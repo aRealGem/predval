@@ -3,24 +3,25 @@ name = "predval"
 version = "0.0.0"
 description = "Predictions-in validation harness for clinical prediction models"
 readme = "README.md"
-# The brief called for 3.11+, but exact pinning forces 3.12+: the pinned numpy requires it, and
-# a universal resolution across 3.11 would need a second, different numpy for that one version.
-# Single exact pins matter more here than 3.11 support -- a metric that moves because a
-# transitive dependency forked by interpreter version is a metric nobody can audit.
-requires-python = ">=3.12"
+requires-python = ">=3.11"
 license = "Apache-2.0"
 license-files = ["LICENSE"]
 
 # Pinned exactly. predval is a measurement instrument: a metric that moves because a
 # transitive dependency changed is indistinguishable from a metric that moves because the
 # model changed. Exact pins keep those two causes separable.
+#
+# numpy and scipy are held one minor behind their latest releases deliberately. Those are the
+# newest versions that still support Python 3.11, so this set resolves to a SINGLE version of
+# every package across 3.11-3.13. Taking the newest numpy instead would fork the lock by
+# interpreter version, which reintroduces exactly the ambiguity exact pinning exists to remove.
 dependencies = [
-    "numpy==2.5.2",
+    "numpy==2.4.6",
     "pandas==3.0.5",
     "pyarrow==25.0.1",
     "scikit-learn==1.9.0",
     "statsmodels==0.14.6",
-    "scipy==1.18.0",
+    "scipy==1.17.1",
     "matplotlib==3.11.1",
     "jinja2==3.1.6",
     "pydantic==2.13.4",
