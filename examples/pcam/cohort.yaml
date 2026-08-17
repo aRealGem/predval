@@ -1,0 +1,41 @@
+# PatchCamelyon holdout cohort -- the predval example fixture.
+#
+# 19,999 histopathology image patches drawn from 22 whole-slide images, held out by slide
+# (GroupShuffleSplit, test_size=0.10, seed 1337) so that no slide appears in both training and
+# holdout. Outcome: does the centre 32x32 region of the patch contain tumour tissue.
+#
+# Regenerate the parquet files with:
+#     uv run python examples/pcam/build_fixture.py
+
+cohort_id: pcam-holdout-wsi-grouped
+version: 0
+subject_key: subject_id
+data: cohort.parquet
+
+outcome:
+  type: binary
+  field: label
+  positive_label: 1
+
+# A patch is not a patient. These 19,999 patches come from 22 slides, and patches from one
+# slide are heavily correlated, so uncertainty must be computed over slides rather than over
+# patches. See docs/spec.md section 2.1.
+clustering:
+  field: wsi
+
+coverage:
+  min_fraction: 0.95
+  compare_on: both
+
+completeness:
+  require_outcome: true
+  on_violation: drop_and_report
+
+# Prespecified. The K=2 clustering separates the slides into two stain/scanner groups, splitting
+# the holdout 11/11 slides and 10,554/9,445 patches. The question it asks is the one a
+# validation harness exists to ask: does the model hold up across scanners?
+subgroups:
+  - name: scanner_domain
+    field: domain
+
+thresholds: [0.5]
