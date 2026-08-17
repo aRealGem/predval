@@ -1,0 +1,13 @@
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+dist/
+build/
+
+# Generated fixture artifacts. build_fixture.py regenerates them deterministically from the
+# campaign source, so the bytes do not belong in git.
+examples/pcam/cohort.parquet
+examples/pcam/predictions.parquet
