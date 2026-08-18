@@ -384,6 +384,92 @@ def coverage_report(cohort: Cohort, predictions: Predictions) -> pd.DataFrame:
     return pd.DataFrame(rows)
 
 
+@dataclass(frozen=True)
+class Flag:
+    """A condition a reader must be told about, carried into the report and the manifest."""
+
+    code: str
+    severity: str  # "warning" | "note"
+    message: str
+
+    def as_dict(self) -> dict[str, str]:
+        return {"code": self.code, "severity": self.severity, "message": self.message}
+
+
+def check_roster(cohort: Cohort, predictions: Predictions) -> list[Flag]:
+    """Compare the declared model roster against what the predictions actually contain.
+
+    Checked in both directions. Declared-but-absent is the loud case the roster exists for;
+    present-but-undeclared usually means a mistyped model_id, which is worse than it looks --
+    it produces plausible metrics for a model that corresponds to nothing while the model it
+    was meant to be silently reads as absent. See docs/spec.md section 2.6.
+    """
+    spec = cohort.spec
+    present = set(predictions.model_ids)
+
+    if spec.expected_models is None:
+        return [
+            Flag(
+                code="roster_not_declared",
+                severity="note",
+                message=(
+                    "model roster not declared; predval reports on whichever models appear "
+                    "in the predictions file and cannot tell you what is missing"
+                ),
+            )
+        ]
+
+    declared = set(spec.expected_models)
+    flags: list[Flag] = []
+
+    absent = sorted(declared - present)
+    if absent:
+        message = f"declared in expected_models but absent from predictions: {absent}"
+        if spec.on_missing_model == "fail":
+            raise CohortSpecError(message, path=cohort.spec_path, column="expected_models")
+        flags.append(Flag(code="declared_but_absent", severity="warning", message=message))
+
+    undeclared = sorted(present - declared)
+    if undeclared:
+        flags.append(
+            Flag(
+                code="present_but_undeclared",
+                severity="warning",
+                message=(
+                    f"present in predictions but not declared in expected_models: "
+                    f"{undeclared}; check for a mistyped model_id"
+                ),
+            )
+        )
+    return flags
+
+
+def check_common_selection(cohort: Cohort, predictions: Predictions) -> list[Flag]:
+    """Caution when restricting to the common subset discards a large share of the cohort.
+
+    The subjects every model happened to score are not a random sample. If models decline to
+    score the hard cases, the common subset is the easy cases and every model looks better on
+    it. See docs/spec.md section 2.4.
+    """
+    report = coverage_report(cohort, predictions)
+    if report.empty:
+        return []
+    excluded = 1.0 - float(report["common_fraction"].iloc[0])
+    threshold = cohort.spec.coverage.common_warn_frac
+    if excluded > threshold:
+        return [
+            Flag(
+                code="informative_common_selection",
+                severity="warning",
+                message=(
+                    f"the common subset excludes {excluded:.1%} of cohort rows "
+                    f"(> {threshold:.0%}); selection into the common subset may be informative"
+                ),
+            )
+        ]
+    return []
+
+
 def check_coverage(cohort: Cohort, predictions: Predictions) -> pd.DataFrame:
     """Return the coverage report, raising if any model falls below the declared floor."""
     report = coverage_report(cohort, predictions)

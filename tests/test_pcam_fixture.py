@@ -92,3 +92,55 @@ def test_full_coverage_for_every_present_model(cohort, predictions) -> None:
 def test_hashes_are_recorded(cohort, predictions) -> None:
     assert len(cohort.spec_hash) == 64
     assert len(predictions.digest) == 64
+
+
+def test_roster_flags_the_permanently_lost_member(cohort, predictions) -> None:
+    """The whole point of declaring p4m_reg: its absence must be loud, not invisible."""
+    from predval import check_roster
+
+    flags = check_roster(cohort, predictions)
+    absent = [f for f in flags if f.code == "declared_but_absent"]
+    assert len(absent) == 1
+    assert "p4m_reg" in absent[0].message
+    assert not [f for f in flags if f.code == "present_but_undeclared"]
+
+
+def test_evaluation_runs_end_to_end(cohort, predictions) -> None:
+    """A cheap-B smoke of the real pipeline; the full B=2000 run is a script, not a test."""
+    from predval import evaluate
+
+    unc = cohort.spec.uncertainty.model_copy(update={"n_boot": 5})
+    spec = cohort.spec.model_copy(update={"uncertainty": unc})
+    small = type(cohort)(**{**cohort.__dict__, "spec": spec})
+
+    result = evaluate(small, predictions)
+    assert set(result.metrics["subset"]) == {"full", "common"}
+    assert len(set(result.metrics["model_id"])) == N_MODELS
+
+    auroc = result.metrics[
+        (result.metrics["metric"] == "auroc")
+        & (result.metrics["stratum_kind"] == "overall")
+        & (result.metrics["subset"] == "full")
+        & (result.metrics["ci_method"] == "cluster_bootstrap")
+    ].set_index("model_id")["value"]
+    # Values verified independently against the campaign ledger during Session 0.
+    assert auroc["swin"] == pytest.approx(0.986570, abs=1e-5)
+    assert auroc["champion"] == pytest.approx(0.916338, abs=1e-5)
+    assert auroc["macenko"] == pytest.approx(0.764140, abs=1e-5)
+
+
+def test_boundary_count_totals_732(cohort, predictions) -> None:
+    """Documented in the spec as the fixture's eps-clip load."""
+    from predval import evaluate
+
+    unc = cohort.spec.uncertainty.model_copy(update={"n_boot": 2})
+    spec = cohort.spec.model_copy(update={"uncertainty": unc})
+    small = type(cohort)(**{**cohort.__dict__, "spec": spec})
+
+    m = evaluate(small, predictions).metrics
+    total = m[
+        (m["metric"] == "boundary_count")
+        & (m["subset"] == "full")
+        & (m["stratum_kind"] == "overall")
+    ]["value"].sum()
+    assert int(total) == 732

@@ -39,3 +39,33 @@ subgroups:
     field: domain
 
 thresholds: [0.5]
+
+uncertainty:
+  n_boot: 2000
+  seed: 1337
+  ci_level: 0.95
+  show_naive_ci: true
+
+# The published 11-member champion ensemble. `p4m_reg` is declared even though its predictions
+# were permanently lost: that is the point. Declaring it makes the gap appear as a flag in every
+# report, instead of the model quietly not existing. The remaining ids are probed members that
+# were evaluated but not promoted -- they are expected in the predictions file, so declaring
+# them keeps the present-but-undeclared check meaningful.
+expected_models:
+  - champion
+  - tinyvgg
+  - p4m_reg
+  - p4m_reg_vl
+  - p4m_seed7
+  - p4m_dense
+  - e2cnn
+  - e2cnn_s21
+  - e2cnn_s99
+  - swin
+  - phikon
+  - macenko
+  - tinyvgg_vl
+  - p4m_s13
+  - p4m_svm
+  - effnet_scratch
+on_missing_model: warn

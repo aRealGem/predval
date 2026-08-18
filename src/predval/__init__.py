@@ -13,11 +13,15 @@ from .errors import (
     PredvalError,
     SchemaViolation,
 )
+from .evaluate import Evaluation, coverage_delta, evaluate
 from .hashing import hash_bytes, hash_file, hash_inputs
 from .io import (
     Cohort,
+    Flag,
     Predictions,
+    check_common_selection,
     check_coverage,
+    check_roster,
     coverage_report,
     load_cohort,
     load_predictions,
@@ -31,6 +35,7 @@ from .schema import (
     CoverageSpec,
     OutcomeSpec,
     SubgroupSpec,
+    UncertaintySpec,
 )
 
 __version__ = "0.0.0"
@@ -45,14 +50,21 @@ __all__ = [
     "CompletenessSpec",
     "CoverageSpec",
     "CoverageViolation",
+    "Evaluation",
+    "Flag",
     "OutcomeSpec",
     "PredictionsError",
     "Predictions",
     "PredvalError",
     "SchemaViolation",
     "SubgroupSpec",
+    "UncertaintySpec",
+    "check_common_selection",
     "check_coverage",
+    "check_roster",
+    "coverage_delta",
     "coverage_report",
+    "evaluate",
     "hash_bytes",
     "hash_file",
     "hash_inputs",

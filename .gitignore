@@ -11,3 +11,4 @@ build/
 # campaign source, so the bytes do not belong in git.
 examples/pcam/cohort.parquet
 examples/pcam/predictions.parquet
+examples/pcam/out/

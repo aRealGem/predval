@@ -69,6 +69,22 @@ class CoverageSpec(StrictModel):
 
     min_fraction: Probability
     compare_on: Literal["full", "common", "both"] = "both"
+    #: When the common subset excludes more than this fraction of otherwise usable rows, the
+    #: report cautions that selection into the intersection may be informative.
+    common_warn_frac: Probability = 0.20
+
+
+class UncertaintySpec(StrictModel):
+    """How intervals are computed. See docs/spec.md section 5."""
+
+    n_boot: int = Field(default=2000, ge=1)
+    #: Recorded in the manifest so an interval can be reproduced exactly.
+    seed: int = 1337
+    ci_level: float = Field(default=0.95, gt=0.0, lt=1.0)
+    #: Render the naive per-row interval beside the cluster interval for AUROC, once, as a
+    #: unit-of-analysis exhibit. It is labelled incorrect; the point is to make the cost of
+    #: ignoring clustering concrete.
+    show_naive_ci: bool = True
 
 
 class CompletenessSpec(StrictModel):
@@ -102,6 +118,11 @@ class CohortSpec(StrictModel):
     clustering: ClusteringSpec | None = None
     subgroups: tuple[SubgroupSpec, ...] = ()
     thresholds: tuple[Probability, ...] = (0.5,)
+    uncertainty: UncertaintySpec = UncertaintySpec()
+    #: Declared model roster. None means "not declared", which is different from an empty
+    #: roster: the first is silence, the second is a claim that no models are expected.
+    expected_models: tuple[str, ...] | None = None
+    on_missing_model: Literal["warn", "fail"] = "warn"
 
     @field_validator("version")
     @classmethod
@@ -120,6 +141,16 @@ class CohortSpec(StrictModel):
             raise ValueError("thresholds must list at least one decision threshold")
         if len(set(v)) != len(v):
             raise ValueError(f"thresholds contains duplicates: {sorted(v)}")
+        return v
+
+    @field_validator("expected_models")
+    @classmethod
+    def _roster_sane(cls, v: tuple[str, ...] | None) -> tuple[str, ...] | None:
+        if v is None:
+            return v
+        if len(set(v)) != len(v):
+            dupes = sorted({m for m in v if list(v).count(m) > 1})
+            raise ValueError(f"expected_models contains duplicates: {dupes}")
         return v
 
     @model_validator(mode="after")
