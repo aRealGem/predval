@@ -54,6 +54,31 @@ class Evaluation:
         return paths
 
 
+def _tool_versions() -> dict[str, str]:
+    """predval and its scientific stack, for the report's provenance section.
+
+    Recorded so a report's numbers can be reproduced against the exact library versions that
+    produced them -- a calibration slope can move between statsmodels releases.
+    """
+    import platform
+
+    import scipy
+    import sklearn
+    import statsmodels
+
+    from . import __version__
+
+    return {
+        "predval": __version__,
+        "python": platform.python_version(),
+        "numpy": np.__version__,
+        "pandas": pd.__version__,
+        "scipy": scipy.__version__,
+        "statsmodels": statsmodels.__version__,
+        "scikit-learn": sklearn.__version__,
+    }
+
+
 def coverage_delta(metrics: pd.DataFrame) -> pd.DataFrame:
     """`metric_full - metric_common` per model and metric.
 
@@ -200,6 +225,7 @@ def evaluate(cohort: Cohort, predictions: Predictions) -> Evaluation:
     manifest = {
         "cohort_id": spec.cohort_id,
         "contract_version": spec.version,
+        "versions": _tool_versions(),
         "inputs": {**cohort.hashes, **predictions.hashes},
         "uncertainty": {
             "n_boot": unc.n_boot,

@@ -16,7 +16,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from predval import evaluate, load_cohort, load_predictions
+from predval import evaluate, load_cohort, load_predictions, write_report
 from predval.metrics import optimism
 
 HERE = Path(__file__).resolve().parent
@@ -38,11 +38,13 @@ def main(argv: list[str] | None = None) -> int:
 
     result = evaluate(cohort, predictions)
     paths = result.write(args.out)
+    report_path = write_report(result, args.out / "report.html")
 
     print(f"cohort:      {cohort.n_subjects:,} subjects")
     print(f"models:      {len(predictions.model_ids)}")
     print(f"metrics:     {len(result.metrics):,} rows -> {paths['metrics']}")
     print(f"fragility:   {len(result.fragility):,} rows -> {paths['fragility']}")
+    print(f"report:      {report_path}")
     print()
 
     print("FLAGS")

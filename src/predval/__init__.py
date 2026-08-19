@@ -26,6 +26,7 @@ from .io import (
     load_cohort,
     load_predictions,
 )
+from .report import render, render_evaluation, render_from_dir, write_report
 from .schema import (
     CONTRACT_VERSION,
     HOLDOUT_FOLD,
@@ -72,5 +73,9 @@ __all__ = [
     "hash_inputs",
     "load_cohort",
     "load_predictions",
+    "render",
+    "render_evaluation",
+    "render_from_dir",
+    "write_report",
     "__version__",
 ]

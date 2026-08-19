@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>predval report -- {{ cohort_id }}</title>
+<style>
+ body { font: 15px/1.5 -apple-system, system-ui, sans-serif; max-width: 60rem; margin: 2rem auto;
+        padding: 0 1rem; color: #1a1a1a; }
+ h1 { font-size: 1.6rem; } h2 { font-size: 1.2rem; margin-top: 2.2rem;
+        border-bottom: 1px solid #ddd; padding-bottom: .3rem; }
+ table { border-collapse: collapse; width: 100%; margin: .6rem 0; font-size: .92rem; }
+ th, td { text-align: left; padding: .35rem .6rem; border-bottom: 1px solid #eee; }
+ th { background: #f6f6f6; }
+ .framing { background: #fff8e6; border: 2px solid #e0b400; border-radius: 6px;
+        padding: 1rem 1.2rem; margin: 1rem 0 1.5rem; font-weight: 500; }
+ .subordinate { color: #333; font-size: .9rem; }
+ .muted { color: #666; } .warn { color: #b00; } code { font-size: .85em; }
+ .byconstruction { font-style: italic; color: #666; }
+</style>
+</head>
+<body>
+<h1>predval report</h1>
+<p class="muted">cohort: <code>{{ cohort_id }}</code></p>
+
+<div class="framing">{{ framing }}</div>
+
+<h2>1. Coverage and roster</h2>
+{% if roster.declared is not none %}
+<p>Roster: <strong>{{ roster.declared }}</strong> declared,
+   <strong>{{ roster.present }}</strong> present,
+   <strong>{{ roster.absent | length }}</strong> absent{% if roster.absent %}
+   (<span class="warn">{{ roster.absent | join(", ") }}</span> -- declared but no predictions){% endif %}.</p>
+{% else %}
+<p class="muted">No model roster was declared.</p>
+{% endif %}
+<table>
+<tr><th>model</th><th>coverage</th><th>scored</th><th>dropped if common</th><th>meets minimum</th></tr>
+{% for r in coverage_rows %}
+<tr><td>{{ r.model }}</td><td>{{ r.coverage_full }}</td><td>{{ r.n_scored }}</td>
+    <td>{{ r.n_dropped_if_common }}</td>
+    <td>{% if r.meets_minimum %}yes{% else %}<span class="warn">no</span>{% endif %}</td></tr>
+{% endfor %}
+</table>
+
+<h2>2. Primary comparison -- model as published (rung0)</h2>
+<p class="muted">Common subset, overall stratum. AUROC and Brier carry cluster intervals; the
+calibration slope and intercept carry cluster-robust analytic intervals.
+{% if identical_coverage %}Full and common coverage are identical here, so the coverage-delta
+column is omitted (every value would be zero).{% else %}The final column is AUROC full minus
+common -- the effect of restricting to the common subset.{% endif %}</p>
+<table>
+<tr><th>model</th><th>AUROC</th><th>avg precision</th><th>Brier</th><th>calib slope</th>
+    <th>calib intercept</th>{% if not identical_coverage %}<th>AUROC cov-delta</th>{% endif %}</tr>
+{% for r in primary_rows %}
+<tr><td>{{ r.model }}</td><td>{{ r.auroc }}</td><td>{{ r.average_precision }}</td>
+    <td>{{ r.brier }}</td><td>{{ r.calibration_slope }}</td><td>{{ r.calibration_intercept }}</td>
+    {% if not identical_coverage %}<td>{{ r.cov_delta }}</td>{% endif %}</tr>
+{% endfor %}
+</table>
+
+{% if exhibit_rows %}
+<h3>Unit-of-analysis exhibit</h3>
+<p class="muted">The naive per-row AUROC interval is <em>incorrect</em> when patches share a slide.
+It is shown only to make the cost of ignoring clustering concrete: the ratio is how much narrower
+the wrong interval looks.</p>
+<table>
+<tr><th>model</th><th>cluster width</th><th>naive width (wrong)</th><th>ratio</th></tr>
+{% for r in exhibit_rows %}
+<tr><td>{{ r.model }}</td><td>{{ r.cluster_width }}</td><td>{{ r.naive_width }}</td>
+    <td>{{ r.ratio }}</td></tr>
+{% endfor %}
+</table>
+{% endif %}
+
+<h2>3. Calibration diagnosis (subordinate to section 2)</h2>
+<p class="subordinate">This section diagnoses rung0; it does not rank models. Every figure below is
+a point estimate -- {{ pending }}. rung1's apparent intercept is ~0 and rung2's apparent slope is
+~1 <span class="byconstruction">by construction</span> (that is what each fit targets), so those
+are not reported as findings. Recalibration cannot improve discrimination; the cross-fitted Brier
+is the expected loss after local recalibration, not a validated result.</p>
+<table>
+<tr><th>model</th><th>Brier rung0</th><th>rung1 cf</th><th>rung2 cf</th><th>rung3 cf</th>
+    <th>cross-fit gain</th><th>rung2 optimism</th></tr>
+{% for r in calibration_rows %}
+<tr><td>{{ r.model }}</td><td>{{ r.rung0 }}</td><td>{{ r.rung1_cf }}</td><td>{{ r.rung2_cf }}</td>
+    <td>{{ r.rung3_cf }}</td><td>{{ r.gain }}</td><td>{{ r.optimism }}</td></tr>
+{% endfor %}
+</table>
+
+<h2>4. Subgroups</h2>
+{% if subgroup_rows %}
+<table>
+<tr><th>subgroup</th><th>model</th><th>AUROC</th><th>Brier</th></tr>
+{% for r in subgroup_rows %}
+<tr><td>{{ r.subgroup }}</td><td>{{ r.model }}</td><td>{{ r.auroc }}</td><td>{{ r.brier }}</td></tr>
+{% endfor %}
+</table>
+{% else %}
+<p class="muted">No subgroups were prespecified.</p>
+{% endif %}
+{% for f in flags.note if f.code == "recalibration_suppressed" %}
+{% if loop.first %}<p class="muted">Ladder suppressed on gated subgroups:</p><ul class="muted">{% endif %}
+<li>{{ f.message }}</li>
+{% if loop.last %}</ul>{% endif %}
+{% endfor %}
+
+<h2>5. Fragility -- not a confidence interval</h2>
+<p class="muted">The largest AUROC change from dropping any single cluster, and the culprit. This is
+deliberately <strong>not</strong> an interval: it answers whether a result is carried by one slide,
+which a tight bootstrap interval will not reveal.</p>
+{% if fragility_rows %}
+<table>
+<tr><th>model</th><th>max |delta AUROC|</th><th>culprit cluster</th></tr>
+{% for r in fragility_rows %}
+<tr><td>{{ r.model }}</td><td>{{ r.max_abs_delta }}</td><td>{{ r.culprit }}</td></tr>
+{% endfor %}
+</table>
+{% else %}
+<p class="muted">No fragility rows (fewer than two clusters).</p>
+{% endif %}
+
+<h2>6. Provenance</h2>
+<p class="muted">Input digests (blake2b), the bootstrap seed and B, and library versions -- enough to
+reproduce every number.</p>
+<table>
+{% for name, digest in provenance.inputs %}
+<tr><th>{{ name }}</th><td><code>{{ digest }}</code></td></tr>
+{% endfor %}
+<tr><th>contract version</th><td>{{ provenance.contract_version }}</td></tr>
+<tr><th>bootstrap</th><td>B={{ provenance.uncertainty.n_boot }}, seed={{ provenance.uncertainty.seed }},
+    ci={{ provenance.uncertainty.ci_level }}</td></tr>
+{% for name, ver in provenance.versions %}
+<tr><th>{{ name }}</th><td>{{ ver }}</td></tr>
+{% endfor %}
+</table>
+
+<h3>Flags</h3>
+{% if flags.warning %}
+<ul>{% for f in flags.warning %}<li class="warn"><strong>{{ f.code }}</strong>: {{ f.message }}</li>{% endfor %}</ul>
+{% endif %}
+{% if flags.note %}
+<ul class="muted">{% for f in flags.note %}<li><strong>{{ f.code }}</strong>: {{ f.message }}</li>{% endfor %}</ul>
+{% endif %}
+{% if not flags.warning and not flags.note %}<p class="muted">No flags.</p>{% endif %}
+
+</body>
+</html>

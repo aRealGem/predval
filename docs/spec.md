@@ -431,9 +431,35 @@ One row per (model, subset, stratum, metric): `max_abs_delta` and `culprit_clust
 
 ### 6.3 `manifest.json`
 
-Input digests (§3), the resolved configuration, the bootstrap seed and `B`, and `flags` — the
-roster findings (§2.6), the informative-selection caution (§2.4), and the few-clusters note
-(§5.1). The manifest is what makes a report's claims checkable later.
+Input digests (§3), the resolved configuration, the bootstrap seed and `B`, the library
+`versions` (predval + the scientific stack), a `roster` summary (`declared` / `present` / `absent`
+counts), and `flags` — the roster findings (§2.6), the informative-selection caution (§2.4), and
+the few-clusters note (§5.1). The manifest is what makes a report's claims checkable later.
+
+### 6.4 `report.html` (S4)
+
+A standalone HTML report rendered from the four artefacts above — it computes nothing new, it
+arranges what `evaluate` produced and refuses to let any of it read as more than it is. Rendering
+is **deterministic**: no wall-clock, a fixed model order, and dict fields (input digests, versions)
+emitted in sorted order, so the same artefacts render byte-identically whether from the in-memory
+`Evaluation` or re-read from disk. `python -m predval.report <outdir>` regenerates it from the
+written artefacts alone.
+
+Structure, in order: **1** coverage and roster (declared/present/absent in the header) → **2** the
+primary as-published (`rung0`) comparison on the common subset, with an AUROC coverage-delta column
+that collapses when full and common coincide, and the unit-of-analysis exhibit (§5.4) → **3** the
+calibration diagnosis (the ladder), explicitly **subordinate** to §2 and never a headline → **4**
+subgroups, with gated strata (§4.7) named as suppressed → **5** fragility, labelled *not a
+confidence interval* (§5.3) → **6** provenance (digests, seed, `B`, versions, all flags).
+
+Three rules are structural, enforced by tests, not cosmetic:
+
+- **The framing block (§4.4) is unconditional and precedes every number**, and includes the
+  sentence *"recalibration does not and cannot improve discrimination."*
+- **Naked-delta ban.** No recalibrated gain is shown without `(interval pending §4.5)` attached; a
+  bare improvement invites a confidence the harness has not earned.
+- **By-construction identities are labelled as such** — rung1's apparent intercept ≈ 0 and rung2's
+  apparent slope ≈ 1 are what each fit targets, never presented as findings.
 
 ---
 
