@@ -109,7 +109,10 @@ def _irls_logistic(
 
     for _ in range(max_iter):
         eta = design @ beta + off
-        mu = 1.0 / (1.0 + np.exp(-eta))
+        # Clip the linear predictor before exp: near-separation can push |eta| past the overflow
+        # bound, and mu saturates to 0/1 there anyway. The clip changes nothing in-range and lets
+        # the separation guard below fire on a finite weight rather than on a warning.
+        mu = 1.0 / (1.0 + np.exp(-np.clip(eta, -700.0, 700.0)))
         w = mu * (1.0 - mu)
         # Near-separation drives the weights to zero and the solve to garbage.
         if not np.all(np.isfinite(w)) or w.sum() < 1e-12:

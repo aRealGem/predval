@@ -98,8 +98,12 @@ def test_all_models_present(result) -> None:
     assert set(result.metrics["model_id"]) == set(MODELS)
 
 
-def test_fit_mode_is_apparent_in_s2(result) -> None:
-    assert set(result.metrics["fit_mode"]) == {"apparent"}
+def test_fit_modes_are_apparent_and_crossfit(result) -> None:
+    """S3 adds the cross-fitted rungs; as-published rung0 stays apparent-only."""
+    assert set(result.metrics["fit_mode"]) == {"apparent", "crossfit"}
+    rung0 = result.metrics[result.metrics["rung"] == "rung0"]
+    assert set(rung0["fit_mode"]) == {"apparent"}
+    assert set(result.metrics["rung"]) == {"rung0", "rung1", "rung2", "rung3"}
 
 
 def test_expected_metrics_reported(result) -> None:
@@ -127,6 +131,7 @@ def test_bootstrap_and_analytic_both_present_for_brier(result) -> None:
     """The report shows the bootstrap and footnotes whether the analytic agrees."""
     brier = result.metrics[
         (result.metrics["metric"] == "brier")
+        & (result.metrics["rung"] == "rung0")
         & (result.metrics["subset"] == "full")
         & (result.metrics["stratum_kind"] == "overall")
         & (result.metrics["model_id"] == "good")
@@ -137,6 +142,7 @@ def test_bootstrap_and_analytic_both_present_for_brier(result) -> None:
 def test_the_two_brier_methods_broadly_agree(result) -> None:
     brier = result.metrics[
         (result.metrics["metric"] == "brier")
+        & (result.metrics["rung"] == "rung0")
         & (result.metrics["subset"] == "full")
         & (result.metrics["stratum_kind"] == "overall")
     ]

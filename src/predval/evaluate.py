@@ -3,8 +3,9 @@
 Structure follows docs/spec.md section 6. Both subsets are always computed, every stratum is
 evaluated, and every metric carries an interval whose method is recorded rather than assumed.
 
-S2 emits `fit_mode = "apparent"` for everything. The cross-fitted rungs (S3) will add
-`fit_mode = "crossfit"` rows to the same table.
+As-published metrics are `rung0`/`apparent`. The recalibration ladder (§4, recalibrate.py) adds
+`rung1`–`rung3` rows in both `apparent` and `crossfit` fit modes for the calibration-sensitive
+metrics; their optimism is `apparent − crossfit`, read back from the paired rows.
 """
 
 from __future__ import annotations
@@ -17,11 +18,14 @@ import numpy as np
 import pandas as pd
 
 from . import metrics as M
+from . import recalibrate as R
 from . import uncertainty as U
 from .io import Cohort, Flag, Predictions, check_common_selection, check_roster, coverage_report
 
-#: Every S2 metric is fitted on the rows it is evaluated on. S3 adds "crossfit".
+#: As-published metrics are fitted on the rows they are evaluated on. S3's ladder adds "crossfit".
 APPARENT = "apparent"
+#: As-published rung. The recalibration ladder (S3) adds rung1-3; see docs/spec.md section 4.
+RUNG0 = "rung0"
 
 
 @dataclass
@@ -57,7 +61,9 @@ def coverage_delta(metrics: pd.DataFrame) -> pd.DataFrame:
     of restriction visible without printing a second full table (docs/spec.md section 2.4).
     """
     keys = ["model_id", "stratum_kind", "subgroup_name", "subgroup_level", "metric", "threshold"]
-    primary = metrics[metrics["ci_method"] != "naive_row_bootstrap"]
+    # As-published only: coverage restriction is a property of rung0, and mixing recalibrated
+    # rungs into the pivot would compare corrections rather than the effect of the common subset.
+    primary = metrics[(metrics["ci_method"] != "naive_row_bootstrap") & (metrics["rung"] == RUNG0)]
     wide = primary.pivot_table(
         index=keys, columns="subset", values="value", aggfunc="first", dropna=False
     ).reset_index()
@@ -136,13 +142,13 @@ def evaluate(cohort: Cohort, predictions: Predictions) -> Evaluation:
 
     rows: list[dict] = []
     frag_rows: list[dict] = []
-    notes: set[str] = set()
+    notes: set[tuple[str, str]] = set()
 
     # A cell is fully determined by (model, analysis-set mask). When every model has identical
     # coverage the `full` and `common` masks coincide, and recomputing 2000 bootstrap replicates
     # to arrive at the same numbers twice is pure waste. Reuse is exact, not an approximation:
     # identical inputs, identical outputs. The subset label is re-stamped on the copy.
-    cache: dict[tuple[str, bytes], tuple[list[dict], list[dict], set[str]]] = {}
+    cache: dict[tuple[str, bytes], tuple[list[dict], list[dict], set[tuple[str, str]]]] = {}
     n_reused = 0
 
     for subset_name, subset_ids in subsets.items():
@@ -175,8 +181,8 @@ def evaluate(cohort: Cohort, predictions: Predictions) -> Evaluation:
                 frag_rows.extend(new_frag)
                 notes |= new_notes
 
-    for note in sorted(notes):
-        flags.append(Flag(code="few_clusters", severity="note", message=note))
+    for code, message in sorted(notes):
+        flags.append(Flag(code=code, severity="note", message=message))
 
     metrics_df = pd.DataFrame(rows)
     manifest = {
@@ -224,11 +230,11 @@ def _evaluate_one(
     ci: float,
     ctx: dict,
     clustered: bool,
-) -> tuple[list[dict], list[dict], set[str]]:
+) -> tuple[list[dict], list[dict], set[tuple[str, str]]]:
     """All metrics for one (model, subset, stratum) cell."""
     rows: list[dict] = []
     frag: list[dict] = []
-    notes: set[str] = set()
+    notes: set[tuple[str, str]] = set()
 
     n = int(y.size)
     n_events = int(y.sum())
@@ -236,12 +242,15 @@ def _evaluate_one(
     n_clusters = len(clusters)
     sizes = dict(n=n, n_events=n_events, n_clusters=n_clusters)
 
-    def row(metric, value, interval=None, threshold=None, **extra):
+    def row(
+        metric, value, interval=None, threshold=None, *, rung=RUNG0, fit_mode=APPARENT, **extra
+    ):
         return {
             **ctx,
             "metric": metric,
             "threshold": threshold,
-            "fit_mode": APPARENT,
+            "rung": rung,
+            "fit_mode": fit_mode,
             "value": float(value) if value is not None else np.nan,
             "ci_low": interval.low if interval else np.nan,
             "ci_high": interval.high if interval else np.nan,
@@ -259,7 +268,7 @@ def _evaluate_one(
 
     if note := U.few_clusters_note(n_clusters):
         if clustered:
-            notes.add(note)
+            notes.add(("few_clusters", note))
 
     # ---- point estimates -------------------------------------------------------------------
     point: dict[tuple[str, float | None], float] = {}
@@ -316,6 +325,16 @@ def _evaluate_one(
                 U.percentile_interval(naive, ci, "naive_row_bootstrap"),
             )
         )
+
+    # ---- recalibration ladder: rung1-3, apparent and cross-fitted --------------------------
+    # rung0 is the as-published block above (fit_mode apparent). The ladder recomputes the
+    # calibration-sensitive metrics on each corrected mapping; optimism is apparent - crossfit,
+    # derived at report time from these paired rows. No interval is attached to a recalibrated
+    # rung yet -- bootstrapping a refit correction is deferred (docs/spec.md section 4.5).
+    ladder_rows, ladder_notes = R.ladder(y, p, groups, max_folds=5)
+    for lr in ladder_rows:
+        rows.append(row(lr.metric, lr.value, rung=lr.rung, fit_mode=lr.fit_mode))
+    notes |= {("recalibration_unavailable", m) for m in ladder_notes}
 
     # ---- leave-one-cluster-out fragility ----------------------------------------------------
     if n_clusters >= 2:

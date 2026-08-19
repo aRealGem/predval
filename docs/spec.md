@@ -284,6 +284,16 @@ Report templates must state, verbatim in substance:
 A recalibration that improves the numbers is a finding about the cohort as much as about the
 model, and the report must not let it read as a promotion.
 
+### 4.5 Rung intervals are deferred
+
+`rung0` carries the full interval layers of §5. The recalibrated rungs (`rung1`–`rung3`) are
+emitted as **point estimates with null `ci_*`** in this version. A correct interval for a
+recalibrated metric must refit the correction inside every bootstrap replicate — and, for the
+cross-fitted rungs, refit it inside every replicate *and* every fold — so that the interval
+carries the variance of the correction itself, not just of the metric. That is a real cost and a
+design surface of its own, so it is backlog rather than a silent omission. The load-bearing S3
+number is the **optimism gap** `apparent − crossfit`, which a point estimate already delivers.
+
 ---
 
 ## 5. Uncertainty
@@ -349,7 +359,7 @@ small, but it is not in the MVP.
 
 ### 6.1 `metrics.parquet`
 
-One row per (model, subset, stratum, metric, threshold, fit_mode, ci_method).
+One row per (model, subset, stratum, metric, threshold, rung, fit_mode, ci_method).
 
 | column | meaning |
 |---|---|
@@ -359,11 +369,19 @@ One row per (model, subset, stratum, metric, threshold, fit_mode, ci_method).
 | `subgroup_name`, `subgroup_level` | null for `overall` |
 | `metric` | metric name |
 | `threshold` | null except for threshold-dependent metrics |
-| `fit_mode` | `apparent` or `crossfit` (S3); `apparent` for all S2 metrics |
+| `rung` | `rung0` (as published) or `rung1`/`rung2`/`rung3` (§4). **S3 addition** |
+| `fit_mode` | `apparent` or `crossfit`; `apparent` for every `rung0` row |
 | `value` | point estimate |
 | `ci_low`, `ci_high`, `ci_level` | interval, null where none applies |
 | `ci_method` | `cluster_bootstrap`, `cluster_robust_t`, `naive_row_bootstrap`, or null |
 | `n`, `n_events`, `n_clusters` | analysis-set sizes |
+
+**`rung` is an S3 addition to the frozen §6.1 columns** — §4.3 requires rung rows in this table,
+and the original column list omitted the discriminator. Every as-published metric (including the
+rank and threshold metrics and the data-quality rows) is `rung0`/`apparent`; the ladder adds
+`rung1`–`rung3` rows for the calibration-sensitive metrics (`brier`, `calibration_intercept`,
+`calibration_slope`), each in both fit modes. Optimism is `apparent − crossfit` per rung, derived
+from these paired rows rather than stored as its own row.
 
 ### 6.2 `fragility.parquet`
 
