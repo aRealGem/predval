@@ -1,11 +1,12 @@
 #!/usr/bin/env python
-"""Evaluate the PCam fixture end to end and write the S2 artefacts.
+"""Evaluate the PCam fixture end to end and write the artefacts.
 
     uv run python examples/pcam/run_evaluation.py [--out DIR] [--n-boot N]
 
 Writes metrics.parquet, fragility.parquet, coverage.parquet and manifest.json, then prints a
-short summary. At the default B=2000 over 15 models this takes several minutes; pass --n-boot
-for a quick smoke run.
+short summary -- discrimination, the unit-of-analysis exhibit, calibration slope, the
+recalibration ladder (rung0 vs cross-fitted rungs), fragility, and the eps-clip load. At the
+default B=2000 over 15 models this takes several minutes; pass --n-boot for a quick smoke run.
 """
 
 from __future__ import annotations
@@ -85,6 +86,36 @@ def main(argv: list[str] | None = None) -> int:
     print("Calibration slope (1.0 = correct spread; <1 = over-confident)")
     for _, r in cal.iterrows():
         print(f"  {r['model_id']:16} {r['value']:.3f}  [{r['ci_low']:.3f}, {r['ci_high']:.3f}]")
+    print()
+
+    lad = result.metrics[
+        (result.metrics["stratum_kind"] == "overall")
+        & (result.metrics["subset"] == "common")
+        & (result.metrics["metric"] == "brier")
+    ].pivot_table(index="model_id", columns=["rung", "fit_mode"], values="value")
+
+    def _cell(model: str, rung: str, mode: str) -> float:
+        col = (rung, mode)
+        return float(lad.loc[model, col]) if col in lad.columns else float("nan")
+
+    # Rank by the cross-fitted Brier gain: rung0 minus the best held-out rung. This is the honest
+    # repair -- a correction fitted on other slides and scored here -- not the apparent optimism.
+    def _cf_gain(model: str) -> float:
+        r0 = _cell(model, "rung0", "apparent")
+        cf = min(_cell(model, r, "crossfit") for r in ("rung1", "rung2", "rung3"))
+        return r0 - cf
+
+    order = sorted(lad.index, key=_cf_gain, reverse=True)
+    print("Recalibration ladder -- Brier, as-published vs cross-fitted (common subset)")
+    print("  real repair only where miscalibration is real; ~0 or negative gain when already good")
+    print(f"  {'model':16} {'rung0':>7} {'r2_cf':>7} {'r3_cf':>7} {'gain_cf':>8} {'optim_r2':>9}")
+    for model in order[:6]:
+        r0 = _cell(model, "rung0", "apparent")
+        r2_cf = _cell(model, "rung2", "crossfit")
+        r3_cf = _cell(model, "rung3", "crossfit")
+        gain = r0 - min(r2_cf, r3_cf)
+        optimism = _cell(model, "rung2", "apparent") - r2_cf  # apparent - crossfit
+        print(f"  {model:16} {r0:7.4f} {r2_cf:7.4f} {r3_cf:7.4f} {gain:8.4f} {optimism:+9.4f}")
     print()
 
     frag = result.fragility[
