@@ -32,11 +32,11 @@ from . import metrics as M
 #: Rungs the ladder fits. rung0 (as-published) is carried by the S2 metric rows, not refitted.
 LADDER_RUNGS = ("rung1", "rung2", "rung3")
 
-#: Metrics recomputed on the recalibrated probabilities. The ladder is a calibration statement,
-#: so it is scored with the proper scoring rule and the two calibration diagnostics; the
-#: rank-only metrics (AUROC, average precision) are unchanged by the monotone rungs and are not
-#: re-emitted. See docs/spec.md section 4.
-LADDER_METRICS = ("brier", "calibration_intercept", "calibration_slope")
+# Every metric is recomputed on each recalibrated mapping -- not only calibration. Threshold
+# metrics move because recalibration shifts the operating point, and rung3 can reorder scores,
+# so AUROC/average precision are no longer invariant. Emitting all of them is what lets the
+# report show that recalibration cannot buy discrimination (rung1/rung2 AUROC == rung0) while a
+# threshold's sensitivity genuinely changes. The metric set is M.THRESHOLD_FREE + M.THRESHOLDED.
 
 APPARENT = "apparent"
 CROSSFIT = "crossfit"
@@ -99,6 +99,9 @@ class _Calibrator:
     """A fitted rung: maps published `p` to a corrected probability. Purely a link-scale map."""
 
     predict: object  # Callable[[np.ndarray], np.ndarray] over published p
+    #: The fitted logit-scale slope, kept so a rank-inverting fit (slope < 0) can be flagged.
+    #: 1.0 for rung1 (slope fixed), the fitted `b` for rung2, None for rung3 (no single slope).
+    slope: float | None = None
 
     def __call__(self, p: np.ndarray) -> np.ndarray:
         return self.predict(p)  # type: ignore[operator]
@@ -121,14 +124,14 @@ def _fit(rung: str, y: np.ndarray, p: np.ndarray) -> _Calibrator | None:
         if beta is None:
             return None
         a = float(beta[0])
-        return _Calibrator(lambda q: _sigmoid(M.logit(q) + a))
+        return _Calibrator(lambda q: _sigmoid(M.logit(q) + a), slope=1.0)
 
     if rung == "rung2":
         beta = M._irls_logistic(y, z, None)
         if beta is None:
             return None
         a, b = float(beta[0]), float(beta[1])
-        return _Calibrator(lambda q: _sigmoid(a + b * M.logit(q)))
+        return _Calibrator(lambda q: _sigmoid(a + b * M.logit(q)), slope=b)
 
     if rung == "rung3":
         knots = _rcs_knots(z)
@@ -141,6 +144,21 @@ def _fit(rung: str, y: np.ndarray, p: np.ndarray) -> _Calibrator | None:
         return _Calibrator(lambda q: _sigmoid(a + _rcs_basis(M.logit(q), knots) @ coef))
 
     raise ValueError(f"unknown rung {rung!r}")
+
+
+def _is_monotone(cal: _Calibrator, p: np.ndarray, tol: float = 1e-9) -> bool:
+    """Is the fitted transform non-decreasing across the observed scores?
+
+    rung1 and rung2 (with slope > 0) are monotone by construction; rung3's spline is not
+    guaranteed to be, and a non-monotone recalibration reorders patients -- it can change AUROC
+    and is worth flagging rather than applying silently. Checked on the distinct published
+    values, which span the same order as their logits.
+    """
+    u = np.unique(p[np.isfinite(p)])
+    if u.size < 2:
+        return True
+    mapped = cal(u)
+    return bool(np.all(np.diff(mapped) >= -tol))
 
 
 def _grouped_folds(groups: np.ndarray, k: int) -> list[np.ndarray]:
@@ -183,48 +201,75 @@ class RungMetric:
     rung: str
     fit_mode: str
     metric: str
+    threshold: float | None
     value: float
 
 
-def _score(y: np.ndarray, p: np.ndarray) -> dict[str, float]:
-    """The ladder metric set on one probability vector."""
-    return {
-        "brier": M.brier(y, p),
-        "calibration_intercept": M.calibration_intercept(y, p),
-        "calibration_slope": M.calibration_slope(y, p),
-    }
+@dataclass(frozen=True)
+class LadderReport:
+    """Quality signals about the fitted ladder, for flags the evaluator labels with the cell."""
+
+    #: Fitted apparent rung2 slope, or None if rung2 was suppressed. Negative == rank-inverting.
+    rung2_slope: float | None
+    #: Whether the apparent rung3 transform is monotone; None if rung3 was suppressed.
+    rung3_monotone: bool | None
+    #: Rungs emitted for neither fit mode because one half of the pair was unavailable (§4.3).
+    suppressed_rungs: tuple[str, ...]
+
+
+def _score_all(
+    y: np.ndarray, p: np.ndarray, thresholds: tuple[float, ...]
+) -> dict[tuple[str, float | None], float]:
+    """Every metric -- threshold-free and thresholded -- on one probability vector."""
+    out: dict[tuple[str, float | None], float] = {}
+    for name, fn in M.THRESHOLD_FREE.items():
+        out[(name, None)] = fn(y, p)
+    for name, fn in M.THRESHOLDED.items():
+        for t in thresholds:
+            out[(name, t)] = fn(y, p, t)
+    return out
 
 
 def ladder(
-    y: np.ndarray, p: np.ndarray, groups: np.ndarray, *, max_folds: int = 5
-) -> tuple[list[RungMetric], list[str]]:
-    """Fit rung1-3 apparent and cross-fitted, and score each on the ladder metrics.
+    y: np.ndarray,
+    p: np.ndarray,
+    groups: np.ndarray,
+    *,
+    thresholds: tuple[float, ...] = (0.5,),
+    max_folds: int = 5,
+) -> tuple[list[RungMetric], LadderReport]:
+    """Fit rung1-3 apparent and cross-fitted, scoring every metric on each corrected mapping.
 
-    Returns (rows, notes). A rung whose fit degenerates contributes NaN-valued rows and a note
-    naming what was unavailable, so a missing correction is visible in the artefact rather than
-    silently absent.
+    Half-pair guard (§4.3): a rung is emitted only if BOTH its apparent and cross-fitted mappings
+    are available. If either degenerates the whole rung is suppressed -- an apparent number with
+    no held-out companion is exactly the flattering figure the ladder exists to discipline, so it
+    is withheld rather than shown alone. Suppressed rungs are named in the returned report.
     """
     rows: list[RungMetric] = []
-    notes: list[str] = []
     if y.size == 0 or np.unique(y).size < 2:
-        return rows, notes
+        return rows, LadderReport(None, None, ())
 
     g = np.unique(groups).size
     k = min(max_folds, g)
+    rung2_slope: float | None = None
+    rung3_monotone: bool | None = None
+    suppressed: list[str] = []
 
     for rung in LADDER_RUNGS:
         cal = _fit(rung, y, p)
-        app = _score(y, cal(p)) if cal is not None else None
-        if app is None:
-            notes.append(f"{rung} apparent fit unavailable (degenerate or non-converging)")
-        for metric in LADDER_METRICS:
-            rows.append(RungMetric(rung, APPARENT, metric, app[metric] if app else float("nan")))
-
         cf_pred = _crossfit_predictions(rung, y, p, groups, k) if g >= 2 else None
-        cf = _score(y, cf_pred) if cf_pred is not None else None
-        if cf is None and g >= 2:
-            notes.append(f"{rung} cross-fit unavailable (a fold degenerated at K={k})")
-        for metric in LADDER_METRICS:
-            rows.append(RungMetric(rung, CROSSFIT, metric, cf[metric] if cf else float("nan")))
+        if cal is None or cf_pred is None:
+            suppressed.append(rung)
+            continue
 
-    return rows, notes
+        if rung == "rung2":
+            rung2_slope = cal.slope
+        if rung == "rung3":
+            rung3_monotone = _is_monotone(cal, p)
+
+        for (metric, t), value in _score_all(y, cal(p), thresholds).items():
+            rows.append(RungMetric(rung, APPARENT, metric, t, value))
+        for (metric, t), value in _score_all(y, cf_pred, thresholds).items():
+            rows.append(RungMetric(rung, CROSSFIT, metric, t, value))
+
+    return rows, LadderReport(rung2_slope, rung3_monotone, tuple(suppressed))

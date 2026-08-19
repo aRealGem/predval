@@ -239,6 +239,21 @@ def test_coverage_delta_is_zero_when_coverage_is_identical(result) -> None:
 # -------------------------------------------------------------------------------- the manifest
 
 
+def test_subgroup_ladder_is_gated_below_threshold(result) -> None:
+    """The toy's subgroups have 4 clusters each -- below the gate -- so they get rung0 only."""
+    sub = result.metrics[result.metrics["stratum_kind"] == "subgroup"]
+    assert set(sub["rung"]) == {"rung0"}
+    overall = result.metrics[result.metrics["stratum_kind"] == "overall"]
+    assert {"rung1", "rung2", "rung3"} <= set(overall["rung"]), "overall is never gated"
+    assert "recalibration_suppressed" in {f.code for f in result.flags}
+
+
+def test_manifest_roster_counts_present_and_absent(result) -> None:
+    r = result.manifest["roster"]
+    assert r["present"] == len(MODELS)
+    assert r["declared"] is None and r["absent"] == []  # toy declares no roster
+
+
 def test_manifest_records_provenance_and_config(result) -> None:
     m = result.manifest
     assert set(m["inputs"]) == {"cohort_spec", "cohort_data", "predictions"}

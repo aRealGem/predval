@@ -269,8 +269,18 @@ miscalibration is present *at all*.
 a correction on some patches of a slide and evaluating it on other patches of the same slide
 would leak, and would reproduce in miniature exactly the error predval exists to detect.
 
-**Optimism** is reported explicitly as `apparent - crossfit` per rung. It is the number that
-says how much of the apparent repair was the correction memorising this particular cohort.
+**Optimism** is reported per rung, oriented so that **positive always means the apparent fit
+flattered itself** — it looked better than the held-out cross-fit. For a score (higher is better,
+e.g. AUROC) that is `apparent − crossfit`; for a loss (lower is better, e.g. Brier) it is
+`crossfit − apparent`. It is undefined for target-valued metrics (calibration intercept and slope,
+whose apparent values are fixed by construction — see §4.6). The report derives it from the paired
+rows; it is not stored as its own row.
+
+**Half-pair guard (S3.1).** A rung is written only if **both** its apparent and cross-fitted
+mappings are available. If either degenerates — a non-converging fit, a single-class fold, or a
+stratum with `G < 2` and so nothing to hold out — the whole rung is withheld and a
+`recalibration_unavailable` flag names it. An apparent number with no held-out companion is exactly
+the flattering figure the ladder exists to discipline, so it is never shown alone.
 
 ### 4.4 Framing rule
 
@@ -292,7 +302,39 @@ recalibrated metric must refit the correction inside every bootstrap replicate �
 cross-fitted rungs, refit it inside every replicate *and* every fold — so that the interval
 carries the variance of the correction itself, not just of the metric. That is a real cost and a
 design surface of its own, so it is backlog rather than a silent omission. The load-bearing S3
-number is the **optimism gap** `apparent − crossfit`, which a point estimate already delivers.
+number is the **optimism gap**, which a point estimate already delivers.
+
+### 4.6 Every metric at every rung, with two integrity checks (S3.1)
+
+The ladder recomputes **all** metrics on each corrected mapping — not only calibration. Threshold
+metrics move because recalibration shifts the operating point, and that shift is clinically real;
+rung3 can reorder scores and so change AUROC and average precision. Emitting the full set is what
+lets a report show, side by side, that recalibration does **not** buy discrimination under the
+monotone rungs (rung1/rung2 AUROC equals rung0's exactly) while a decision threshold's sensitivity
+genuinely changes.
+
+Two identities hold **by construction** and must be annotated as such in any report, never
+presented as findings: rung1's apparent calibration intercept is ≈ 0, and rung2's apparent
+calibration slope is ≈ 1. They are what the fit targets, not evidence about the model.
+
+Two integrity checks accompany the fits:
+
+- **rung3 monotonicity.** The fitted spline transform is checked for monotonicity across the
+  observed scores. A non-monotone transform reorders patients; it is emitted but raises a
+  `recalibration_non_monotone` flag so the AUROC change is read as reordering, not improvement.
+- **Rank-inverting slope.** A fitted rung2 slope `b < 0` inverts the ranking (AUROC flips to
+  `1 − AUROC`). It is flagged loudly as `recalibration_rank_inverting`: a recalibration that has to
+  invert the score to fit is a statement about the model, not a repair to apply.
+
+### 4.7 Subgroup gating (S3.1)
+
+The ladder always runs on the `overall` stratum. On a **subgroup** stratum it runs only when the
+stratum clears `recalibration.min_clusters` (default 5) and `recalibration.min_events_per_class`
+(default 20, the smaller of events / non-events). Below the gate the subgroup reports `rung0` only
+and raises a `recalibration_suppressed` flag naming the counts. A correction fitted on a handful of
+clusters or a handful of events memorises noise, and the cross-fit cannot hold enough out to expose
+it — so the honest move is to decline the ladder there rather than report a correction nobody should
+trust.
 
 ---
 
@@ -378,10 +420,10 @@ One row per (model, subset, stratum, metric, threshold, rung, fit_mode, ci_metho
 
 **`rung` is an S3 addition to the frozen §6.1 columns** — §4.3 requires rung rows in this table,
 and the original column list omitted the discriminator. Every as-published metric (including the
-rank and threshold metrics and the data-quality rows) is `rung0`/`apparent`; the ladder adds
-`rung1`–`rung3` rows for the calibration-sensitive metrics (`brier`, `calibration_intercept`,
-`calibration_slope`), each in both fit modes. Optimism is `apparent − crossfit` per rung, derived
-from these paired rows rather than stored as its own row.
+rank, threshold, and data-quality rows) is `rung0`/`apparent`; the ladder adds `rung1`–`rung3` rows
+for **every metric** (§4.6), each in both fit modes, subject to the half-pair guard (§4.3) and the
+subgroup gate (§4.7). Optimism is derived from the paired rows, oriented per metric (§4.3), rather
+than stored as its own row.
 
 ### 6.2 `fragility.parquet`
 

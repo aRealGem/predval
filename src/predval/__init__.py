@@ -34,6 +34,7 @@ from .schema import (
     CompletenessSpec,
     CoverageSpec,
     OutcomeSpec,
+    RecalibrationSpec,
     SubgroupSpec,
     UncertaintySpec,
 )
@@ -56,6 +57,7 @@ __all__ = [
     "PredictionsError",
     "Predictions",
     "PredvalError",
+    "RecalibrationSpec",
     "SchemaViolation",
     "SubgroupSpec",
     "UncertaintySpec",

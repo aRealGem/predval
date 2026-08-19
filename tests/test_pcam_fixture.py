@@ -117,6 +117,18 @@ def test_evaluation_runs_end_to_end(cohort, predictions) -> None:
     assert set(result.metrics["subset"]) == {"full", "common"}
     assert len(set(result.metrics["model_id"])) == N_MODELS
 
+    # Roster reconciled: 16 declared, 15 present, p4m_reg the one permanently-lost member.
+    roster = result.manifest["roster"]
+    assert roster["declared"] == 16 and roster["present"] == N_MODELS
+    assert roster["absent"] == ["p4m_reg"]
+
+    # The scanner-domain subgroups have 11 clusters each -- above the gate -- so the ladder runs
+    # there too, not only overall.
+    sub_rungs = set(
+        result.metrics[result.metrics["stratum_kind"] == "subgroup"]["rung"].unique()
+    )
+    assert {"rung1", "rung2", "rung3"} <= sub_rungs
+
     auroc = result.metrics[
         (result.metrics["metric"] == "auroc")
         & (result.metrics["stratum_kind"] == "overall")

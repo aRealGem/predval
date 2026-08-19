@@ -17,6 +17,7 @@ from pathlib import Path
 import pandas as pd
 
 from predval import evaluate, load_cohort, load_predictions
+from predval.metrics import optimism
 
 HERE = Path(__file__).resolve().parent
 
@@ -108,14 +109,16 @@ def main(argv: list[str] | None = None) -> int:
     order = sorted(lad.index, key=_cf_gain, reverse=True)
     print("Recalibration ladder -- Brier, as-published vs cross-fitted (common subset)")
     print("  real repair only where miscalibration is real; ~0 or negative gain when already good")
+    print("  optim_r2 > 0 == the apparent rung2 fit flattered itself vs held-out")
     print(f"  {'model':16} {'rung0':>7} {'r2_cf':>7} {'r3_cf':>7} {'gain_cf':>8} {'optim_r2':>9}")
     for model in order[:6]:
         r0 = _cell(model, "rung0", "apparent")
         r2_cf = _cell(model, "rung2", "crossfit")
         r3_cf = _cell(model, "rung3", "crossfit")
         gain = r0 - min(r2_cf, r3_cf)
-        optimism = _cell(model, "rung2", "apparent") - r2_cf  # apparent - crossfit
-        print(f"  {model:16} {r0:7.4f} {r2_cf:7.4f} {r3_cf:7.4f} {gain:8.4f} {optimism:+9.4f}")
+        # Oriented so positive means the apparent fit looked better than the cross-fit.
+        optim = optimism("brier", _cell(model, "rung2", "apparent"), r2_cf)
+        print(f"  {model:16} {r0:7.4f} {r2_cf:7.4f} {r3_cf:7.4f} {gain:8.4f} {optim:+9.4f}")
     print()
 
     frag = result.fragility[

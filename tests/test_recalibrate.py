@@ -63,14 +63,19 @@ def test_rcs_knots_none_when_degenerate() -> None:
 
 
 def test_ladder_survives_exact_zero_and_one() -> None:
-    """Real models emit exact 0 and 1; every rung above rung0 must stay finite through them."""
+    """Real models emit exact 0 and 1; the eps-clip must keep every rung finite through them.
+
+    Scoped to the threshold-free metrics: a thresholded metric can legitimately be NaN when a
+    confusion cell is empty, which is unrelated to the clip this test guards.
+    """
     rng = np.random.default_rng(0)
     p, y, g = _clustered_scores(rng, slope=0.5)
     p[:50] = 1.0
     p[50:100] = 0.0
     rows, _ = R.ladder(y, p, g)
     assert rows, "ladder produced no rows"
-    assert all(np.isfinite(r.value) for r in rows), "an exact 0/1 leaked a non-finite value"
+    free = [r for r in rows if r.threshold is None]
+    assert all(np.isfinite(r.value) for r in free), "an exact 0/1 leaked a non-finite value"
 
 
 # ----------------------------------------------------------------------------- rung behaviour
@@ -145,5 +150,82 @@ def test_single_class_cell_yields_no_ladder_rows() -> None:
     rng = np.random.default_rng(6)
     p, _, g = _clustered_scores(rng)
     y = np.ones_like(p, dtype=np.int64)
-    rows, notes = R.ladder(y, p, g)
-    assert rows == [] and notes == []
+    rows, report = R.ladder(y, p, g)
+    assert rows == []
+    assert report.suppressed_rungs == () and report.rung2_slope is None
+
+
+# ------------------------------------------------------------------------- half-pair guard
+
+
+def test_no_crossfit_partner_suppresses_the_whole_rung() -> None:
+    """With one cluster there is nothing to hold out, so every rung is withheld, not half-shown."""
+    rng = np.random.default_rng(7)
+    p, y, _ = _clustered_scores(rng, n_clusters=1, per=400, slope=0.5)
+    g = np.full(p.size, "only")
+    rows, report = R.ladder(y, p, g)
+    assert rows == [], "a rung with no cross-fitted partner must emit nothing (no half-pair)"
+    assert set(report.suppressed_rungs) == set(R.LADDER_RUNGS)
+
+
+# ------------------------------------------------------------------ monotonicity and slope sign
+
+
+def test_rank_inverting_slope_is_captured() -> None:
+    """When the published score is inversely related to outcome, rung2 fits a negative slope."""
+    rng = np.random.default_rng(8)
+    # Invert the published logit relative to the truth: high p now means low risk.
+    p, y, g = _clustered_scores(rng, slope=-1.5, per=400)
+    _, report = R.ladder(y, p, g)
+    assert report.rung2_slope is not None and report.rung2_slope < 0
+
+
+def test_is_monotone_flags_a_reordering_transform() -> None:
+    """The monotonicity check must catch a transform that reorders scores."""
+    increasing = R._Calibrator(predict=lambda q: q)
+    reordering = R._Calibrator(predict=lambda q: np.abs(q - 0.5))  # U-shaped: not monotone
+    grid = np.linspace(0.01, 0.99, 50)
+    assert R._is_monotone(increasing, grid) is True
+    assert R._is_monotone(reordering, grid) is False
+
+
+# ----------------------------------------------------------------------- all metrics per rung
+
+
+def test_every_rung_carries_discrimination_and_threshold_metrics() -> None:
+    """S3.1: the ladder recomputes all metrics, not only calibration -- AUROC and thresholded."""
+    rng = np.random.default_rng(9)
+    p, y, g = _clustered_scores(rng, slope=0.5, per=300)
+    rows, _ = R.ladder(y, p, g, thresholds=(0.5,))
+    r2 = {(r.metric, r.threshold) for r in rows if r.rung == "rung2" and r.fit_mode == "apparent"}
+    assert ("auroc", None) in r2
+    assert ("average_precision", None) in r2
+    assert ("sensitivity", 0.5) in r2 and ("specificity", 0.5) in r2
+
+
+def test_monotone_rungs_leave_auroc_unchanged() -> None:
+    """rung1/rung2 are monotone, so they cannot change discrimination -- AUROC equals rung0's."""
+    rng = np.random.default_rng(10)
+    p, y, g = _clustered_scores(rng, slope=0.5, per=300)
+    published_auroc = M.auroc(y, p)
+    rows, _ = R.ladder(y, p, g)
+    for rung in ("rung1", "rung2"):
+        auroc = next(
+            r.value
+            for r in rows
+            if r.rung == rung and r.fit_mode == "apparent" and r.metric == "auroc"
+        )
+        assert auroc == pytest.approx(published_auroc, abs=1e-9)
+
+
+# ------------------------------------------------------------------- optimism orientation
+
+
+def test_optimism_is_oriented_so_positive_means_apparent_flattered() -> None:
+    """Positive optimism must mean the apparent fit looked better than held-out, for both senses."""
+    # Brier is a loss: apparent lower than crossfit is flattering -> positive.
+    assert M.optimism("brier", apparent=0.10, crossfit=0.15) == pytest.approx(0.05)
+    # AUROC is a score: apparent higher than crossfit is flattering -> positive.
+    assert M.optimism("auroc", apparent=0.90, crossfit=0.85) == pytest.approx(0.05)
+    # Target-valued metrics have no flattering direction.
+    assert np.isnan(M.optimism("calibration_slope", 1.0, 1.2))

@@ -46,11 +46,15 @@ uncertainty:
   ci_level: 0.95
   show_naive_ci: true
 
-# The published 11-member champion ensemble. `p4m_reg` is declared even though its predictions
-# were permanently lost: that is the point. Declaring it makes the gap appear as a flag in every
-# report, instead of the model quietly not existing. The remaining ids are probed members that
-# were evaluated but not promoted -- they are expected in the predictions file, so declaring
-# them keeps the present-but-undeclared check meaningful.
+# Roster count, reconciled: 16 declared / 15 present / 1 absent. The 15 present are the 14 files
+# in autoloop/members/ plus `p4m_reg_vl` recovered from autoloop/inbox/ -- the S0 note's "all 14"
+# counted only the members/ directory and missed the recovered file. `p4m_reg` is the 16th,
+# declared but permanently lost (its .keras weights lived in ephemeral Colab storage), so it is
+# the one absent id. (`champion` is a single model_id that is itself an 11-member ensemble; that
+# 11 is unrelated to the roster count.) Declaring `p4m_reg` is the point: it makes the gap appear
+# as a flag in every report instead of the model quietly not existing. The remaining ids are
+# probed members evaluated but not promoted -- declaring them keeps present-but-undeclared
+# meaningful.
 expected_models:
   - champion
   - tinyvgg

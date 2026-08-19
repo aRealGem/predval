@@ -207,3 +207,29 @@ THRESHOLDED = {
     "ppv": ppv,
     "npv": npv,
 }
+
+#: Optimism orientation: does a larger value mean a better model (`score`) or worse (`loss`)?
+#: Calibration intercept and slope are target-valued (0 and 1), so "flattered" is undefined for
+#: them and they are deliberately absent -- optimism() returns NaN rather than a misleading sign.
+METRIC_ORIENTATION = {
+    "auroc": "score",
+    "average_precision": "score",
+    "brier": "loss",
+    "sensitivity": "score",
+    "specificity": "score",
+    "ppv": "score",
+    "npv": "score",
+}
+
+
+def optimism(metric: str, apparent: float, crossfit: float) -> float:
+    """Recalibration optimism, oriented so **positive means the apparent fit flattered itself**.
+
+    For a score (higher is better) that is `apparent - crossfit`; for a loss (lower is better) it
+    is `crossfit - apparent`. Undefined -- returns NaN -- for target-valued metrics not in
+    METRIC_ORIENTATION, or when either input is not finite. See docs/spec.md section 4.3.
+    """
+    orient = METRIC_ORIENTATION.get(metric)
+    if orient is None or not (np.isfinite(apparent) and np.isfinite(crossfit)):
+        return float("nan")
+    return apparent - crossfit if orient == "score" else crossfit - apparent

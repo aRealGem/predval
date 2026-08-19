@@ -4,8 +4,8 @@ Structure follows docs/spec.md section 6. Both subsets are always computed, ever
 evaluated, and every metric carries an interval whose method is recorded rather than assumed.
 
 As-published metrics are `rung0`/`apparent`. The recalibration ladder (§4, recalibrate.py) adds
-`rung1`–`rung3` rows in both `apparent` and `crossfit` fit modes for the calibration-sensitive
-metrics; their optimism is `apparent − crossfit`, read back from the paired rows.
+`rung1`–`rung3` rows in both `apparent` and `crossfit` fit modes for every metric, subject to the
+half-pair guard and the subgroup gate; their optimism is derived per metric from the paired rows.
 """
 
 from __future__ import annotations
@@ -71,6 +71,18 @@ def coverage_delta(metrics: pd.DataFrame) -> pd.DataFrame:
         return pd.DataFrame(columns=[*keys, "cov_delta"])
     wide["cov_delta"] = wide["full"] - wide["common"]
     return wide[[*keys, "cov_delta"]]
+
+
+def _cell_label(ctx: dict) -> str:
+    """A model+stratum label for ladder-quality flags. Subset is omitted deliberately: cells with
+    identical coverage are reused across subsets, so the stratum is stable but the subset is not.
+    """
+    stratum = (
+        "overall"
+        if ctx["stratum_kind"] == "overall"
+        else f"{ctx['subgroup_name']}={ctx['subgroup_level']}"
+    )
+    return f"{ctx['model_id']} ({stratum})"
 
 
 def _strata(cohort: Cohort) -> list[tuple[str, str | None, str | None, np.ndarray]]:
@@ -204,6 +216,15 @@ def evaluate(cohort: Cohort, predictions: Predictions) -> Evaluation:
         },
         "models_present": list(predictions.model_ids),
         "expected_models": list(spec.expected_models) if spec.expected_models else None,
+        # Declared-vs-present at a glance, so a report header states both without recounting.
+        # For the PCam fixture: 16 declared, 15 present, 1 absent (p4m_reg, predictions lost).
+        "roster": {
+            "declared": len(spec.expected_models) if spec.expected_models else None,
+            "present": len(predictions.model_ids),
+            "absent": sorted(set(spec.expected_models) - set(predictions.model_ids))
+            if spec.expected_models
+            else [],
+        },
         "n_subjects": cohort.n_subjects,
         "dropped_subjects": list(cohort.dropped_subjects),
         # Recorded rather than left implicit: a reader can confirm that identical subsets were
@@ -327,14 +348,44 @@ def _evaluate_one(
         )
 
     # ---- recalibration ladder: rung1-3, apparent and cross-fitted --------------------------
-    # rung0 is the as-published block above (fit_mode apparent). The ladder recomputes the
-    # calibration-sensitive metrics on each corrected mapping; optimism is apparent - crossfit,
-    # derived at report time from these paired rows. No interval is attached to a recalibrated
-    # rung yet -- bootstrapping a refit correction is deferred (docs/spec.md section 4.5).
-    ladder_rows, ladder_notes = R.ladder(y, p, groups, max_folds=5)
-    for lr in ladder_rows:
-        rows.append(row(lr.metric, lr.value, rung=lr.rung, fit_mode=lr.fit_mode))
-    notes |= {("recalibration_unavailable", m) for m in ladder_notes}
+    # rung0 is the as-published block above. The ladder recomputes every metric on each corrected
+    # mapping (optimism = apparent - crossfit, oriented per metric, derived at report time). No
+    # interval is attached to a recalibrated rung yet (docs/spec.md section 4.5). Subgroups below
+    # the gate get rung0 only, and a rung with no apparent/crossfit pair is withheld entirely.
+    rec = spec.recalibration
+    label = _cell_label(ctx)
+    if ctx["stratum_kind"] == "subgroup" and (
+        n_clusters < rec.min_clusters or min(n_events, n - n_events) < rec.min_events_per_class
+    ):
+        notes.add((
+            "recalibration_suppressed",
+            f"ladder suppressed for {label}: {n_clusters} clusters, "
+            f"{min(n_events, n - n_events)} events in the smaller class "
+            f"(gate: {rec.min_clusters} clusters, {rec.min_events_per_class} events/class)",
+        ))
+    else:
+        ladder_rows, lrep = R.ladder(
+            y, p, groups, thresholds=tuple(spec.thresholds), max_folds=5
+        )
+        for lr in ladder_rows:
+            rows.append(
+                row(lr.metric, lr.value, rung=lr.rung, fit_mode=lr.fit_mode, threshold=lr.threshold)
+            )
+        if lrep.rung2_slope is not None and lrep.rung2_slope < 0:
+            notes.add((
+                "recalibration_rank_inverting",
+                f"rung2 slope {lrep.rung2_slope:.3f} < 0 (rank-inverting) for {label}",
+            ))
+        if lrep.rung3_monotone is False:
+            notes.add((
+                "recalibration_non_monotone",
+                f"rung3 fitted transform is non-monotone (reorders scores) for {label}",
+            ))
+        for supp in lrep.suppressed_rungs:
+            notes.add((
+                "recalibration_unavailable",
+                f"{supp} withheld for {label}: no apparent/cross-fitted pair",
+            ))
 
     # ---- leave-one-cluster-out fragility ----------------------------------------------------
     if n_clusters >= 2:

@@ -94,6 +94,19 @@ class CompletenessSpec(StrictModel):
     on_violation: Literal["drop_and_report", "fail"] = "drop_and_report"
 
 
+class RecalibrationSpec(StrictModel):
+    """Gating for the recalibration ladder on a stratum. See docs/spec.md section 4.
+
+    A recalibration fitted on too few clusters or too few events per class is worse than none:
+    the correction memorises noise and the cross-fit cannot hold enough out to expose it. Below
+    the gate the ladder is suppressed on that stratum and only rung0 (as published) is reported.
+    The overall stratum always runs; these thresholds gate the subgroups.
+    """
+
+    min_clusters: int = Field(default=5, ge=2)
+    min_events_per_class: int = Field(default=20, ge=1)
+
+
 class SubgroupSpec(StrictModel):
     """One prespecified subgroup analysis."""
 
@@ -119,6 +132,7 @@ class CohortSpec(StrictModel):
     subgroups: tuple[SubgroupSpec, ...] = ()
     thresholds: tuple[Probability, ...] = (0.5,)
     uncertainty: UncertaintySpec = UncertaintySpec()
+    recalibration: RecalibrationSpec = RecalibrationSpec()
     #: Declared model roster. None means "not declared", which is different from an empty
     #: roster: the first is silence, the second is a claim that no models are expected.
     expected_models: tuple[str, ...] | None = None
