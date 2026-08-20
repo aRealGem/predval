@@ -107,58 +107,78 @@ class _Calibrator:
         return self.predict(p)  # type: ignore[operator]
 
 
-def _fit(rung: str, y: np.ndarray, p: np.ndarray) -> _Calibrator | None:
-    """Fit one rung on (y, p). Returns None if the fit degenerates or fails to converge.
+# Reasons a rung fit is withheld, surfaced verbatim in the recalibration_unavailable flag so a
+# reader sees *why* a rung is missing rather than only that it is (§4.3, S4.1 item 3).
+R_SINGLE_CLASS = "single-class fold"
+R_NO_VARIATION = "no score variation"
+R_NON_CONVERGENCE = "non-convergence"
+R_RANK_DEFICIENT = "rank-deficient spline design"
+R_FEW_CLUSTERS = "G<2 (nothing to hold out)"
 
-    A None here is not an error: near-separation and single-class folds are real, and the honest
-    response is an unavailable rung (NaN downstream) rather than a fabricated correction.
+
+def _fit(rung: str, y: np.ndarray, p: np.ndarray) -> tuple[_Calibrator | None, str | None]:
+    """Fit one rung on (y, p). Returns (calibrator, None) or (None, reason).
+
+    A None calibrator is not an error: near-separation and single-class folds are real, and the
+    honest response is an unavailable rung (with the reason recorded) rather than a fabricated
+    correction. The reason distinguishes the four failure modes the report is asked to name.
     """
     if y.size == 0 or np.unique(y).size < 2:
-        return None
+        return None, R_SINGLE_CLASS
     z = M.logit(p)
     if np.ptp(z) == 0.0:
-        return None
+        return None, R_NO_VARIATION
 
     if rung == "rung1":
         beta = M._irls_logistic(y, None, z)
         if beta is None:
-            return None
+            return None, R_NON_CONVERGENCE
         a = float(beta[0])
-        return _Calibrator(lambda q: _sigmoid(M.logit(q) + a), slope=1.0)
+        return _Calibrator(lambda q: _sigmoid(M.logit(q) + a), slope=1.0), None
 
     if rung == "rung2":
         beta = M._irls_logistic(y, z, None)
         if beta is None:
-            return None
+            return None, R_NON_CONVERGENCE
         a, b = float(beta[0]), float(beta[1])
-        return _Calibrator(lambda q: _sigmoid(a + b * M.logit(q)), slope=b)
+        return _Calibrator(lambda q: _sigmoid(a + b * M.logit(q)), slope=b), None
 
     if rung == "rung3":
+        # Two distinct rung3 failure modes, distinguished (diagnosis 2026-08-19, docs/):
+        #   - knot collapse: too few distinct logit values to place df=4 knots -> rank-deficient.
+        #   - IRLS separation: knots are fine but the df=4 spline logistic separates / goes
+        #     singular on this (sub)set -- e.g. a leave-one-slide-out fold whose training scores
+        #     are very flat (near-collinear basis) or saturated near 0/1 (tail separation).
         knots = _rcs_knots(z)
         if knots is None:
-            return None
+            return None, R_RANK_DEFICIENT
         beta = M._irls_logistic(y, _rcs_basis(z, knots), None)
         if beta is None:
-            return None
+            return None, R_NON_CONVERGENCE
         a, coef = float(beta[0]), np.asarray(beta[1:], dtype=float)
-        return _Calibrator(lambda q: _sigmoid(a + _rcs_basis(M.logit(q), knots) @ coef))
+        return _Calibrator(lambda q: _sigmoid(a + _rcs_basis(M.logit(q), knots) @ coef)), None
 
     raise ValueError(f"unknown rung {rung!r}")
 
 
-def _is_monotone(cal: _Calibrator, p: np.ndarray, tol: float = 1e-9) -> bool:
-    """Is the fitted transform non-decreasing across the observed scores?
+def _max_local_decrease(cal: _Calibrator, p: np.ndarray) -> float:
+    """The largest downward step of the fitted transform across the distinct observed scores.
 
-    rung1 and rung2 (with slope > 0) are monotone by construction; rung3's spline is not
-    guaranteed to be, and a non-monotone recalibration reorders patients -- it can change AUROC
-    and is worth flagging rather than applying silently. Checked on the distinct published
-    values, which span the same order as their logits.
+    0.0 for a monotone transform. This is the magnitude that decides, against monotone_tol,
+    whether a rung3 non-monotonicity is *material* (reorders patients enough to matter) or a
+    sub-tolerance wiggle to record but not flag (§4.6).
     """
     u = np.unique(p[np.isfinite(p)])
     if u.size < 2:
-        return True
-    mapped = cal(u)
-    return bool(np.all(np.diff(mapped) >= -tol))
+        return 0.0
+    d = np.diff(cal(u))
+    drops = -d[d < 0.0]
+    return float(drops.max()) if drops.size else 0.0
+
+
+def _is_monotone(cal: _Calibrator, p: np.ndarray, tol: float = 1e-9) -> bool:
+    """Whether the transform is non-decreasing across the scores (largest decrease <= tol)."""
+    return _max_local_decrease(cal, p) <= tol
 
 
 def _grouped_folds(groups: np.ndarray, k: int) -> list[np.ndarray]:
@@ -176,12 +196,12 @@ def _grouped_folds(groups: np.ndarray, k: int) -> list[np.ndarray]:
 
 def _crossfit_predictions(
     rung: str, y: np.ndarray, p: np.ndarray, groups: np.ndarray, k: int
-) -> np.ndarray | None:
+) -> tuple[np.ndarray | None, str | None]:
     """Out-of-fold corrected probabilities: fit on the other folds, score the held-out one.
 
-    Returns None if any fold cannot be fitted -- a partial cross-fit would score some rows with a
-    correction and others without, which is not comparable, so the whole rung is reported
-    unavailable instead.
+    Returns (predictions, None), or (None, reason) if any fold cannot be fitted -- a partial
+    cross-fit would score some rows with a correction and others without, which is not comparable,
+    so the whole rung is reported unavailable with the failing fold's reason.
     """
     out = np.full(p.size, np.nan)
     for eval_idx in _grouped_folds(groups, k):
@@ -189,11 +209,13 @@ def _crossfit_predictions(
             continue
         train = np.ones(p.size, dtype=bool)
         train[eval_idx] = False
-        cal = _fit(rung, y[train], p[train])
+        cal, reason = _fit(rung, y[train], p[train])
         if cal is None:
-            return None
+            return None, reason
         out[eval_idx] = cal(p[eval_idx])
-    return None if not np.all(np.isfinite(out)) else out
+    if not np.all(np.isfinite(out)):
+        return None, R_NON_CONVERGENCE
+    return out, None
 
 
 @dataclass(frozen=True)
@@ -211,10 +233,15 @@ class LadderReport:
 
     #: Fitted apparent rung2 slope, or None if rung2 was suppressed. Negative == rank-inverting.
     rung2_slope: float | None
-    #: Whether the apparent rung3 transform is monotone; None if rung3 was suppressed.
-    rung3_monotone: bool | None
-    #: Rungs emitted for neither fit mode because one half of the pair was unavailable (§4.3).
-    suppressed_rungs: tuple[str, ...]
+    #: Largest downward step of the apparent rung3 transform; None if rung3 was suppressed. Always
+    #: recorded (in the artefact); only flagged when it, or delta_auroc_rung3, clears monotone_tol.
+    rung3_max_local_decrease: float | None
+    #: apparent rung3 AUROC minus rung0 AUROC; None if rung3 suppressed. The discrimination that
+    #: the (possibly non-monotone) spline moved -- the outcome-level materiality signal.
+    delta_auroc_rung3: float | None
+    #: (rung, reason) for each rung emitted in neither fit mode because a half of the pair was
+    #: unavailable (§4.3). The reason is one of the R_* strings above.
+    suppressed: tuple[tuple[str, str], ...]
 
 
 def _score_all(
@@ -247,29 +274,42 @@ def ladder(
     """
     rows: list[RungMetric] = []
     if y.size == 0 or np.unique(y).size < 2:
-        return rows, LadderReport(None, None, ())
+        return rows, LadderReport(None, None, None, ())
 
     g = np.unique(groups).size
     k = min(max_folds, g)
+    auroc0 = M.auroc(y, p)
     rung2_slope: float | None = None
-    rung3_monotone: bool | None = None
-    suppressed: list[str] = []
+    rung3_mld: float | None = None
+    rung3_dauroc: float | None = None
+    suppressed: list[tuple[str, str]] = []
 
     for rung in LADDER_RUNGS:
-        cal = _fit(rung, y, p)
-        cf_pred = _crossfit_predictions(rung, y, p, groups, k) if g >= 2 else None
+        cal, reason_apparent = _fit(rung, y, p)
+        if g >= 2:
+            cf_pred, reason_crossfit = _crossfit_predictions(rung, y, p, groups, k)
+        else:
+            cf_pred, reason_crossfit = None, R_FEW_CLUSTERS
         if cal is None or cf_pred is None:
-            suppressed.append(rung)
+            suppressed.append((rung, reason_apparent or reason_crossfit or R_NON_CONVERGENCE))
             continue
 
         if rung == "rung2":
             rung2_slope = cal.slope
-        if rung == "rung3":
-            rung3_monotone = _is_monotone(cal, p)
 
-        for (metric, t), value in _score_all(y, cal(p), thresholds).items():
+        apparent_scores = _score_all(y, cal(p), thresholds)
+        if rung == "rung3":
+            rung3_mld = _max_local_decrease(cal, p)
+            r3_auroc = apparent_scores[("auroc", None)]
+            rung3_dauroc = (
+                float(r3_auroc - auroc0)
+                if np.isfinite(r3_auroc) and np.isfinite(auroc0)
+                else float("nan")
+            )
+
+        for (metric, t), value in apparent_scores.items():
             rows.append(RungMetric(rung, APPARENT, metric, t, value))
         for (metric, t), value in _score_all(y, cf_pred, thresholds).items():
             rows.append(RungMetric(rung, CROSSFIT, metric, t, value))
 
-    return rows, LadderReport(rung2_slope, rung3_monotone, tuple(suppressed))
+    return rows, LadderReport(rung2_slope, rung3_mld, rung3_dauroc, tuple(suppressed))

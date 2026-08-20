@@ -16,6 +16,16 @@
  .subordinate { color: #333; font-size: .9rem; }
  .muted { color: #666; } .warn { color: #b00; } code { font-size: .85em; }
  .byconstruction { font-style: italic; color: #666; }
+ @media print {
+   /* The pitch path is browser print-to-PDF; there is no PDF pipeline. Keep it clean on paper. */
+   body { max-width: none; margin: 0; padding: 0; font-size: 10.5pt; color: #000; }
+   a { color: #000; text-decoration: none; }
+   h2 { page-break-after: avoid; }
+   table, tr, .framing { page-break-inside: avoid; }
+   /* Keep the framing box and header shading visible on paper, not dropped as "backgrounds". */
+   .framing { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+   th { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+ }
 </style>
 </head>
 <body>
@@ -57,6 +67,15 @@ common -- the effect of restricting to the common subset.{% endif %}</p>
     {% if not identical_coverage %}<td>{{ r.cov_delta }}</td>{% endif %}</tr>
 {% endfor %}
 </table>
+{% if brier_footnote %}
+<p class="muted">Brier intervals above are the cluster percentile bootstrap (a non-negative loss
+cannot cross 0). The analytic t(G-1) cross-check is in metrics.parquet; being symmetric it can fall
+below the 0 loss boundary, and is truncated at 0 where it did:
+{% for r in brier_footnote %}{{ r.model }} {{ r.interval }} (raw lower {{ r.raw_low }}){% if not loop.last %}; {% endif %}{% endfor %}.</p>
+{% else %}
+<p class="muted">Brier intervals above are the cluster percentile bootstrap; the analytic t(G-1)
+cross-check in metrics.parquet agrees (none crossed the 0 loss boundary).</p>
+{% endif %}
 
 {% if exhibit_rows %}
 <h3>Unit-of-analysis exhibit</h3>
@@ -73,14 +92,16 @@ the wrong interval looks.</p>
 {% endif %}
 
 <h2>3. Calibration diagnosis (subordinate to section 2)</h2>
-<p class="subordinate">This section diagnoses rung0; it does not rank models. Every figure below is
-a point estimate -- {{ pending }}. rung1's apparent intercept is ~0 and rung2's apparent slope is
-~1 <span class="byconstruction">by construction</span> (that is what each fit targets), so those
-are not reported as findings. Recalibration cannot improve discrimination; the cross-fitted Brier
-is the expected loss after local recalibration, not a validated result.</p>
+<p class="subordinate">This section diagnoses rung0; it does not rank models. Rows are ordered by
+cross-fit gain. Legend: the two delta columns (cross-fit gain, rung2 optimism) are point estimates
+-- {{ pending }}. rung1's apparent intercept is ~0 and rung2's apparent slope is ~1
+<span class="byconstruction">by construction</span> (that is what each fit targets), so those are
+not reported as findings. Recalibration cannot improve discrimination; the cross-fitted Brier is the
+expected loss after local recalibration, not a validated result.</p>
 <table>
 <tr><th>model</th><th>Brier rung0</th><th>rung1 cf</th><th>rung2 cf</th><th>rung3 cf</th>
-    <th>cross-fit gain</th><th>rung2 optimism</th></tr>
+    <th>cross-fit gain (interval pending section 4.5)</th>
+    <th>rung2 optimism (interval pending section 4.5)</th></tr>
 {% for r in calibration_rows %}
 <tr><td>{{ r.model }}</td><td>{{ r.rung0 }}</td><td>{{ r.rung1_cf }}</td><td>{{ r.rung2_cf }}</td>
     <td>{{ r.rung3_cf }}</td><td>{{ r.gain }}</td><td>{{ r.optimism }}</td></tr>

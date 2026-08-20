@@ -105,6 +105,10 @@ class RecalibrationSpec(StrictModel):
 
     min_clusters: int = Field(default=5, ge=2)
     min_events_per_class: int = Field(default=20, ge=1)
+    #: A rung3 spline is only *materially* non-monotone if its fitted transform's largest local
+    #: decrease, or the AUROC it moves versus rung0, exceeds this. Below it the non-monotonicity
+    #: is recorded in the artefact but not flagged -- a sub-1e-3 wiggle is not a finding (§4.6).
+    monotone_tol: float = Field(default=1e-3, ge=0.0)
 
 
 class SubgroupSpec(StrictModel):

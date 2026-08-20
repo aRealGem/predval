@@ -98,6 +98,18 @@ def coverage_delta(metrics: pd.DataFrame) -> pd.DataFrame:
     return wide[[*keys, "cov_delta"]]
 
 
+def _material_nonmonotone(max_local_decrease: float, delta_auroc: float | None, tol: float) -> bool:
+    """Is a rung3 non-monotonicity material enough to flag (S4.1 item 2)?
+
+    Material when the transform's largest local decrease exceeds `tol`, or when it moved AUROC
+    (either direction -- a reordering is a reordering) past `tol`. Below both it is recorded in the
+    artefact but not flagged.
+    """
+    if max_local_decrease > tol:
+        return True
+    return bool(delta_auroc is not None and np.isfinite(delta_auroc) and abs(delta_auroc) > tol)
+
+
 def _cell_label(ctx: dict) -> str:
     """A model+stratum label for ladder-quality flags. Subset is omitted deliberately: cells with
     identical coverage are reused across subsets, so the stratum is stable but the subset is not.
@@ -390,6 +402,15 @@ def _evaluate_one(
             f"(gate: {rec.min_clusters} clusters, {rec.min_events_per_class} events/class)",
         ))
     else:
+        # Overall is never suppressed; but a below-gate cluster count still weakens the cross-fit,
+        # so it runs with a caution rather than silently (S4.1 item 5).
+        if ctx["stratum_kind"] == "overall" and n_clusters < rec.min_clusters:
+            notes.add((
+                "recalibration_overall_low_power",
+                f"overall ladder run with only {n_clusters} clusters "
+                f"(below gate {rec.min_clusters}); its cross-fit is low-power for {label}",
+            ))
+
         ladder_rows, lrep = R.ladder(
             y, p, groups, thresholds=tuple(spec.thresholds), max_folds=5
         )
@@ -397,20 +418,35 @@ def _evaluate_one(
             rows.append(
                 row(lr.metric, lr.value, rung=lr.rung, fit_mode=lr.fit_mode, threshold=lr.threshold)
             )
+
+        # rung3 non-monotonicity diagnostics: ALWAYS recorded in the artefact (S4.1 item 2), so a
+        # sub-tolerance wiggle is visible without being flagged as a finding.
+        if lrep.rung3_max_local_decrease is not None:
+            mld_val = lrep.rung3_max_local_decrease
+            rows.append(row("rung3_max_local_decrease", mld_val, rung="rung3"))
+            rows.append(row("delta_auroc_rung3", lrep.delta_auroc_rung3, rung="rung3"))
+            # Flag ONLY when the non-monotonicity is material: it moves AUROC, or the transform's
+            # largest local decrease, past monotone_tol. |dAUROC| is direction-agnostic on purpose
+            # -- a reordering that raises or lowers discrimination is equally a reordering.
+            mld = lrep.rung3_max_local_decrease
+            dauroc = lrep.delta_auroc_rung3
+            if _material_nonmonotone(mld, dauroc, rec.monotone_tol):
+                notes.add((
+                    "recalibration_non_monotone",
+                    f"rung3 materially non-monotone for {label}: "
+                    f"delta_auroc={dauroc:+.4f}, max local decrease={mld:.4f} "
+                    f"(tol {rec.monotone_tol})",
+                ))
+
         if lrep.rung2_slope is not None and lrep.rung2_slope < 0:
             notes.add((
                 "recalibration_rank_inverting",
                 f"rung2 slope {lrep.rung2_slope:.3f} < 0 (rank-inverting) for {label}",
             ))
-        if lrep.rung3_monotone is False:
-            notes.add((
-                "recalibration_non_monotone",
-                f"rung3 fitted transform is non-monotone (reorders scores) for {label}",
-            ))
-        for supp in lrep.suppressed_rungs:
+        for supp_rung, reason in lrep.suppressed:
             notes.add((
                 "recalibration_unavailable",
-                f"{supp} withheld for {label}: no apparent/cross-fitted pair",
+                f"{supp_rung} withheld for {label}: {reason}",
             ))
 
     # ---- leave-one-cluster-out fragility ----------------------------------------------------

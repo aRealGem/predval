@@ -72,6 +72,18 @@ def _val_ci(v: float, lo: float, hi: float) -> str:
     return f"{_f(v)} {_ci(lo, hi)}".strip()
 
 
+def _truncate_loss_lo(lo: float) -> tuple[float, bool]:
+    """Clamp a loss-metric interval's lower bound at the 0 boundary. Returns (lo, was_truncated).
+
+    The percentile bootstrap of a non-negative loss cannot cross 0, but the symmetric analytic
+    t(G-1) interval can. Where it does, displaying the raw negative bound is nonsense -- Brier is a
+    squared error -- so it is truncated at 0 and marked (§5.2, S4.1 item 4).
+    """
+    if lo is not None and np.isfinite(lo) and lo < 0.0:
+        return 0.0, True
+    return lo, False
+
+
 def _one(df: pd.DataFrame, **conds) -> pd.Series | None:
     """First row matching every equality condition, or None. NaN threshold matches via isna."""
     mask = pd.Series(True, index=df.index)
@@ -120,7 +132,9 @@ def _primary_rows(metrics: pd.DataFrame, models: list[str], show_cov_delta: bool
             "model": model,
             "auroc": cell("auroc", "cluster_bootstrap"),
             "average_precision": cell("average_precision", "cluster_bootstrap"),
-            "brier": cell("brier", "cluster_robust_t"),
+            # Body Brier is the percentile bootstrap -- a non-negative loss whose interval cannot
+            # cross 0 (S4.1 item 4). The analytic t(G-1) cross-check is a footnote below.
+            "brier": cell("brier", "cluster_bootstrap"),
             "calibration_slope": cell("calibration_slope", "cluster_robust_t"),
             "calibration_intercept": cell("calibration_intercept", "cluster_robust_t"),
         }
@@ -128,6 +142,34 @@ def _primary_rows(metrics: pd.DataFrame, models: list[str], show_cov_delta: bool
             d = cov_auroc.get(model, float("nan"))
             row["cov_delta"] = _f(d, 4) if np.isfinite(d) else "0.0000"
         out.append(row)
+    return out
+
+
+def _brier_analytic_footnote(metrics: pd.DataFrame, models: list[str]) -> list[dict]:
+    """Analytic t(G-1) Brier intervals that crossed the 0 loss boundary, truncated with a note.
+
+    The report body shows the bootstrap; this names the models whose symmetric analytic interval
+    fell below 0 and was clamped -- the divergence §5.2 asks the report to surface rather than hide.
+    """
+    base = metrics[
+        (metrics["rung"] == "rung0")
+        & (metrics["subset"] == "common")
+        & (metrics["stratum_kind"] == "overall")
+        & (metrics["metric"] == "brier")
+        & (metrics["ci_method"] == "cluster_robust_t")
+    ]
+    out = []
+    for model in models:
+        r = _one(base, model_id=model)
+        if r is None:
+            continue
+        lo, truncated = _truncate_loss_lo(float(r["ci_low"]))
+        if truncated:
+            out.append({
+                "model": model,
+                "interval": _ci(lo, float(r["ci_high"])),
+                "raw_low": _f(float(r["ci_low"]), 4),
+            })
     return out
 
 
@@ -160,7 +202,12 @@ def _exhibit_rows(metrics: pd.DataFrame, models: list[str]) -> list[dict]:
 
 
 def _calibration_rows(metrics: pd.DataFrame, models: list[str]) -> list[dict]:
-    """Ladder diagnosis: rung0 Brier vs cross-fitted rungs, with the naked-delta ban applied."""
+    """Ladder diagnosis: rung0 Brier vs cross-fitted rungs.
+
+    Cells carry clean numbers; the "(interval pending §4.5)" marker lives in the two delta column
+    headers and the legend, not repeated per cell (S4.1 item 1). Rows are ordered by cross-fit gain
+    descending so the members a recalibration would most help sit at the top (S4.1 item 6).
+    """
     overall = metrics[(metrics["subset"] == "common") & (metrics["stratum_kind"] == "overall")]
 
     def brier(model: str, rung: str, mode: str) -> float:
@@ -181,9 +228,13 @@ def _calibration_rows(metrics: pd.DataFrame, models: list[str]) -> list[dict]:
             "rung1_cf": _f(cf["rung1"]),
             "rung2_cf": _f(cf["rung2"]),
             "rung3_cf": _f(cf["rung3"]),
-            "gain": f"{_f(gain)} {PENDING}",
-            "optimism": f"{_f(opt)} {PENDING}",
+            "gain": _f(gain),
+            "optimism": _f(opt),
+            "_gain_sort": gain if np.isfinite(gain) else float("-inf"),
         })
+    out.sort(key=lambda r: r["_gain_sort"], reverse=True)
+    for r in out:
+        del r["_gain_sort"]
     return out
 
 
@@ -202,7 +253,7 @@ def _subgroup_rows(metrics: pd.DataFrame) -> list[dict]:
             & (sub["model_id"] == key["model_id"])
         ]
         auroc = _one(cell, metric="auroc", ci_method="cluster_bootstrap")
-        brier = _one(cell, metric="brier", ci_method="cluster_robust_t")
+        brier = _one(cell, metric="brier", ci_method="cluster_bootstrap")  # loss: bootstrap body
 
         def fmt(r: pd.Series | None) -> str:
             return _val_ci(r["value"], r["ci_low"], r["ci_high"]) if r is not None else "n/a"
@@ -276,6 +327,7 @@ def build_context(
         "identical_coverage": identical_coverage,
         "coverage_rows": coverage_rows,
         "primary_rows": _primary_rows(metrics, models, show_cov_delta=not identical_coverage),
+        "brier_footnote": _brier_analytic_footnote(metrics, models),
         "exhibit_rows": _exhibit_rows(metrics, models),
         "calibration_rows": _calibration_rows(metrics, models),
         "subgroup_rows": _subgroup_rows(metrics),

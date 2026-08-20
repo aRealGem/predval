@@ -22,11 +22,17 @@ PER_CLUSTER = 60
 MODELS = ("good", "weak")
 
 
-def build(tmp_path: Path, *, spec_extra: dict | None = None, drop_for_weak: int = 0) -> tuple:
+def build(
+    tmp_path: Path,
+    *,
+    spec_extra: dict | None = None,
+    drop_for_weak: int = 0,
+    n_clusters: int = N_CLUSTERS,
+) -> tuple:
     """A small clustered cohort with two models and a two-level subgroup."""
     rng = np.random.default_rng(5)
     rows, preds = [], []
-    for c in range(N_CLUSTERS):
+    for c in range(n_clusters):
         shift = rng.normal(0, 1.0)
         for i in range(PER_CLUSTER):
             z = rng.normal(shift, 1.0)
@@ -237,6 +243,24 @@ def test_coverage_delta_is_zero_when_coverage_is_identical(result) -> None:
 
 
 # -------------------------------------------------------------------------------- the manifest
+
+
+def test_overall_ladder_runs_with_a_low_cluster_caution(tmp_path: Path) -> None:
+    """S4.1 item 5: overall is never suppressed, but G < min_clusters raises a caution flag."""
+    cohort, preds = build(tmp_path, n_clusters=3)  # G=3 overall, below the default gate of 5
+    res = evaluate(cohort, preds)
+    codes = {f.code for f in res.flags}
+    assert "recalibration_overall_low_power" in codes
+    overall = res.metrics[res.metrics["stratum_kind"] == "overall"]
+    assert {"rung1", "rung2"} <= set(overall["rung"]), "overall must still run the ladder"
+
+
+def test_rung3_nonmonotonicity_diagnostics_are_always_recorded(result) -> None:
+    """S4.1 item 2: the two rung3 diagnostics land in the artefact regardless of the flag."""
+    overall = result.metrics[result.metrics["stratum_kind"] == "overall"]
+    names = set(overall["metric"])
+    assert "rung3_max_local_decrease" in names
+    assert "delta_auroc_rung3" in names
 
 
 def test_subgroup_ladder_is_gated_below_threshold(result) -> None:

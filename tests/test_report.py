@@ -91,14 +91,44 @@ def test_framing_block_is_present_and_unconditional(html) -> None:
 # ------------------------------------------------------------------------------ naked-delta ban
 
 
-def test_every_ladder_gain_carries_the_pending_interval_marker(evaluation) -> None:
+def test_delta_marker_is_in_headers_not_cells(evaluation, html) -> None:
+    """S4.1 item 1: the pending marker lives in the two delta headers + legend, cells are clean."""
     ctx = build_context(
         evaluation.metrics, evaluation.fragility, evaluation.coverage, evaluation.manifest
     )
     assert ctx["calibration_rows"], "expected ladder rows to test"
     for row in ctx["calibration_rows"]:
-        assert row["gain"].endswith(PENDING), f"gain shown without pending marker: {row}"
-        assert row["optimism"].endswith(PENDING), f"optimism shown without pending marker: {row}"
+        assert PENDING not in row["gain"], f"gain cell should be clean: {row}"
+        assert PENDING not in row["optimism"], f"optimism cell should be clean: {row}"
+    # The marker appears on the two delta column headers.
+    assert html.count(f"cross-fit gain {PENDING}") == 1
+    assert html.count(f"rung2 optimism {PENDING}") == 1
+    # And it is no longer stamped 30 times: headers (2) + one legend line = 3 total occurrences.
+    assert html.count(PENDING) == 3
+
+
+def test_displayed_loss_metric_ci_lower_bound_is_nonnegative(evaluation, html) -> None:
+    """S4.1 item 4: body Brier is the bootstrap; its lower bound cannot fall below 0."""
+    import re
+
+    ctx = build_context(
+        evaluation.metrics, evaluation.fragility, evaluation.coverage, evaluation.manifest
+    )
+    def lower(cell: str) -> float | None:
+        m = re.search(r"\[(-?\d+\.\d+),", cell)
+        return float(m.group(1)) if m else None
+
+    # Body Brier -- both the primary (overall) table and the subgroup table, where the original
+    # bug lived (an analytic interval crossing 0 in a subgroup).
+    for row in ctx["primary_rows"]:
+        lo = lower(row["brier"])
+        assert lo is None or lo >= 0.0, f"primary Brier CI below 0: {row['brier']}"
+    for row in ctx["subgroup_rows"]:
+        lo = lower(row["brier"])
+        assert lo is None or lo >= 0.0, f"subgroup Brier CI below 0: {row['brier']}"
+    # Any analytic interval surfaced in the footnote is truncated at 0.
+    for fn in ctx["brier_footnote"]:
+        assert fn["interval"].startswith("[0.00")
 
 
 def test_by_construction_identities_are_labelled(html) -> None:

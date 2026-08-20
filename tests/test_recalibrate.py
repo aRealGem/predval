@@ -13,6 +13,7 @@ import pytest
 
 from predval import metrics as M
 from predval import recalibrate as R
+from predval.evaluate import _material_nonmonotone
 
 
 def _clustered_scores(rng, n_clusters=12, per=200, slope=1.0, intercept=0.0):
@@ -152,7 +153,7 @@ def test_single_class_cell_yields_no_ladder_rows() -> None:
     y = np.ones_like(p, dtype=np.int64)
     rows, report = R.ladder(y, p, g)
     assert rows == []
-    assert report.suppressed_rungs == () and report.rung2_slope is None
+    assert report.suppressed == () and report.rung2_slope is None
 
 
 # ------------------------------------------------------------------------- half-pair guard
@@ -165,7 +166,9 @@ def test_no_crossfit_partner_suppresses_the_whole_rung() -> None:
     g = np.full(p.size, "only")
     rows, report = R.ladder(y, p, g)
     assert rows == [], "a rung with no cross-fitted partner must emit nothing (no half-pair)"
-    assert set(report.suppressed_rungs) == set(R.LADDER_RUNGS)
+    assert {rung for rung, _ in report.suppressed} == set(R.LADDER_RUNGS)
+    # S4.1 item 3: each withholding carries a reason -- here, nothing to hold out.
+    assert {reason for _, reason in report.suppressed} == {R.R_FEW_CLUSTERS}
 
 
 # ------------------------------------------------------------------ monotonicity and slope sign
@@ -187,6 +190,33 @@ def test_is_monotone_flags_a_reordering_transform() -> None:
     grid = np.linspace(0.01, 0.99, 50)
     assert R._is_monotone(increasing, grid) is True
     assert R._is_monotone(reordering, grid) is False
+
+
+def test_max_local_decrease_measures_the_biggest_downward_step() -> None:
+    grid = np.linspace(0.0, 1.0, 11)
+    assert R._max_local_decrease(R._Calibrator(predict=lambda q: q), grid) == 0.0
+    drop = R._max_local_decrease(R._Calibrator(predict=lambda q: np.abs(q - 0.5)), grid)
+    assert drop == pytest.approx(0.1, abs=1e-9)  # 0.5 -> 0.4 is the largest single step down
+
+
+def test_materiality_gate() -> None:
+    """S4.1 item 2: a sub-tolerance wiggle is not flagged; either signal past tol is."""
+    tol = 1e-3
+    assert _material_nonmonotone(5e-4, 0.0, tol) is False
+    assert _material_nonmonotone(2e-3, 0.0, tol) is True          # local decrease past tol
+    assert _material_nonmonotone(0.0, -2e-3, tol) is True         # AUROC dropped past tol
+    assert _material_nonmonotone(0.0, 2e-3, tol) is True          # AUROC rose past tol
+    assert _material_nonmonotone(0.0, float("nan"), tol) is False  # non-finite dAUROC ignored
+
+
+def test_rung3_rank_deficient_reason_on_narrow_support() -> None:
+    """A near-constant score collapses the df=4 knots; rung3 declines with a spline-rank reason."""
+    rng = np.random.default_rng(20)
+    y = rng.integers(0, 2, size=200).astype(np.int64)
+    p = np.full(200, 0.60)
+    p[:5] = 0.61  # only two distinct scores -> knot quantiles collapse below df
+    cal, reason = R._fit("rung3", y, p)
+    assert cal is None and reason == R.R_RANK_DEFICIENT
 
 
 # ----------------------------------------------------------------------- all metrics per rung

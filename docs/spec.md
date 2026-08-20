@@ -319,12 +319,23 @@ calibration slope is ≈ 1. They are what the fit targets, not evidence about th
 
 Two integrity checks accompany the fits:
 
-- **rung3 monotonicity.** The fitted spline transform is checked for monotonicity across the
-  observed scores. A non-monotone transform reorders patients; it is emitted but raises a
-  `recalibration_non_monotone` flag so the AUROC change is read as reordering, not improvement.
+- **rung3 monotonicity, materiality-gated (S4.1).** Two diagnostics are **always** written to
+  `metrics.parquet` as `rung3`/`apparent` rows: `rung3_max_local_decrease` (the largest downward
+  step of the fitted transform) and `delta_auroc_rung3` (apparent rung3 AUROC − rung0 AUROC). A
+  `recalibration_non_monotone` flag fires **only when the non-monotonicity is material** — either
+  quantity exceeds `recalibration.monotone_tol` (default `1e-3`); `|delta_auroc|` is used, since a
+  reordering that raises or lowers discrimination is equally a reordering. The fired flag text
+  carries the measured `delta_auroc`. A sub-tolerance wiggle is recorded in the artefact but is not
+  a finding.
 - **Rank-inverting slope.** A fitted rung2 slope `b < 0` inverts the ranking (AUROC flips to
   `1 − AUROC`). It is flagged loudly as `recalibration_rank_inverting`: a recalibration that has to
   invert the score to fit is a statement about the model, not a repair to apply.
+
+Every withheld rung (§4.3 half-pair guard) carries a **reason** in its `recalibration_unavailable`
+flag: `single-class fold`, `no score variation`, `non-convergence` (the IRLS fit separated or went
+singular — including a df=4 spline that cannot be cross-fit on a small stratum), `rank-deficient
+spline design` (the knots collapsed), or `G<2 (nothing to hold out)`. See
+`docs/diagnosis-rung3-scanner_domain0.md` for a worked example.
 
 ### 4.7 Subgroup gating (S3.1)
 
@@ -335,6 +346,10 @@ and raises a `recalibration_suppressed` flag naming the counts. A correction fit
 clusters or a handful of events memorises noise, and the cross-fit cannot hold enough out to expose
 it — so the honest move is to decline the ladder there rather than report a correction nobody should
 trust.
+
+The `overall` stratum is **never** suppressed, but when its cluster count is below
+`min_clusters` the ladder runs with a `recalibration_overall_low_power` caution rather than
+silently (S4.1): the cross-fit is real but under-powered, and the report says so.
 
 ---
 
@@ -372,6 +387,13 @@ Written to `metrics.parquet` alongside the bootstrap rows, distinguished by `ci_
 The report body shows the bootstrap interval and **footnotes whether the analytic interval
 agrees or diverges**. Two methods that disagree are information, not a problem to hide: it
 usually means the cluster count is too small for one of them to be trusted.
+
+**Loss-metric boundary (S4.1).** Brier is a non-negative loss, so its percentile bootstrap
+interval cannot cross 0 — that is the interval the report body shows. The analytic `t(G-1)`
+interval is symmetric and **can** fall below 0 (e.g. `[-0.002, 0.072]`); displaying a negative
+Brier bound is nonsense. So any analytic loss interval that is displayed is **truncated at the 0
+boundary with a note**, and it appears only in the footnote, never the body. The report body's
+displayed lower bound for a loss metric is therefore always ≥ 0.
 
 ### 5.3 Fragility, not an interval
 
