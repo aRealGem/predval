@@ -148,3 +148,75 @@ def test_percentile_interval_ignores_undefined_replicates() -> None:
     ci = U.percentile_interval(samples, 0.95, "m")
     assert np.isfinite(ci.low) and np.isfinite(ci.high)
     assert ci.low >= 0.1 and ci.high <= 0.3
+
+
+# --------------------------------------------------------- paired cross-fit gain interval (item 1)
+
+
+def _recalibrated_pair(seed=7, n_clusters=20, per=200):
+    """A published score p0 and a compressed companion p_r on the same rows (correlated)."""
+    y, p0, g = clustered_sample(n_clusters=n_clusters, per_cluster=per, seed=seed)
+    z = np.log(np.clip(p0, 1e-6, 1 - 1e-6) / (1 - np.clip(p0, 1e-6, 1 - 1e-6)))
+    p_r = 1.0 / (1.0 + np.exp(-(0.2 + 0.9 * z)))
+    return y, p0, p_r, g
+
+
+def test_paired_gain_interval_brackets_point_and_is_deterministic() -> None:
+    y, p0, p_r, g = _recalibrated_pair()
+    point, ci = U.paired_brier_gain_interval(y, p0, p_r, g, 0.95, n_boot=2000, seed=1337)
+    assert ci.method == "paired_cluster_bootstrap"
+    assert ci.low <= point <= ci.high, "the paired interval must bracket its point estimate"
+    # point equals brier(p0) - brier(p_r) exactly (same rows)
+    assert point == pytest.approx(M.brier(y, p0) - M.brier(y, p_r))
+    p2, ci2 = U.paired_brier_gain_interval(y, p0, p_r, g, 0.95, n_boot=2000, seed=1337)
+    assert (point, ci.low, ci.high) == (p2, ci2.low, ci2.high)
+
+
+def test_paired_gain_is_tighter_than_an_unpaired_difference() -> None:
+    """The whole reason to pair: p0 and its recalibration move together within a slide, so the
+    paired interval is far tighter than differencing two independent slide resamples."""
+    y, p0, p_r, g = _recalibrated_pair()
+    _, paired = U.paired_brier_gain_interval(y, p0, p_r, g, 0.95, n_boot=2000, seed=1337)
+
+    clusters = U.cluster_indices(g)
+    d0, dr = (p0 - y) ** 2, (p_r - y) ** 2
+    rng0 = np.random.default_rng(1337)
+    rng1 = np.random.default_rng(24601)  # a DIFFERENT stream for the second term -> unpaired
+    unp = np.empty(2000)
+    for b in range(2000):
+        unp[b] = d0[U.bootstrap_cluster_indices(clusters, rng0)].mean() - dr[
+            U.bootstrap_cluster_indices(clusters, rng1)
+        ].mean()
+    unpaired = U.percentile_interval(unp, 0.95, "x")
+    assert (paired.high - paired.low) < 0.5 * (unpaired.high - unpaired.low)
+
+
+def test_paired_gain_degrades_to_nan_with_one_cluster() -> None:
+    y, p0, p_r, _ = _recalibrated_pair(n_clusters=1, per=200)
+    g = np.full(y.size, "only")
+    point, ci = U.paired_brier_gain_interval(y, p0, p_r, g, 0.95, n_boot=50, seed=1337)
+    assert np.isfinite(point) and ci.is_empty
+
+
+# ------------------------------------------------------------------- Brier skill interval (item 3)
+
+
+def test_brier_skill_interval_brackets_and_anchors() -> None:
+    y, p, groups = clustered_sample()
+    bss, ci = U.brier_skill_interval(y, p, groups, 0.95, n_boot=2000, seed=1337)
+    assert ci.method == "cluster_bootstrap"
+    assert ci.low <= bss <= ci.high
+    # a genuinely skilful score sits above the no-skill anchor of 0
+    assert bss > 0.0
+    pbar = float(np.mean(y))
+    expected = 1.0 - M.brier(y, p) / (pbar * (1 - pbar))
+    assert bss == pytest.approx(expected)
+
+
+def test_brier_skill_of_the_prevalence_predictor_is_about_zero() -> None:
+    """Always predicting prevalence is the no-skill reference: its BSS must be ~0."""
+    y, _, groups = clustered_sample()
+    pbar = float(np.mean(y))
+    p = np.full(y.size, pbar)
+    bss, _ = U.brier_skill_interval(y, p, groups, 0.95, n_boot=200, seed=1337)
+    assert bss == pytest.approx(0.0, abs=1e-9)

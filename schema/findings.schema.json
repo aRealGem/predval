@@ -1,0 +1,399 @@
+{
+  "$defs": {
+    "FlagOut": {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "title": "Code",
+          "type": "string"
+        },
+        "message": {
+          "title": "Message",
+          "type": "string"
+        },
+        "severity": {
+          "title": "Severity",
+          "type": "string"
+        }
+      },
+      "required": [
+        "code",
+        "severity",
+        "message"
+      ],
+      "title": "FlagOut",
+      "type": "object"
+    },
+    "GainOut": {
+      "additionalProperties": false,
+      "properties": {
+        "ci_high": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Ci High"
+        },
+        "ci_low": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Ci Low"
+        },
+        "ci_method": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Ci Method"
+        },
+        "gain": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Gain"
+        },
+        "rung": {
+          "title": "Rung",
+          "type": "string"
+        }
+      },
+      "required": [
+        "rung",
+        "gain",
+        "ci_low",
+        "ci_high",
+        "ci_method"
+      ],
+      "title": "GainOut",
+      "type": "object"
+    },
+    "IntervalOut": {
+      "additionalProperties": false,
+      "properties": {
+        "ci_high": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Ci High"
+        },
+        "ci_low": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Ci Low"
+        },
+        "ci_method": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Ci Method"
+        },
+        "value": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Value"
+        }
+      },
+      "required": [
+        "value",
+        "ci_low",
+        "ci_high",
+        "ci_method"
+      ],
+      "title": "IntervalOut",
+      "type": "object"
+    },
+    "Member": {
+      "additionalProperties": false,
+      "properties": {
+        "analytic_ci_truncated": {
+          "title": "Analytic Ci Truncated",
+          "type": "boolean"
+        },
+        "metrics": {
+          "$ref": "#/$defs/MemberMetrics"
+        },
+        "model_id": {
+          "title": "Model Id",
+          "type": "string"
+        },
+        "recalibration_gains": {
+          "items": {
+            "$ref": "#/$defs/GainOut"
+          },
+          "title": "Recalibration Gains",
+          "type": "array"
+        },
+        "verdict": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/VerdictOut"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "model_id",
+        "metrics",
+        "verdict",
+        "recalibration_gains",
+        "analytic_ci_truncated"
+      ],
+      "title": "Member",
+      "type": "object"
+    },
+    "MemberMetrics": {
+      "additionalProperties": false,
+      "properties": {
+        "auroc": {
+          "$ref": "#/$defs/IntervalOut"
+        },
+        "average_precision": {
+          "$ref": "#/$defs/IntervalOut"
+        },
+        "brier": {
+          "$ref": "#/$defs/IntervalOut"
+        },
+        "calibration_intercept": {
+          "$ref": "#/$defs/IntervalOut"
+        },
+        "calibration_slope": {
+          "$ref": "#/$defs/IntervalOut"
+        }
+      },
+      "required": [
+        "auroc",
+        "average_precision",
+        "brier",
+        "calibration_slope",
+        "calibration_intercept"
+      ],
+      "title": "MemberMetrics",
+      "type": "object"
+    },
+    "Provenance": {
+      "additionalProperties": false,
+      "properties": {
+        "ci_level": {
+          "title": "Ci Level",
+          "type": "number"
+        },
+        "config": {
+          "additionalProperties": true,
+          "title": "Config",
+          "type": "object"
+        },
+        "git_commit": {
+          "title": "Git Commit",
+          "type": "string"
+        },
+        "input_hashes": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "title": "Input Hashes",
+          "type": "object"
+        },
+        "n_boot": {
+          "title": "N Boot",
+          "type": "integer"
+        },
+        "seed": {
+          "title": "Seed",
+          "type": "integer"
+        },
+        "versions": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "title": "Versions",
+          "type": "object"
+        }
+      },
+      "required": [
+        "input_hashes",
+        "seed",
+        "n_boot",
+        "ci_level",
+        "git_commit",
+        "versions",
+        "config"
+      ],
+      "title": "Provenance",
+      "type": "object"
+    },
+    "Roster": {
+      "additionalProperties": false,
+      "properties": {
+        "absent": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Absent",
+          "type": "array"
+        },
+        "declared": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Declared"
+        },
+        "present": {
+          "title": "Present",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "declared",
+        "present",
+        "absent"
+      ],
+      "title": "Roster",
+      "type": "object"
+    },
+    "VerdictOut": {
+      "additionalProperties": false,
+      "properties": {
+        "best_rung": {
+          "title": "Best Rung",
+          "type": "string"
+        },
+        "bss": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Bss"
+        },
+        "bss_ci_high": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Bss Ci High"
+        },
+        "bss_ci_low": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Bss Ci Low"
+        },
+        "gauge_label": {
+          "title": "Gauge Label",
+          "type": "string"
+        }
+      },
+      "required": [
+        "bss",
+        "bss_ci_low",
+        "bss_ci_high",
+        "best_rung",
+        "gauge_label"
+      ],
+      "title": "VerdictOut",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "cohort_id": {
+      "title": "Cohort Id",
+      "type": "string"
+    },
+    "flags": {
+      "items": {
+        "$ref": "#/$defs/FlagOut"
+      },
+      "title": "Flags",
+      "type": "array"
+    },
+    "members": {
+      "items": {
+        "$ref": "#/$defs/Member"
+      },
+      "title": "Members",
+      "type": "array"
+    },
+    "provenance": {
+      "$ref": "#/$defs/Provenance"
+    },
+    "roster": {
+      "$ref": "#/$defs/Roster"
+    },
+    "schema_version": {
+      "title": "Schema Version",
+      "type": "string"
+    }
+  },
+  "required": [
+    "schema_version",
+    "cohort_id",
+    "provenance",
+    "roster",
+    "members",
+    "flags"
+  ],
+  "title": "FindingsDocument",
+  "type": "object"
+}

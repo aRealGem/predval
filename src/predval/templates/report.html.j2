@@ -16,6 +16,11 @@
  .subordinate { color: #333; font-size: .9rem; }
  .muted { color: #666; } .warn { color: #b00; } code { font-size: .85em; }
  .byconstruction { font-style: italic; color: #666; }
+ .figure { margin: 1rem 0; }
+ .figure svg { max-width: 100%; height: auto; }
+ .limitations { background: #f4f6f8; border-left: 3px solid #123B5E; padding: .8rem 1rem;
+        margin: 1.2rem 0; font-size: .92rem; }
+ .appendix { margin-top: 2.5rem; border-top: 2px solid #ddd; padding-top: 1rem; }
  @media print {
    /* The pitch path is browser print-to-PDF; there is no PDF pipeline. Keep it clean on paper. */
    body { max-width: none; margin: 0; padding: 0; font-size: 10.5pt; color: #000; }
@@ -71,10 +76,32 @@ common -- the effect of restricting to the common subset.{% endif %}</p>
 <p class="muted">Brier intervals above are the cluster percentile bootstrap (a non-negative loss
 cannot cross 0). The analytic t(G-1) cross-check is in metrics.parquet; being symmetric it can fall
 below the 0 loss boundary, and is truncated at 0 where it did:
-{% for r in brier_footnote %}{{ r.model }} {{ r.interval }} (raw lower {{ r.raw_low }}){% if not loop.last %}; {% endif %}{% endfor %}.</p>
+{% for r in brier_footnote %}{{ r.model }} {{ r.interval }} (raw lower {{ r.raw_low }}){% if not loop.last %}; {% endif %}{% endfor %}.
+Where truncated, <em>{{ analytic_truncated_note }}</em>.</p>
 {% else %}
 <p class="muted">Brier intervals above are the cluster percentile bootstrap; the analytic t(G-1)
 cross-check in metrics.parquet agrees (none crossed the 0 loss boundary).</p>
+{% endif %}
+
+{% if verdict_lines %}
+<h3>Verdict</h3>
+<p class="muted">One line per member, assembled only from AUROC, the Brier skill score (BSS), and the
+best admissible rung -- no free adjectives. BSS is anchored at <strong>0 = no-skill</strong> (always
+predict prevalence) and <strong>1 = perfect</strong>; "closes Y% of the gap" is BSS as a percentage.
+The gauge fault names which rung, if any, the miscalibration needed.</p>
+<ul>
+{% for v in verdict_lines %}
+<li><strong>{{ v.model }}</strong> -- {{ v.line }}</li>
+{% endfor %}
+</ul>
+{% endif %}
+
+{% if calibration_svg %}
+<h3>Calibration (rung0, as published)</h3>
+<p class="muted">Decile calibration per member: points are observed frequency against mean predicted
+probability, the shaded band is the cluster bootstrap on the observed rate, and the dashed diagonal
+is <em>perfect</em>. Points below the diagonal over-predict risk; above, under-predict.</p>
+<div class="figure">{{ calibration_svg | safe }}</div>
 {% endif %}
 
 {% if exhibit_rows %}
@@ -89,24 +116,32 @@ the wrong interval looks.</p>
     <td>{{ r.ratio }}</td></tr>
 {% endfor %}
 </table>
+{% if dumbbell_svg %}<div class="figure">{{ dumbbell_svg | safe }}</div>{% endif %}
 {% endif %}
 
 <h2>3. Calibration diagnosis (subordinate to section 2)</h2>
-<p class="subordinate">This section diagnoses rung0; it does not rank models. Rows are ordered by
-cross-fit gain. Legend: the two delta columns (cross-fit gain, rung2 optimism) are point estimates
--- {{ pending }}. rung1's apparent intercept is ~0 and rung2's apparent slope is ~1
+<p class="subordinate">This section diagnoses rung0; it does not rank models. Rows are ordered by the
+best per-member gain. Each cell is the <strong>paired cross-fit Brier gain</strong> -- rung0 Brier
+minus that rung's held-out Brier, positive when recalibration helped -- with its paired
+cluster-bootstrap interval (a gain whose interval excludes 0 is a real out-of-fold improvement).
+The apparent, in-sample gains run larger; only the cross-fitted gains, which hold whole slides out,
+are shown. rung1's apparent intercept is ~0 and rung2's apparent slope is ~1
 <span class="byconstruction">by construction</span> (that is what each fit targets), so those are
 not reported as findings. Recalibration cannot improve discrimination; the cross-fitted Brier is the
 expected loss after local recalibration, not a validated result.</p>
+<p class="subordinate">At small G the flexible rung is high-variance under cross-fitting: absence of
+a rung3 gain is evidence of linear miscalibration only insofar as rung3 had power to detect shape
+distortion. See the fold4 diagnosis (docs/diagnosis-rung3-scanner_domain0.md) for the members whose
+rung3 could not be cross-fit on this cohort.</p>
 <table>
-<tr><th>model</th><th>Brier rung0</th><th>rung1 cf</th><th>rung2 cf</th><th>rung3 cf</th>
-    <th>cross-fit gain (interval pending section 4.5)</th>
-    <th>rung2 optimism (interval pending section 4.5)</th></tr>
+<tr><th>model</th><th>Brier rung0</th><th>rung1 gain [CI]</th><th>rung2 gain [CI]</th>
+    <th>rung3 gain [CI]</th></tr>
 {% for r in calibration_rows %}
-<tr><td>{{ r.model }}</td><td>{{ r.rung0 }}</td><td>{{ r.rung1_cf }}</td><td>{{ r.rung2_cf }}</td>
-    <td>{{ r.rung3_cf }}</td><td>{{ r.gain }}</td><td>{{ r.optimism }}</td></tr>
+<tr><td>{{ r.model }}</td><td>{{ r.rung0 }}</td><td>{{ r.rung1_gain }}</td>
+    <td>{{ r.rung2_gain }}</td><td>{{ r.rung3_gain }}</td></tr>
 {% endfor %}
 </table>
+{% if brier_rung_svg %}<div class="figure">{{ brier_rung_svg | safe }}</div>{% endif %}
 
 <h2>4. Subgroups</h2>
 {% if subgroup_rows %}
@@ -140,6 +175,9 @@ which a tight bootstrap interval will not reveal.</p>
 <p class="muted">No fragility rows (fewer than two clusters).</p>
 {% endif %}
 
+<h3>Limitations</h3>
+<div class="limitations">{{ limitations }}</div>
+
 <h2>6. Provenance</h2>
 <p class="muted">Input digests (blake2b), the bootstrap seed and B, and library versions -- enough to
 reproduce every number.</p>
@@ -163,6 +201,19 @@ reproduce every number.</p>
 <ul class="muted">{% for f in flags.note %}<li><strong>{{ f.code }}</strong>: {{ f.message }}</li>{% endfor %}</ul>
 {% endif %}
 {% if not flags.warning and not flags.note %}<p class="muted">No flags.</p>{% endif %}
+
+{% if appendix %}
+<div class="appendix">
+<h2>Appendix -- concepts</h2>
+<p class="muted">An optional explainer, off by default. Static SVG assets will be inserted into these
+placeholders in a later revision; the structure is fixed now so the default report bytes never carry
+it.</p>
+{% for title, body in appendix_sections %}
+<h3>{{ title }}</h3>
+<p class="muted">{{ body }}</p>
+{% endfor %}
+</div>
+{% endif %}
 
 </body>
 </html>

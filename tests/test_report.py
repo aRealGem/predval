@@ -91,20 +91,28 @@ def test_framing_block_is_present_and_unconditional(html) -> None:
 # ------------------------------------------------------------------------------ naked-delta ban
 
 
-def test_delta_marker_is_in_headers_not_cells(evaluation, html) -> None:
-    """S4.1 item 1: the pending marker lives in the two delta headers + legend, cells are clean."""
+def test_section3_gains_carry_intervals_not_pending(evaluation, html) -> None:
+    """Item 1: every section-3 gain now carries a paired interval; the pending marker is gone.
+
+    The naked-delta ban is satisfied by showing the interval, not by deferring it.
+    """
     ctx = build_context(
-        evaluation.metrics, evaluation.fragility, evaluation.coverage, evaluation.manifest
+        evaluation.metrics, evaluation.fragility, evaluation.coverage, evaluation.manifest,
+        evaluation.calibration,
     )
     assert ctx["calibration_rows"], "expected ladder rows to test"
+    saw_interval = False
     for row in ctx["calibration_rows"]:
-        assert PENDING not in row["gain"], f"gain cell should be clean: {row}"
-        assert PENDING not in row["optimism"], f"optimism cell should be clean: {row}"
-    # The marker appears on the two delta column headers.
-    assert html.count(f"cross-fit gain {PENDING}") == 1
-    assert html.count(f"rung2 optimism {PENDING}") == 1
-    # And it is no longer stamped 30 times: headers (2) + one legend line = 3 total occurrences.
-    assert html.count(PENDING) == 3
+        for rung in ("rung1_gain", "rung2_gain", "rung3_gain"):
+            cell = row[rung]
+            assert PENDING not in cell, f"gain cell should not defer its interval: {row}"
+            if cell != "n/a":
+                # a signed point estimate with a bracketed interval, e.g. '+0.0112 [0.005, 0.017]'
+                assert "[" in cell and "]" in cell, f"gain cell missing interval: {cell}"
+                saw_interval = True
+    assert saw_interval, "expected at least one converged rung gain with an interval"
+    # The deferred-interval marker no longer appears anywhere in the default report body.
+    assert PENDING not in html
 
 
 def test_displayed_loss_metric_ci_lower_bound_is_nonnegative(evaluation, html) -> None:
@@ -210,3 +218,63 @@ def test_render_accepts_bare_dataframes(evaluation) -> None:
         evaluation.metrics, evaluation.fragility, evaluation.coverage, evaluation.manifest
     )
     assert FRAMING in html
+
+
+# ----------------------------------------------------------------------- verdict layer (item 3)
+
+
+def test_verdict_lines_present_with_anchors(html) -> None:
+    assert "Verdict" in html
+    assert "no-skill" in html and "perfect" in html
+    assert "Gauge fault found" in html
+    assert "closes" in html and "% of the gap" in html
+
+
+def test_verdict_line_names_only_binned_gauge_label(evaluation) -> None:
+    """The only qualitative token is the gauge-fault rung label; no free adjectives."""
+    from predval.report import GAUGE_LABELS, build_context
+    ctx = build_context(
+        evaluation.metrics, evaluation.fragility, evaluation.coverage, evaluation.manifest,
+        evaluation.calibration,
+    )
+    assert ctx["verdict_lines"]
+    for v in ctx["verdict_lines"]:
+        assert v["gauge"] in GAUGE_LABELS.values()
+        assert "AUROC" in v["line"] and "Gauge fault found" in v["line"]
+
+
+# ---------------------------------------------------------------------------- figures (item 2)
+
+
+def test_report_embeds_the_three_figures(html) -> None:
+    # three inline SVGs: calibration small-multiples, dumbbell, brier-by-rung
+    assert html.count("<svg") >= 3
+    assert 'class="figure"' in html
+
+
+# ------------------------------------------------------------------------- limitations (item 6b)
+
+
+def test_limitations_block_is_present(html) -> None:
+    assert "Limitations" in html
+    assert "recalibration step" in html.lower()
+    assert "ensemble" in html
+
+
+# ---------------------------------------------------------------------------- appendix (item 5)
+
+
+def test_appendix_off_by_default_and_bytes_unchanged(evaluation) -> None:
+    default = render_evaluation(evaluation)
+    with_flag = render_evaluation(evaluation, appendix=True)
+    assert "Appendix -- concepts" not in default
+    assert "Appendix -- concepts" in with_flag
+    # The appendix is purely additive: everything in the default report up to its closing </body>
+    # appears verbatim at the front of the appendix render, so turning it on alters no default byte.
+    default_body = default[: default.rindex("</body>")].rstrip()
+    assert with_flag.startswith(default_body)
+
+
+def test_appendix_has_placeholder_structure(evaluation) -> None:
+    html = render_evaluation(evaluation, appendix=True)
+    assert html.count("Placeholder --") == 4

@@ -90,6 +90,81 @@ def clustered_mean_interval(values: np.ndarray, groups: np.ndarray, ci_level: fl
     return Interval(float(theta - crit * se), float(theta + crit * se), "cluster_robust_t")
 
 
+def paired_brier_gain_interval(
+    y: np.ndarray,
+    p0: np.ndarray,
+    p_r: np.ndarray,
+    groups: np.ndarray,
+    ci_level: float,
+    *,
+    n_boot: int,
+    seed: int,
+) -> tuple[float, Interval]:
+    """Cluster bootstrap interval for the paired Brier gain ``brier(p0) - brier(p_r)``.
+
+    ``p0`` is the as-published probability (rung0) and ``p_r`` a cross-fitted rung's out-of-fold
+    probability, both aligned to the same rows. The gain is a *paired* difference: the per-row loss
+    difference ``d_i = (p0_i - y_i)^2 - (p_r_i - y_i)^2`` already carries both terms, so resampling
+    whole slides and averaging ``d`` over the resample evaluates both briers on the *same* slide
+    draw. That pairing is the whole point -- p0 and its recalibration are strongly correlated within
+    a slide, and an unpaired interval (two independent slide draws) would inflate the width with
+    variance the difference does not actually have.
+
+    This does **not** refit the correction inside each replicate; the cross-fitted mapping is held
+    fixed (docs/spec.md section 4.5 keeps the refit-in-replicate interval as backlog). It is the
+    interval on the gain of a *given* out-of-fold correction, which is the number the pitch shows.
+    """
+    d = (p0 - y) ** 2 - (p_r - y) ** 2
+    point = float(np.mean(d)) if d.size else float("nan")
+    clusters = cluster_indices(groups)
+    if len(clusters) < 2 or not np.isfinite(point):
+        return point, Interval(float("nan"), float("nan"), "paired_cluster_bootstrap")
+    rng = np.random.default_rng(seed)
+    samples = np.empty(n_boot)
+    for b in range(n_boot):
+        idx = bootstrap_cluster_indices(clusters, rng)
+        samples[b] = np.mean(d[idx])
+    return point, percentile_interval(samples, ci_level, "paired_cluster_bootstrap")
+
+
+def brier_skill_interval(
+    y: np.ndarray,
+    p: np.ndarray,
+    groups: np.ndarray,
+    ci_level: float,
+    *,
+    n_boot: int,
+    seed: int,
+) -> tuple[float, Interval]:
+    """Brier skill score ``1 - brier(p) / (pbar*(1-pbar))`` with a cluster bootstrap interval.
+
+    ``pbar`` is the observed prevalence, so the reference ``pbar*(1-pbar)`` is the Brier of the
+    no-skill model that always predicts prevalence. BSS is therefore anchored at **0 = no-skill**
+    and **1 = perfect**; it is the fraction of the gap from one to the other that ``p`` closes.
+
+    Both the reference and the loss are recomputed inside each slide resample, so the interval
+    carries the sampling variance of prevalence as well as of the loss. Replicates whose resampled
+    prevalence is degenerate (all one class -> zero-variance reference) are dropped as undefined
+    rather than divided by zero.
+    """
+    pbar = float(np.mean(y)) if y.size else float("nan")
+    ref = pbar * (1.0 - pbar)
+    point = 1.0 - float(np.mean((p - y) ** 2)) / ref if ref > 0 else float("nan")
+    clusters = cluster_indices(groups)
+    if len(clusters) < 2 or not np.isfinite(point):
+        return point, Interval(float("nan"), float("nan"), "cluster_bootstrap")
+    rng = np.random.default_rng(seed)
+    samples = np.full(n_boot, np.nan)
+    for b in range(n_boot):
+        idx = bootstrap_cluster_indices(clusters, rng)
+        yb, pb = y[idx], p[idx]
+        mb = float(np.mean(yb))
+        ref_b = mb * (1.0 - mb)
+        if ref_b > 0:
+            samples[b] = 1.0 - float(np.mean((pb - yb) ** 2)) / ref_b
+    return point, percentile_interval(samples, ci_level, "cluster_bootstrap")
+
+
 def calibration_interval(
     y: np.ndarray,
     p: np.ndarray,

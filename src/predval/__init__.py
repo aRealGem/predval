@@ -14,6 +14,7 @@ from .errors import (
     SchemaViolation,
 )
 from .evaluate import Evaluation, coverage_delta, evaluate
+from .findings import build_findings, dumps_findings, findings_schema, write_findings
 from .hashing import hash_bytes, hash_file, hash_inputs
 from .io import (
     Cohort,
@@ -62,12 +63,15 @@ __all__ = [
     "SchemaViolation",
     "SubgroupSpec",
     "UncertaintySpec",
+    "build_findings",
     "check_common_selection",
     "check_coverage",
     "check_roster",
     "coverage_delta",
     "coverage_report",
+    "dumps_findings",
     "evaluate",
+    "findings_schema",
     "hash_bytes",
     "hash_file",
     "hash_inputs",
@@ -76,6 +80,7 @@ __all__ = [
     "render",
     "render_evaluation",
     "render_from_dir",
+    "write_findings",
     "write_report",
     "__version__",
 ]

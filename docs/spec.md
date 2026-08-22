@@ -294,15 +294,25 @@ Report templates must state, verbatim in substance:
 A recalibration that improves the numbers is a finding about the cohort as much as about the
 model, and the report must not let it read as a promotion.
 
-### 4.5 Rung intervals are deferred
+### 4.5 Rung intervals: the paired cross-fit gain carries one; the per-rung refit is deferred
 
 `rung0` carries the full interval layers of §5. The recalibrated rungs (`rung1`–`rung3`) are
-emitted as **point estimates with null `ci_*`** in this version. A correct interval for a
-recalibrated metric must refit the correction inside every bootstrap replicate — and, for the
-cross-fitted rungs, refit it inside every replicate *and* every fold — so that the interval
-carries the variance of the correction itself, not just of the metric. That is a real cost and a
-design surface of its own, so it is backlog rather than a silent omission. The load-bearing S3
-number is the **optimism gap**, which a point estimate already delivers.
+emitted as **point estimates with null `ci_*`** for their *level* metrics in this version.
+
+**The paired cross-fit gain does carry an interval.** For each converged rung `r`, predval writes a
+`paired_gain_brier` row: the gain `brier(rung0) − brier(rung_r crossfit)` with a **paired cluster
+bootstrap** interval (`ci_method = paired_cluster_bootstrap`, `B` and `seed` from `uncertainty`).
+The per-row loss difference `d_i = (p0_i − y_i)² − (p_r_i − y_i)²` carries both terms, so resampling
+whole slides and averaging `d` evaluates both briers on the *same* slide draw — the pairing that
+makes the interval tight, because a score and its recalibration move together within a slide. This
+is the interval the pitch shows in section 3; it replaces the earlier `(interval pending §4.5)`
+marker. The gain is emitted wherever the ladder runs (overall, and gated-pass subgroups).
+
+**What is still deferred** is the interval on a recalibrated metric *level* that refits the
+correction inside every bootstrap replicate — and, for the cross-fitted rungs, inside every
+replicate *and* every fold — so that it carries the variance of the correction itself. The paired
+gain holds the cross-fit mapping fixed; the full refit-in-replicate interval is a design surface of
+its own and remains backlog rather than a silent omission.
 
 ### 4.6 Every metric at every rung, with two integrity checks (S3.1)
 
@@ -319,14 +329,18 @@ calibration slope is ≈ 1. They are what the fit targets, not evidence about th
 
 Two integrity checks accompany the fits:
 
-- **rung3 monotonicity, materiality-gated (S4.1).** Two diagnostics are **always** written to
-  `metrics.parquet` as `rung3`/`apparent` rows: `rung3_max_local_decrease` (the largest downward
-  step of the fitted transform) and `delta_auroc_rung3` (apparent rung3 AUROC − rung0 AUROC). A
-  `recalibration_non_monotone` flag fires **only when the non-monotonicity is material** — either
-  quantity exceeds `recalibration.monotone_tol` (default `1e-3`); `|delta_auroc|` is used, since a
-  reordering that raises or lowers discrimination is equally a reordering. The fired flag text
-  carries the measured `delta_auroc`. A sub-tolerance wiggle is recorded in the artefact but is not
-  a finding.
+- **rung3 monotonicity, materiality-gated (S4.1; gate revised, D1).** Two diagnostics are
+  **always** written to `metrics.parquet` as `rung3`/`apparent` rows: `rung3_max_local_decrease`
+  (the largest downward step of the fitted transform) and `delta_auroc_rung3` (apparent rung3 AUROC
+  − rung0 AUROC). A `recalibration_non_monotone` flag fires **only when `|delta_auroc_rung3|`
+  exceeds `recalibration.monotone_tol`** (default `1e-3`) — the outcome-level signal ALONE.
+  `|delta_auroc|` is used because a reordering that raises or lowers discrimination is equally a
+  reordering. `rung3_max_local_decrease` is a dip on the probability-scale transform that need not
+  reorder anyone; it is kept in the artefact and carried as a **secondary note** in the flag
+  message, but it no longer drives the flag. This quiets epsilon-wiggle members (a member moving
+  AUROC by ~2e-5 while showing a small transform dip) while still catching a genuine reordering
+  (a member with `delta_auroc` ≈ 0.004). A sub-tolerance move is recorded in the artefact but is
+  not a finding.
 - **Rank-inverting slope.** A fitted rung2 slope `b < 0` inverts the ranking (AUROC flips to
   `1 − AUROC`). It is flagged loudly as `recalibration_rank_inverting`: a recalibration that has to
   invert the score to fit is a statement about the model, not a repair to apply.
@@ -350,6 +364,39 @@ trust.
 The `overall` stratum is **never** suppressed, but when its cluster count is below
 `min_clusters` the ladder runs with a `recalibration_overall_low_power` caution rather than
 silently (S4.1): the cross-fit is real but under-powered, and the report says so.
+
+### 4.8 Verdict layer
+
+Per member, on the common subset / overall stratum, predval reports a single skill number and a
+single plain-language line, stored in `manifest.verdict[model]` and rendered in report section 2.
+
+**Brier skill score.** `BSS = 1 − brier_bestrung_crossfit / (pbar·(1−pbar))`, where `pbar` is the
+observed prevalence on the common subset and the *best admissible rung* is the rung — including
+`rung0` (as published) — with the lowest cross-fitted Brier. `pbar·(1−pbar)` is the Brier of the
+no-skill model that always predicts prevalence, so BSS is anchored at **0 = no-skill** and
+**1 = perfect**: the fraction of the gap between them that the score closes. Its interval is a
+cluster bootstrap over slides, recomputing both the loss and the prevalence reference inside each
+resample (`ci_method = cluster_bootstrap`).
+
+**Plain-language line, template-generated (item 3ii).** Exactly one line per member, assembled
+**only** from `(AUROC, BSS, best rung)` with **no free adjectives**. AUROC and BSS are inserted as
+numbers with their intervals; the sole qualitative token is the *gauge-fault* label, drawn from a
+fixed bin on the best rung:
+
+| best rung | gauge-fault label |
+|---|---|
+| `rung0` | none — well-calibrated as published |
+| `rung1` | level (calibration-in-the-large) |
+| `rung2` | level and spread (intercept + slope) |
+| `rung3` | non-monotone shape |
+
+The line names its references so it stands on its own:
+
+> Ranking: AUROC `X` `[CI]`. Probability quality after best admissible repair: closes `Y%`
+> `[CI]` of the gap from no-skill (always predict prevalence) to perfect. Gauge fault found:
+> `<label>`.
+
+where `Y% = 100·BSS`. No adjective enters that is not one of the four labels above.
 
 ---
 
@@ -388,11 +435,14 @@ The report body shows the bootstrap interval and **footnotes whether the analyti
 agrees or diverges**. Two methods that disagree are information, not a problem to hide: it
 usually means the cluster count is too small for one of them to be trusted.
 
-**Loss-metric boundary (S4.1).** Brier is a non-negative loss, so its percentile bootstrap
+**Loss-metric boundary (S4.1; D2).** Brier is a non-negative loss, so its percentile bootstrap
 interval cannot cross 0 — that is the interval the report body shows. The analytic `t(G-1)`
 interval is symmetric and **can** fall below 0 (e.g. `[-0.002, 0.072]`); displaying a negative
 Brier bound is nonsense. So any analytic loss interval that is displayed is **truncated at the 0
-boundary with a note**, and it appears only in the footnote, never the body. The report body's
+boundary** — but never *silently*. Where it is truncated, the report footnote carries the raw
+(pre-truncation) lower bound and the note *"normal approximation unreliable at this G; percentile
+bootstrap interval is authoritative"*, and `findings.json` sets `analytic_ci_truncated = true` on
+that member. The analytic interval appears only in the footnote, never the body; the report body's
 displayed lower bound for a loss metric is therefore always ≥ 0.
 
 ### 5.3 Fragility, not an interval
@@ -447,41 +497,73 @@ for **every metric** (§4.6), each in both fit modes, subject to the half-pair g
 subgroup gate (§4.7). Optimism is derived from the paired rows, oriented per metric (§4.3), rather
 than stored as its own row.
 
+**`paired_gain_brier` rows (item 1).** In addition, wherever the ladder runs the table carries a
+`paired_gain_brier` row per converged rung: `metric = paired_gain_brier`, `rung ∈ {rung1,rung2,rung3}`,
+`fit_mode = crossfit`, `value` = the paired cross-fit Brier gain (§4.5), and `ci_low`/`ci_high`/
+`ci_method = paired_cluster_bootstrap` the paired slide-bootstrap interval.
+
 ### 6.2 `fragility.parquet`
 
 One row per (model, subset, stratum, metric): `max_abs_delta` and `culprit_cluster` (§5.3).
+
+### 6.2b `calibration.parquet` (item 2a)
+
+Per-member decile calibration points for the section-2 figure, common subset / overall stratum, as
+published (`rung0`). One row per (model, decile bin): `mean_pred`, `obs_rate`, a cluster-bootstrap
+band on the observed rate (`ci_low`, `ci_high`), and `n` / `n_events`. The report figure reads this;
+nothing statistical is recomputed at render time.
 
 ### 6.3 `manifest.json`
 
 Input digests (§3), the resolved configuration, the bootstrap seed and `B`, the library
 `versions` (predval + the scientific stack), a `roster` summary (`declared` / `present` / `absent`
-counts), and `flags` — the roster findings (§2.6), the informative-selection caution (§2.4), and
-the few-clusters note (§5.1). The manifest is what makes a report's claims checkable later.
+counts), a per-member `verdict` block (§4.8: `bss`, its interval, and the best admissible `best_rung`),
+and `flags` — the roster findings (§2.6), the informative-selection caution (§2.4), and the
+few-clusters note (§5.1). The manifest is what makes a report's claims checkable later.
 
 ### 6.4 `report.html` (S4)
 
-A standalone HTML report rendered from the four artefacts above — it computes nothing new, it
+A standalone HTML report rendered from the artefacts above — it computes nothing new, it
 arranges what `evaluate` produced and refuses to let any of it read as more than it is. Rendering
 is **deterministic**: no wall-clock, a fixed model order, and dict fields (input digests, versions)
 emitted in sorted order, so the same artefacts render byte-identically whether from the in-memory
-`Evaluation` or re-read from disk. `python -m predval.report <outdir>` regenerates it from the
-written artefacts alone.
+`Evaluation` or re-read from disk. Figures are inline SVG rendered deterministically (item 2:
+`SOURCE_DATE_EPOCH=0`, fixed `svg.hashsalt`, matplotlib's bundled font embedded as glyph paths, no
+system-font dependency). `python -m predval.report <outdir>` regenerates it from the written
+artefacts alone; `--appendix` adds the concept-explainer appendix (item 5, off by default).
 
 Structure, in order: **1** coverage and roster (declared/present/absent in the header) → **2** the
 primary as-published (`rung0`) comparison on the common subset, with an AUROC coverage-delta column
-that collapses when full and common coincide, and the unit-of-analysis exhibit (§5.4) → **3** the
-calibration diagnosis (the ladder), explicitly **subordinate** to §2 and never a headline → **4**
-subgroups, with gated strata (§4.7) named as suppressed → **5** fragility, labelled *not a
-confidence interval* (§5.3) → **6** provenance (digests, seed, `B`, versions, all flags).
+that collapses when full and common coincide, the **verdict** lines and Brier skill score (§4.8), the
+per-member **calibration small-multiples** (item 2a), and the unit-of-analysis exhibit (§5.4) with
+its **dumbbell** figure (item 2b) → **3** the calibration diagnosis (the ladder), explicitly
+**subordinate** to §2 and never a headline, each gain carrying its paired interval (§4.5) plus the
+**cross-fit Brier by rung** figure (item 2c) → **4** subgroups, with gated strata (§4.7) named as
+suppressed → **5** fragility, labelled *not a confidence interval* (§5.3), followed by the
+**Limitations** block (§9) → **6** provenance (digests, seed, `B`, versions, all flags). An optional
+**Appendix** (item 5) follows when `--appendix` is set.
 
 Three rules are structural, enforced by tests, not cosmetic:
 
 - **The framing block (§4.4) is unconditional and precedes every number**, and includes the
   sentence *"recalibration does not and cannot improve discrimination."*
-- **Naked-delta ban.** No recalibrated gain is shown without `(interval pending §4.5)` attached; a
-  bare improvement invites a confidence the harness has not earned.
+- **No naked delta.** Every recalibrated gain in section 3 carries an interval — the paired
+  cross-fit gain interval of §4.5. (Earlier versions attached a `(interval pending §4.5)` marker
+  instead; item 1 replaced the marker with the interval itself.)
 - **By-construction identities are labelled as such** — rung1's apparent intercept ≈ 0 and rung2's
   apparent slope ≈ 1 are what each fit targets, never presented as findings.
+
+### 6.5 `findings.json` (item 4)
+
+The machine-readable companion to `report.html`: the same numbers, flags, and verdict in a shape a
+script can diff or gate on. It carries `schema_version`, per-member `metrics` (AUROC, average
+precision, Brier, calibration slope/intercept, each with its interval), the `verdict` (§4.8), the
+`recalibration_gains` (§4.5), the `analytic_ci_truncated` flag (D2, §5.2), a `roster` summary, the
+global `flags`, and a `provenance` block (input hashes, seed, `B`, `ci_level`, config echo, library
+versions, and the git commit). It is **byte-stable** — keys sorted, every float rounded to a fixed
+precision — so regeneration from the same evaluation yields identical bytes. Its shape is a pydantic
+model; the JSON Schema at `schema/findings.schema.json` is generated from that model and checked in,
+and a test guards the checked-in schema against drift.
 
 ---
 
@@ -507,3 +589,17 @@ something about itself, which is why the count is reported rather than silently 
 predval refuses to run on schema violation rather than degrading. Every error names the file,
 the column, and where practical an offending value and row count. A harness that guesses is
 worse than no harness, because its output looks the same either way.
+
+---
+
+## 9. Limitations
+
+**The optimism correction covers the recalibration step only, not model or ensemble construction
+(item 6b).** Section 3's cross-fit disciplines the *recalibration*: it holds whole slides out so a
+correction is never scored on the rows it was fitted on. It says nothing about how the predictions
+themselves were produced. If the ensemble weights of a member (the champion) were selected on slides
+inside this cohort, then `rung0` — the as-published score — is *itself* optimistically biased, and
+this harness cannot detect that: predval evaluates the predictions it is handed and has no view of
+their construction. Only a cohort the ensemble was never tuned on could expose that bias. The report
+renders this verbatim in a Limitations block so the optimism gap is never mis-read as covering more
+than it does.

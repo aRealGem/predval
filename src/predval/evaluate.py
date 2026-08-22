@@ -36,6 +36,10 @@ class Evaluation:
     fragility: pd.DataFrame
     coverage: pd.DataFrame
     manifest: dict
+    #: Per-member rung0 decile calibration points with a cluster-bootstrap band, for the section-2
+    #: calibration small-multiples (item 2a). Common subset, overall stratum. A report figure reads
+    #: it; nothing statistical is recomputed at render time.
+    calibration: pd.DataFrame = field(default_factory=pd.DataFrame)
     flags: list[Flag] = field(default_factory=list)
 
     def write(self, outdir: str | Path) -> dict[str, Path]:
@@ -45,11 +49,13 @@ class Evaluation:
             "metrics": out / "metrics.parquet",
             "fragility": out / "fragility.parquet",
             "coverage": out / "coverage.parquet",
+            "calibration": out / "calibration.parquet",
             "manifest": out / "manifest.json",
         }
         self.metrics.to_parquet(paths["metrics"], index=False)
         self.fragility.to_parquet(paths["fragility"], index=False)
         self.coverage.to_parquet(paths["coverage"], index=False)
+        self.calibration.to_parquet(paths["calibration"], index=False)
         paths["manifest"].write_text(json.dumps(self.manifest, indent=2, sort_keys=True))
         return paths
 
@@ -98,15 +104,136 @@ def coverage_delta(metrics: pd.DataFrame) -> pd.DataFrame:
     return wide[[*keys, "cov_delta"]]
 
 
-def _material_nonmonotone(max_local_decrease: float, delta_auroc: float | None, tol: float) -> bool:
-    """Is a rung3 non-monotonicity material enough to flag (S4.1 item 2)?
+#: Decile bins for the section-2 calibration small-multiples (item 2a).
+N_CALIBRATION_BINS = 10
 
-    Material when the transform's largest local decrease exceeds `tol`, or when it moved AUROC
-    (either direction -- a reordering is a reordering) past `tol`. Below both it is recorded in the
-    artefact but not flagged.
+
+def _common_overall_cells(
+    preds: dict[str, np.ndarray],
+    y_all: np.ndarray,
+    groups_all: np.ndarray,
+    subject_ids: np.ndarray,
+    common_ids: set[str],
+) -> list[tuple[str, np.ndarray, np.ndarray, np.ndarray]]:
+    """(model, y, p, groups) on the common subset, overall stratum -- the verdict/figure cells.
+
+    Every model scored every common subject by construction (the common set is the intersection),
+    so the mask is the common set itself for each model.
     """
-    if max_local_decrease > tol:
-        return True
+    in_common = np.fromiter((s in common_ids for s in subject_ids), bool, len(subject_ids))
+    cells = []
+    for model, pvec in preds.items():
+        mask = in_common & np.isfinite(pvec)
+        cells.append((model, y_all[mask], pvec[mask], groups_all[mask]))
+    return cells
+
+
+def _verdict_layer(cells, spec, unc, ci: float) -> dict[str, dict]:
+    """Per member: Brier skill score at the best admissible rung, and which rung that was (item 3).
+
+    The best admissible repair is the rung -- including rung0 (as published) -- with the lowest
+    cross-fitted Brier. BSS is measured against that rung's held-out probabilities, anchored at
+    0 = no-skill (always predict prevalence) and 1 = perfect. The chosen rung is the "gauge fault":
+    rung0 means none was needed, rung1/2/3 name the shape of the miscalibration the ladder repaired.
+    """
+    verdict: dict[str, dict] = {}
+    for model, y, p, groups in cells:
+        if y.size == 0 or np.unique(y).size < 2:
+            continue
+        ladder_rows, lrep = R.ladder(y, p, groups, thresholds=tuple(spec.thresholds), max_folds=5)
+        cf_brier = {
+            lr.rung: lr.value
+            for lr in ladder_rows
+            if lr.fit_mode == R.CROSSFIT and lr.metric == "brier" and lr.threshold is None
+        }
+        candidates = {"rung0": M.brier(y, p), **cf_brier}
+        candidates = {k: float(v) for k, v in candidates.items() if np.isfinite(v)}
+        if not candidates:
+            continue
+        best_rung = min(candidates, key=lambda k: candidates[k])
+        p_best = p if best_rung == RUNG0 else lrep.crossfit_predictions[best_rung]
+        bss, bss_ci = U.brier_skill_interval(
+            y, p_best, groups, ci, n_boot=unc.n_boot, seed=unc.seed
+        )
+        verdict[model] = {
+            "bss": bss,
+            "bss_ci_low": bss_ci.low,
+            "bss_ci_high": bss_ci.high,
+            "best_rung": best_rung,
+            "best_rung_brier": candidates[best_rung],
+            "rung0_brier": candidates[RUNG0],
+            "prevalence": float(np.mean(y)),
+            "n": int(y.size),
+            "n_clusters": int(np.unique(groups).size),
+        }
+    return verdict
+
+
+def _calibration_curves(cells, unc, ci: float) -> pd.DataFrame:
+    """Per-member decile calibration points with a cluster-bootstrap band on the observed rate.
+
+    Bins are the deciles of the member's published probabilities on the common subset. Each bin
+    carries its mean predicted probability, its observed event rate, and a percentile band over
+    slide resamples of that observed rate -- the band the section-2 figure shades (item 2a).
+    """
+    cols = ["model_id", "bin", "mean_pred", "obs_rate", "ci_low", "ci_high", "n", "n_events"]
+    rows: list[dict] = []
+    alpha = (1.0 - ci) / 2.0
+    for model, y, p, groups in cells:
+        if y.size == 0:
+            continue
+        edges = np.unique(np.quantile(p, np.linspace(0.0, 1.0, N_CALIBRATION_BINS + 1)))
+        if edges.size < 2:
+            continue
+        nbins = edges.size - 1
+        bin_idx = np.clip(np.searchsorted(edges, p, side="right") - 1, 0, nbins - 1)
+        clusters = U.cluster_indices(groups)
+        boot = np.full((unc.n_boot, nbins), np.nan)
+        if len(clusters) >= 2:
+            rng = np.random.default_rng(unc.seed)
+            for b in range(unc.n_boot):
+                ridx = U.bootstrap_cluster_indices(clusters, rng)
+                bi, yy = bin_idx[ridx], y[ridx]
+                cnt = np.bincount(bi, minlength=nbins).astype(float)
+                pos = np.bincount(bi, weights=yy.astype(float), minlength=nbins)
+                with np.errstate(invalid="ignore", divide="ignore"):
+                    boot[b] = np.where(cnt > 0, pos / cnt, np.nan)
+        for bidx in range(nbins):
+            sel = bin_idx == bidx
+            n = int(sel.sum())
+            if n == 0:
+                continue
+            col = boot[:, bidx]
+            finite = col[np.isfinite(col)]
+            lo, hi = (
+                (float(x) for x in np.quantile(finite, [alpha, 1.0 - alpha]))
+                if finite.size >= 2
+                else (float("nan"), float("nan"))
+            )
+            rows.append({
+                "model_id": model,
+                "bin": bidx,
+                "mean_pred": float(p[sel].mean()),
+                "obs_rate": float(y[sel].mean()),
+                "ci_low": lo,
+                "ci_high": hi,
+                "n": n,
+                "n_events": int(y[sel].sum()),
+            })
+    return pd.DataFrame(rows, columns=cols)
+
+
+def _material_nonmonotone(max_local_decrease: float, delta_auroc: float | None, tol: float) -> bool:
+    """Is a rung3 non-monotonicity material enough to flag (S4.1 item 2; gate revised, D1)?
+
+    The flag is driven by the **outcome-level** signal ALONE: the non-monotonicity is material iff
+    it moved AUROC past `tol`, either direction (a reordering that raises or lowers discrimination
+    is equally a reordering). `max_local_decrease` -- a dip on the probability-scale transform that
+    need not reorder anyone -- is kept in `metrics.parquet` and shown as a secondary note in the
+    flag message, but it no longer drives the flag. This quiets epsilon-wiggle members (phikon,
+    dAUROC ~2e-5) while still catching genuine reordering (effnet_scratch, dAUROC 0.004).
+    """
+    del max_local_decrease  # retained in the artefact + message; deliberately not a flag driver
     return bool(delta_auroc is not None and np.isfinite(delta_auroc) and abs(delta_auroc) > tol)
 
 
@@ -233,6 +360,11 @@ def evaluate(cohort: Cohort, predictions: Predictions) -> Evaluation:
     for code, message in sorted(notes):
         flags.append(Flag(code=code, severity="note", message=message))
 
+    # Verdict layer + calibration curves, both on the common subset / overall stratum (items 2a, 3).
+    cells = _common_overall_cells(preds, y_all, groups_all, subject_ids, subsets["common"])
+    verdict = _verdict_layer(cells, spec, unc, ci)
+    calibration_df = _calibration_curves(cells, unc, ci)
+
     metrics_df = pd.DataFrame(rows)
     manifest = {
         "cohort_id": spec.cohort_id,
@@ -268,6 +400,9 @@ def evaluate(cohort: Cohort, predictions: Predictions) -> Evaluation:
         # Recorded rather than left implicit: a reader can confirm that identical subsets were
         # reused rather than independently recomputed.
         "cells_reused_identical": n_reused,
+        # Per-member verdict: Brier skill score at the best admissible rung (item 3). Stored in the
+        # manifest rather than metrics.parquet so the rung/fit_mode invariants of §6.1 stay clean.
+        "verdict": verdict,
         "flags": [f.as_dict() for f in flags],
     }
 
@@ -276,6 +411,7 @@ def evaluate(cohort: Cohort, predictions: Predictions) -> Evaluation:
         fragility=pd.DataFrame(frag_rows),
         coverage=coverage_report(cohort, predictions),
         manifest=manifest,
+        calibration=calibration_df,
         flags=flags,
     )
 
@@ -419,23 +555,34 @@ def _evaluate_one(
                 row(lr.metric, lr.value, rung=lr.rung, fit_mode=lr.fit_mode, threshold=lr.threshold)
             )
 
+        # Paired cross-fit Brier gain per converged rung: rung0 (as-published) minus the rung's
+        # out-of-fold Brier, with a paired slide bootstrap (item 1). This is the interval the pitch
+        # shows in section 3, replacing the deferred "(interval pending §4.5)" marker. Emitted for
+        # every rung whose cross-fit mapping is available; ci_method is paired_cluster_bootstrap.
+        for lr_rung, cf_pred in lrep.crossfit_predictions.items():
+            gain, gain_ci = U.paired_brier_gain_interval(
+                y, p, cf_pred, groups, ci, n_boot=unc.n_boot, seed=unc.seed
+            )
+            rows.append(row("paired_gain_brier", gain, gain_ci, rung=lr_rung, fit_mode=R.CROSSFIT))
+
         # rung3 non-monotonicity diagnostics: ALWAYS recorded in the artefact (S4.1 item 2), so a
         # sub-tolerance wiggle is visible without being flagged as a finding.
         if lrep.rung3_max_local_decrease is not None:
             mld_val = lrep.rung3_max_local_decrease
             rows.append(row("rung3_max_local_decrease", mld_val, rung="rung3"))
             rows.append(row("delta_auroc_rung3", lrep.delta_auroc_rung3, rung="rung3"))
-            # Flag ONLY when the non-monotonicity is material: it moves AUROC, or the transform's
-            # largest local decrease, past monotone_tol. |dAUROC| is direction-agnostic on purpose
-            # -- a reordering that raises or lowers discrimination is equally a reordering.
+            # Flag ONLY when the non-monotonicity is material at the outcome level: |dAUROC| past
+            # monotone_tol (D1). |dAUROC| is direction-agnostic on purpose -- a reordering that
+            # raises or lowers discrimination is equally a reordering. The transform's largest local
+            # decrease rides along as a secondary note but never drives the flag.
             mld = lrep.rung3_max_local_decrease
             dauroc = lrep.delta_auroc_rung3
             if _material_nonmonotone(mld, dauroc, rec.monotone_tol):
                 notes.add((
                     "recalibration_non_monotone",
-                    f"rung3 materially non-monotone for {label}: "
-                    f"delta_auroc={dauroc:+.4f}, max local decrease={mld:.4f} "
-                    f"(tol {rec.monotone_tol})",
+                    f"rung3 materially non-monotone for {label}: delta_auroc={dauroc:+.4f} "
+                    f"exceeds tol {rec.monotone_tol} (secondary note: largest local decrease on "
+                    f"the probability-scale transform = {mld:.4f}, not a flag driver)",
                 ))
 
         if lrep.rung2_slope is not None and lrep.rung2_slope < 0:

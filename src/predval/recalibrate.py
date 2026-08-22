@@ -23,7 +23,7 @@ only, and evaluate.py stamps the existing as-published rows as rung0.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 import numpy as np
 
@@ -242,6 +242,11 @@ class LadderReport:
     #: (rung, reason) for each rung emitted in neither fit mode because a half of the pair was
     #: unavailable (§4.3). The reason is one of the R_* strings above.
     suppressed: tuple[tuple[str, str], ...]
+    #: Out-of-fold corrected probabilities per emitted rung, aligned to the input rows. The
+    #: evaluator uses these to bootstrap the paired cross-fit gain (rung0 - rung_r) over slides
+    #: (§4.5, item 1) without refitting -- the mapping is already held-out. Empty when no rung
+    #: converged. rung0 is not here: its cross-fit equals its as-published p.
+    crossfit_predictions: dict[str, np.ndarray] = field(default_factory=dict)
 
 
 def _score_all(
@@ -283,6 +288,7 @@ def ladder(
     rung3_mld: float | None = None
     rung3_dauroc: float | None = None
     suppressed: list[tuple[str, str]] = []
+    crossfit_preds: dict[str, np.ndarray] = {}
 
     for rung in LADDER_RUNGS:
         cal, reason_apparent = _fit(rung, y, p)
@@ -296,6 +302,7 @@ def ladder(
 
         if rung == "rung2":
             rung2_slope = cal.slope
+        crossfit_preds[rung] = cf_pred
 
         apparent_scores = _score_all(y, cal(p), thresholds)
         if rung == "rung3":
@@ -312,4 +319,6 @@ def ladder(
         for (metric, t), value in _score_all(y, cf_pred, thresholds).items():
             rows.append(RungMetric(rung, CROSSFIT, metric, t, value))
 
-    return rows, LadderReport(rung2_slope, rung3_mld, rung3_dauroc, tuple(suppressed))
+    return rows, LadderReport(
+        rung2_slope, rung3_mld, rung3_dauroc, tuple(suppressed), crossfit_preds
+    )

@@ -263,6 +263,42 @@ def test_rung3_nonmonotonicity_diagnostics_are_always_recorded(result) -> None:
     assert "delta_auroc_rung3" in names
 
 
+def test_paired_gain_rows_present_with_intervals(result) -> None:
+    """Item 1: paired cross-fit Brier gain rows (overall/common) carry a paired interval."""
+    pg = result.metrics[
+        (result.metrics["metric"] == "paired_gain_brier")
+        & (result.metrics["subset"] == "common")
+        & (result.metrics["stratum_kind"] == "overall")
+    ]
+    assert not pg.empty
+    assert set(pg["rung"]) <= {"rung1", "rung2", "rung3"}
+    assert set(pg["fit_mode"]) == {"crossfit"}
+    assert (pg["ci_method"] == "paired_cluster_bootstrap").all()
+    # the point estimate lies within its own interval
+    for _, r in pg.iterrows():
+        if np.isfinite(r["ci_low"]) and np.isfinite(r["ci_high"]):
+            assert r["ci_low"] <= r["value"] <= r["ci_high"]
+
+
+def test_verdict_layer_in_manifest(result) -> None:
+    """Item 3: per-member BSS + best rung on the common/overall stratum."""
+    verdict = result.manifest["verdict"]
+    assert set(verdict) == set(MODELS)
+    for v in verdict.values():
+        assert v["best_rung"] in {"rung0", "rung1", "rung2", "rung3"}
+        assert v["bss_ci_low"] <= v["bss"] <= v["bss_ci_high"]
+
+
+def test_calibration_artefact_shape(result) -> None:
+    """Item 2a: per-member decile points with a cluster band."""
+    cal = result.calibration
+    assert set(cal.columns) == {
+        "model_id", "bin", "mean_pred", "obs_rate", "ci_low", "ci_high", "n", "n_events"
+    }
+    assert set(cal["model_id"]) == set(MODELS)
+    assert (cal["ci_low"] <= cal["obs_rate"] + 1e-9).all() or cal["ci_low"].isna().any()
+
+
 def test_subgroup_ladder_is_gated_below_threshold(result) -> None:
     """The toy's subgroups have 4 clusters each -- below the gate -- so they get rung0 only."""
     sub = result.metrics[result.metrics["stratum_kind"] == "subgroup"]
@@ -290,7 +326,7 @@ def test_manifest_records_provenance_and_config(result) -> None:
 
 def test_write_emits_all_artefacts(result, tmp_path: Path) -> None:
     paths = result.write(tmp_path / "out")
-    assert set(paths) == {"metrics", "fragility", "coverage", "manifest"}
+    assert set(paths) == {"metrics", "fragility", "coverage", "calibration", "manifest"}
     for p in paths.values():
         assert p.exists() and p.stat().st_size > 0
     assert len(pd.read_parquet(paths["metrics"])) == len(result.metrics)

@@ -25,8 +25,8 @@ import numpy as np
 import pandas as pd
 from jinja2 import Environment, select_autoescape
 
+from . import figures
 from .evaluate import Evaluation, coverage_delta
-from .metrics import optimism
 
 #: The report template lives beside the module (packaged with it), not inline, so it stays out of
 #: the linter's way and reads as the HTML it is.
@@ -47,10 +47,51 @@ FRAMING = (
     "Recalibration does not and cannot improve discrimination."
 )
 
-#: Attached to every recalibrated gain. Ladder rungs carry no interval yet (section 4.5).
+#: Historical marker for a gain shown without an interval. The paired cross-fit gain now carries a
+#: real interval (item 1), so section 3 no longer uses this; it survives only for the appendix's
+#: description of the deferred refit-in-replicate interval (section 4.5).
 PENDING = "(interval pending section 4.5)"
 
+#: D2 footnote for a symmetric analytic loss interval that crossed the 0 boundary and was truncated.
+ANALYTIC_TRUNCATED_NOTE = (
+    "normal approximation unreliable at this G; percentile bootstrap interval is authoritative"
+)
+
 _LADDER_RUNGS = ("rung1", "rung2", "rung3")
+
+#: Limitations block (item 6b), verbatim in report and docs/spec.md section 9. The optimism
+#: correction disciplines the recalibration step; it says nothing about how the predictions were
+#: built, and it must not be read as if it did.
+LIMITATIONS = (
+    "The optimism correction in section 3 covers the recalibration step ONLY -- it does not cover "
+    "model or ensemble construction. If the ensemble weights (the champion) were selected on "
+    "slides inside this cohort, rung0 is itself optimistically biased, and this harness cannot "
+    "detect it: predval evaluates the predictions it is handed and has no view of how they were "
+    "produced. Only a cohort the ensemble was never tuned on could expose that bias."
+)
+
+#: Appendix concept-explainer (item 5): OFF by default; structure + placeholders this session, the
+#: static SVG assets arrive later. Rendered only when --appendix is passed, so default bytes are
+#: unaffected.
+APPENDIX_SECTIONS = (
+    ("Why the unit of analysis is not the unit of independence",
+     "Placeholder -- a static SVG explainer of clustered sampling will be inserted here."),
+    ("The recalibration ladder, rung by rung",
+     "Placeholder -- a static SVG explainer of rungs 0-3 will be inserted here."),
+    ("Apparent versus cross-fitted, and what optimism measures",
+     "Placeholder -- a static SVG explainer of the cross-fit gap will be inserted here."),
+    ("Reading the Brier skill score",
+     "Placeholder -- a static SVG explainer of the no-skill and perfect anchors will go here."),
+)
+
+#: The "gauge fault" bin: which rung was the best admissible repair -> a fixed label, no adjectives
+#: (item 3ii). rung0 means none was needed. Documented in docs/spec.md section 4.8.
+GAUGE_LABELS = {
+    "rung0": "none -- well-calibrated as published",
+    "rung1": "level (calibration-in-the-large)",
+    "rung2": "level and spread (intercept + slope)",
+    "rung3": "non-monotone shape",
+}
 
 
 # --------------------------------------------------------------------------- formatting helpers
@@ -201,14 +242,100 @@ def _exhibit_rows(metrics: pd.DataFrame, models: list[str]) -> list[dict]:
     return out
 
 
-def _calibration_rows(metrics: pd.DataFrame, models: list[str]) -> list[dict]:
-    """Ladder diagnosis: rung0 Brier vs cross-fitted rungs.
+def _signed_ci(v: float, lo: float, hi: float) -> str:
+    """A signed point estimate with its interval: '+0.0112 [0.005, 0.017]', or 'n/a'."""
+    if v is None or not np.isfinite(v):
+        return "n/a"
+    ci = _ci(lo, hi)
+    return f"{v:+.4f} {ci}".strip()
 
-    Cells carry clean numbers; the "(interval pending §4.5)" marker lives in the two delta column
-    headers and the legend, not repeated per cell (S4.1 item 1). Rows are ordered by cross-fit gain
-    descending so the members a recalibration would most help sit at the top (S4.1 item 6).
+
+def _gain_lookup(metrics: pd.DataFrame) -> pd.DataFrame:
+    """The paired cross-fit gain rows (rung0 - rung_r), common subset, overall stratum (item 1)."""
+    return metrics[
+        (metrics["metric"] == "paired_gain_brier")
+        & (metrics["subset"] == "common")
+        & (metrics["stratum_kind"] == "overall")
+    ]
+
+
+def _dumbbell_data(metrics: pd.DataFrame, models: list[str]) -> list[dict]:
+    """Figure 2b input: AUROC point with its cluster and naive per-row intervals, per member."""
+    auroc = metrics[
+        (metrics["metric"] == "auroc")
+        & (metrics["rung"] == "rung0")
+        & (metrics["subset"] == "common")
+        & (metrics["stratum_kind"] == "overall")
+    ]
+    out = []
+    for model in models:
+        sub = auroc[auroc["model_id"] == model]
+        cluster = _one(sub, ci_method="cluster_bootstrap")
+        naive = _one(sub, ci_method="naive_row_bootstrap")
+        if cluster is None or naive is None:
+            continue
+        vals = [cluster["ci_low"], cluster["ci_high"], naive["ci_low"], naive["ci_high"]]
+        if not all(np.isfinite(x) for x in vals):
+            continue
+        out.append({
+            "model": model,
+            "value": float(cluster["value"]),
+            "cluster_low": float(cluster["ci_low"]),
+            "cluster_high": float(cluster["ci_high"]),
+            "naive_low": float(naive["ci_low"]),
+            "naive_high": float(naive["ci_high"]),
+        })
+    return out
+
+
+def _calibration_rows(metrics: pd.DataFrame, models: list[str]) -> list[dict]:
+    """Ladder diagnosis: rung0 Brier and, per rung, the paired cross-fit gain WITH its interval.
+
+    The "(interval pending §4.5)" marker is gone: every gain now carries a paired cluster-bootstrap
+    interval (item 1). A gain is rung0 Brier minus that rung's held-out Brier, positive when the
+    out-of-fold recalibration helped; the interval is the paired slide bootstrap. Rows are ordered
+    by the best per-member gain descending, so the members a recalibration would most help sit on
+    top. rung3 reads 'n/a' where it did not converge.
     """
     overall = metrics[(metrics["subset"] == "common") & (metrics["stratum_kind"] == "overall")]
+    gains = _gain_lookup(metrics)
+
+    def brier(model: str, rung: str, mode: str) -> float:
+        r = _one(overall, model_id=model, metric="brier", rung=rung, fit_mode=mode, threshold=None)
+        return float(r["value"]) if r is not None else float("nan")
+
+    def gain(model: str, rung: str) -> tuple[float, float, float]:
+        r = _one(gains, model_id=model, rung=rung, fit_mode="crossfit")
+        if r is None:
+            return float("nan"), float("nan"), float("nan")
+        return float(r["value"]), float(r["ci_low"]), float(r["ci_high"])
+
+    out = []
+    for model in models:
+        r0 = brier(model, "rung0", "apparent")
+        best = float("-inf")
+        cells = {}
+        for rung in _LADDER_RUNGS:
+            v, lo, hi = gain(model, rung)
+            cells[f"{rung}_gain"] = _signed_ci(v, lo, hi)
+            if np.isfinite(v):
+                best = max(best, v)
+        out.append({
+            "model": model,
+            "rung0": _f(r0),
+            **cells,
+            "_gain_sort": best,
+        })
+    out.sort(key=lambda r: r["_gain_sort"], reverse=True)
+    for r in out:
+        del r["_gain_sort"]
+    return out
+
+
+def _brier_by_rung_data(metrics: pd.DataFrame, models: list[str]) -> list[dict]:
+    """Figure 2c input: rung0 Brier, cross-fit levels, and paired-gain intervals per member."""
+    overall = metrics[(metrics["subset"] == "common") & (metrics["stratum_kind"] == "overall")]
+    gains = _gain_lookup(metrics)
 
     def brier(model: str, rung: str, mode: str) -> float:
         r = _one(overall, model_id=model, metric="brier", rung=rung, fit_mode=mode, threshold=None)
@@ -217,24 +344,63 @@ def _calibration_rows(metrics: pd.DataFrame, models: list[str]) -> list[dict]:
     out = []
     for model in models:
         r0 = brier(model, "rung0", "apparent")
-        cf = {rung: brier(model, rung, "crossfit") for rung in _LADDER_RUNGS}
-        finite_cf = [v for v in cf.values() if np.isfinite(v)]
-        best_cf = min(finite_cf) if finite_cf else float("nan")
-        gain = optimism("brier", best_cf, r0)  # oriented: positive == the cross-fit helped
-        opt = optimism("brier", brier(model, "rung2", "apparent"), cf["rung2"])
+        if not np.isfinite(r0):
+            continue
+        levels, gain_ci = {}, {}
+        for rung in _LADDER_RUNGS:
+            lvl = brier(model, rung, "crossfit")
+            if not np.isfinite(lvl):
+                continue
+            levels[rung] = lvl
+            g = _one(gains, model_id=model, rung=rung, fit_mode="crossfit")
+            gain_ci[rung] = (
+                (float(g["ci_low"]), float(g["ci_high"])) if g is not None else (float("nan"),) * 2
+            )
+        out.append({"model": model, "rung0": r0, "levels": levels, "gains": gain_ci})
+    return out
+
+
+def _verdict_lines(metrics: pd.DataFrame, manifest: dict, models: list[str]) -> list[dict]:
+    """One template-generated plain-language line per member (item 3ii).
+
+    Assembled only from (AUROC, BSS, best rung): AUROC and BSS are inserted as numbers with their
+    intervals, and the single qualitative token is the gauge-fault rung label (GAUGE_LABELS). No
+    free adjectives. The line names its references -- the no-skill and perfect anchors of BSS -- so
+    it stands on its own. See docs/spec.md section 4.8 for the template and bins.
+    """
+    verdict = manifest.get("verdict", {})
+    auroc = metrics[
+        (metrics["metric"] == "auroc")
+        & (metrics["rung"] == "rung0")
+        & (metrics["subset"] == "common")
+        & (metrics["stratum_kind"] == "overall")
+        & (metrics["ci_method"] == "cluster_bootstrap")
+    ]
+    out = []
+    for model in models:
+        v = verdict.get(model)
+        a = _one(auroc, model_id=model)
+        if v is None or a is None:
+            continue
+        auroc_str = _val_ci(float(a["value"]), float(a["ci_low"]), float(a["ci_high"]))
+        bss_pct = 100.0 * float(v["bss"])
+        bss_ci = _ci(100.0 * float(v["bss_ci_low"]), 100.0 * float(v["bss_ci_high"]), nd=1)
+        gauge = GAUGE_LABELS.get(v["best_rung"], v["best_rung"])
+        line = (
+            f"Ranking: AUROC {auroc_str}. "
+            f"Probability quality after best admissible repair: closes {bss_pct:.1f}% "
+            f"[{100.0 * float(v['bss_ci_low']):.1f}%, {100.0 * float(v['bss_ci_high']):.1f}%] "
+            f"of the gap from no-skill (always predict prevalence) to perfect. "
+            f"Gauge fault found: {gauge}."
+        )
         out.append({
             "model": model,
-            "rung0": _f(r0),
-            "rung1_cf": _f(cf["rung1"]),
-            "rung2_cf": _f(cf["rung2"]),
-            "rung3_cf": _f(cf["rung3"]),
-            "gain": _f(gain),
-            "optimism": _f(opt),
-            "_gain_sort": gain if np.isfinite(gain) else float("-inf"),
+            "auroc": auroc_str,
+            "bss_pct": f"{bss_pct:.1f}",
+            "bss_ci": bss_ci,
+            "gauge": gauge,
+            "line": line,
         })
-    out.sort(key=lambda r: r["_gain_sort"], reverse=True)
-    for r in out:
-        del r["_gain_sort"]
     return out
 
 
@@ -299,8 +465,32 @@ def _flags_by_severity(manifest: dict) -> dict[str, list[dict]]:
 # ------------------------------------------------------------------------------------ rendering
 
 
+def _curves_by_model(calibration: pd.DataFrame) -> dict[str, list[dict]]:
+    """calibration.parquet -> {model: [decile dicts]} for the section-2 figure."""
+    if calibration is None or calibration.empty:
+        return {}
+    out: dict[str, list[dict]] = {}
+    for model, grp in calibration.sort_values(["model_id", "bin"]).groupby("model_id", sort=True):
+        out[str(model)] = [
+            {
+                "mean_pred": float(r["mean_pred"]),
+                "obs_rate": float(r["obs_rate"]),
+                "ci_low": float(r["ci_low"]),
+                "ci_high": float(r["ci_high"]),
+            }
+            for _, r in grp.iterrows()
+        ]
+    return out
+
+
 def build_context(
-    metrics: pd.DataFrame, fragility: pd.DataFrame, coverage: pd.DataFrame, manifest: dict
+    metrics: pd.DataFrame,
+    fragility: pd.DataFrame,
+    coverage: pd.DataFrame,
+    manifest: dict,
+    calibration: pd.DataFrame | None = None,
+    *,
+    appendix: bool = False,
 ) -> dict:
     """Assemble everything the template needs. All logic lives here; the template only arranges."""
     models = _models_by_auroc(metrics)
@@ -320,6 +510,8 @@ def build_context(
         for _, r in coverage.sort_values("model_id").iterrows()
     ]
 
+    brier_footnote = _brier_analytic_footnote(metrics, models)
+
     return {
         "framing": FRAMING,
         "cohort_id": manifest.get("cohort_id", ""),
@@ -327,11 +519,20 @@ def build_context(
         "identical_coverage": identical_coverage,
         "coverage_rows": coverage_rows,
         "primary_rows": _primary_rows(metrics, models, show_cov_delta=not identical_coverage),
-        "brier_footnote": _brier_analytic_footnote(metrics, models),
+        "brier_footnote": brier_footnote,
+        "analytic_truncated": bool(brier_footnote),
+        "analytic_truncated_note": ANALYTIC_TRUNCATED_NOTE,
+        "verdict_lines": _verdict_lines(metrics, manifest, models),
+        "calibration_svg": figures.calibration_small_multiples(
+            _curves_by_model(calibration), models
+        ),
         "exhibit_rows": _exhibit_rows(metrics, models),
+        "dumbbell_svg": figures.interval_dumbbell(_dumbbell_data(metrics, models)),
         "calibration_rows": _calibration_rows(metrics, models),
+        "brier_rung_svg": figures.brier_by_rung(_brier_by_rung_data(metrics, models)),
         "subgroup_rows": _subgroup_rows(metrics),
         "fragility_rows": _fragility_rows(fragility, models),
+        "limitations": LIMITATIONS,
         "provenance": {
             # Sorted, so the report is byte-identical whether it renders from the in-memory
             # manifest (insertion order) or from manifest.json (written with sort_keys).
@@ -342,39 +543,58 @@ def build_context(
         },
         "flags": _flags_by_severity(manifest),
         "pending": PENDING,
+        "appendix": appendix,
+        "appendix_sections": APPENDIX_SECTIONS if appendix else (),
     }
 
 
 def render(
-    metrics: pd.DataFrame, fragility: pd.DataFrame, coverage: pd.DataFrame, manifest: dict
+    metrics: pd.DataFrame,
+    fragility: pd.DataFrame,
+    coverage: pd.DataFrame,
+    manifest: dict,
+    calibration: pd.DataFrame | None = None,
+    *,
+    appendix: bool = False,
 ) -> str:
-    """Render the report HTML from the four artefacts."""
+    """Render the report HTML from the artefacts."""
     env = Environment(autoescape=select_autoescape(["html"]), trim_blocks=True, lstrip_blocks=True)
     template = env.from_string(_template_source())
-    return template.render(**build_context(metrics, fragility, coverage, manifest))
-
-
-def render_evaluation(evaluation: Evaluation) -> str:
-    """Render straight from an in-memory Evaluation."""
-    return render(
-        evaluation.metrics, evaluation.fragility, evaluation.coverage, evaluation.manifest
+    return template.render(
+        **build_context(metrics, fragility, coverage, manifest, calibration, appendix=appendix)
     )
 
 
-def render_from_dir(outdir: str | Path) -> str:
+def render_evaluation(evaluation: Evaluation, *, appendix: bool = False) -> str:
+    """Render straight from an in-memory Evaluation."""
+    return render(
+        evaluation.metrics,
+        evaluation.fragility,
+        evaluation.coverage,
+        evaluation.manifest,
+        evaluation.calibration,
+        appendix=appendix,
+    )
+
+
+def render_from_dir(outdir: str | Path, *, appendix: bool = False) -> str:
     """Render from a directory of written artefacts, so a report regenerates from hashes alone."""
     out = Path(outdir)
+    cal_path = out / "calibration.parquet"
+    calibration = pd.read_parquet(cal_path) if cal_path.exists() else None
     return render(
         pd.read_parquet(out / "metrics.parquet"),
         pd.read_parquet(out / "fragility.parquet"),
         pd.read_parquet(out / "coverage.parquet"),
         json.loads((out / "manifest.json").read_text()),
+        calibration,
+        appendix=appendix,
     )
 
 
-def write_report(evaluation: Evaluation, path: str | Path) -> Path:
+def write_report(evaluation: Evaluation, path: str | Path, *, appendix: bool = False) -> Path:
     p = Path(path)
-    p.write_text(render_evaluation(evaluation))
+    p.write_text(render_evaluation(evaluation, appendix=appendix))
     return p
 
 
@@ -386,8 +606,14 @@ def _main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description="Render a predval HTML report from written artefacts.")
     ap.add_argument("outdir", type=Path, help="dir with metrics/fragility/coverage/manifest")
     ap.add_argument("--to", type=Path, default=None, help="output path (default: report.html)")
+    ap.add_argument(
+        "--appendix",
+        action="store_true",
+        help="append the concept-explainer appendix (off by default; does not change the "
+        "default-report bytes)",
+    )
     args = ap.parse_args(argv)
-    html = render_from_dir(args.outdir)
+    html = render_from_dir(args.outdir, appendix=args.appendix)
     dest = args.to or (args.outdir / "report.html")
     dest.write_text(html)
     print(f"report -> {dest}")
