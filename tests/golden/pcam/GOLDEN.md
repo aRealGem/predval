@@ -10,8 +10,8 @@ uv run python examples/pcam/run_evaluation.py
 
 | | |
 |---|---|
-| generated | 2026-08-22 |
-| predval commit | `5a8e5d7` (S4.2) |
+| generated | 2026-08-22 (refreshed in S5.1 -- `report.html`/`findings.json` only, after the item-3 Limitations sentence; metrics/fragility/calibration/coverage/manifest unchanged since S5) |
+| predval commit | S5.1 (pre-commit at generation time) |
 | PCam campaign source (`~/histopath-cancer-detection`) HEAD | `5646c80eef04029543f5ad317a9cbf87653be7ce`, clean |
 
 `findings.json` here has its `provenance.git_commit` field taken as-is from that generation run;
@@ -20,3 +20,8 @@ the comparison, since it legitimately changes on every commit to this repo.
 
 To refresh deliberately after an intentional change, see the docstring of
 `tests/test_golden_pcam.py`.
+
+These golden artefacts (and the source `cohort.parquet`/`predictions.parquet` they are built
+from) are committed here because they are small and derived from public CC0 data (PatchCamelyon,
+via Camelyon16) -- not sensitive. The fixture *inputs* live outside git only because they are
+regenerable derivatives, per `.gitignore`; see the README's "Reproducing the example" section.

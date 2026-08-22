@@ -11189,7 +11189,7 @@ which a tight bootstrap interval will not reveal.</p>
 </table>
 
 <h3>Limitations</h3>
-<div class="limitations">The optimism correction in section 3 covers the recalibration step ONLY -- it does not cover model or ensemble construction. If the ensemble weights (the champion) were selected on slides inside this cohort, rung0 is itself optimistically biased, and this harness cannot detect it: predval evaluates the predictions it is handed and has no view of how they were produced. Only a cohort the ensemble was never tuned on could expose that bias.</div>
+<div class="limitations">The optimism correction in section 3 covers the recalibration step ONLY -- it does not cover model or ensemble construction. If the ensemble weights (the champion) were selected on slides inside this cohort, rung0 is itself optimistically biased, and this harness cannot detect it: predval evaluates the predictions it is handed and has no view of how they were produced. Only a cohort the ensemble was never tuned on could expose that bias. Similarly, the paired cross-fit gain interval (section 3) conditions on the fitted correction -- it resamples the slide-level loss difference but does not refit the correction inside each bootstrap replicate, so it does not carry the correction&#39;s own fitting variance; that refit-in-replicate interval remains backlog (spec section 4.5).</div>
 
 <h2>6. Provenance</h2>
 <p class="muted">Input digests (blake2b), the bootstrap seed and B, and library versions -- enough to

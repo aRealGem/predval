@@ -70,6 +70,31 @@ existing traditions:
   coverage table, the calibration diagnosis, and the subgroup gating are the kind of checks a
   TRIPOD-AI-conformant report has to make somewhere, produced as artefacts rather than prose a
   reader has to trust.
+- **`calzone`** ([DIDSR/calzone](https://github.com/DIDSR/calzone), an FDA/CDRH regulatory-science
+  tool, JOSS 2025) measures calibration: metrics, reliability diagrams, bootstrap confidence
+  intervals, subgroup breakdowns, and prevalence adjustment for enriched-versus-population data.
+  It is a measurement library, not a validation harness — no declared clustering unit or
+  cluster-aware resampling, no recalibration ladder, no apparent-versus-cross-fitted optimism
+  disclosure, no report artefact. Where its metrics apply to a cohort predval also measures,
+  the two are complementary rather than competing; predval does not attempt to duplicate its
+  breadth of calibration metrics.
+- **`pmcalibration` and `pminternal`** (Stephen Rhodes,
+  [stephenrho.github.io](https://stephenrho.github.io/pminternal/)) are the closest R analogues.
+  `pmcalibration` fits smoothed calibration curves (spline/GAM/loess) and reports Eavg/E50/E90/Emax
+  for binary and time-to-event outcomes. `pminternal` goes further and produces bias-corrected
+  performance measures — but by *refitting the model itself* inside each bootstrap or
+  cross-validation resample (bootstrap optimism, `.632`, CV optimism), which requires a model
+  development function, not just its output. That is the structural difference from predval:
+  predval's contract is predictions-only and has no model to refit, by design (see "What predval
+  deliberately does not do," above) — nor, as far as this harness is aware, does either package
+  resample at a declared clustering unit rather than at the row.
+- **`predRupdate`** ([CRAN](https://cran.r-project.org/package=predRupdate)) is the nearest
+  conceptual relative of the recalibration ladder: given an existing model's coefficients, it
+  offers graded updating methods from an intercept-only correction up to a full recalibration
+  refit, for both logistic and Cox models. predval's rungs cover the same *idea* — increasingly
+  flexible corrections to a published score — but stay link-scale-only (never a covariate refit)
+  and add the apparent-versus-cross-fitted split with a paired-gain interval that
+  `predRupdate`, as far as this harness is aware, does not.
 - **Decision curve analysis** (e.g. the `dcurves` family) answers a question predval does not yet
   ask — net benefit at a chosen treatment threshold. It is deliberately deferred (see the
   `pyproject.toml` dependency notes and the spec's backlog): a decision-curve number is only
@@ -79,6 +104,11 @@ existing traditions:
   solve an adjacent but different problem: watching a *deployed* model's inputs and outputs
   change over time. predval has no notion of time-ordering or a live pipeline; it validates one
   static batch of predictions against one cohort, once, and says so.
+
+predval's outcome contract is binary only (`docs/spec.md` §2.1); survival and competing-risks
+outcomes are out of scope for v0, not a deferred feature of this version. For that territory,
+[`SurvivalEVAL`](https://github.com/shi-ang/SurvivalEVAL) is the adjacent tool — a comparably
+scoped evaluation package for individual survival distributions.
 
 ## Example: a real fixture, not a synthetic one
 
@@ -105,9 +135,13 @@ uv run python examples/pcam/reproduce.py
 ```
 
 This is a **local, single-machine reproduction**, not a from-anywhere clean-clone one, and that
-limit is deliberate rather than an oversight: `examples/pcam/cohort.parquet` and
-`predictions.parquet` are derived from real histopathology predictions and are intentionally not
-committed to this repository (see `.gitignore`). `reproduce.py` will:
+limit is deliberate rather than an oversight. `examples/pcam/cohort.parquet` and
+`predictions.parquet` are **not** excluded because the data is sensitive — PatchCamelyon derives
+from Camelyon16, released [CC0](https://github.com/basveeling/pcam#license), so it is public
+domain. They are excluded because they are *generated derivatives*: `build_fixture.py` produces
+them deterministically from a local campaign checkout, and a repository does not need to carry
+regenerable multi-megabyte binary artefacts alongside the script that makes them (see
+`.gitignore`). `reproduce.py` will:
 
 1. Use the fixture parquet files if they are already present, or build them from a local
    `~/histopath-cancer-detection` campaign checkout if one is found (pass `--campaign PATH`
@@ -156,4 +190,8 @@ replicate intervals).
 
 ## License
 
-Apache-2.0.
+predval itself is Apache-2.0. The PCam example fixture derives from
+[PatchCamelyon](https://github.com/basveeling/pcam), which follows Camelyon16 and is released
+[CC0](https://github.com/basveeling/pcam#license) — public domain, not a restricted or sensitive
+dataset. It is not committed to this repository for the reasons described above
+(regenerable derivative, not a licensing or sensitivity concern).

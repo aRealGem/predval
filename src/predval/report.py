@@ -67,7 +67,11 @@ LIMITATIONS = (
     "model or ensemble construction. If the ensemble weights (the champion) were selected on "
     "slides inside this cohort, rung0 is itself optimistically biased, and this harness cannot "
     "detect it: predval evaluates the predictions it is handed and has no view of how they were "
-    "produced. Only a cohort the ensemble was never tuned on could expose that bias."
+    "produced. Only a cohort the ensemble was never tuned on could expose that bias. "
+    "Similarly, the paired cross-fit gain interval (section 3) conditions on the fitted "
+    "correction -- it resamples the slide-level loss difference but does not refit the "
+    "correction inside each bootstrap replicate, so it does not carry the correction's own "
+    "fitting variance; that refit-in-replicate interval remains backlog (spec section 4.5)."
 )
 
 #: Appendix concept-explainer (item 5): OFF by default; structure + placeholders this session, the

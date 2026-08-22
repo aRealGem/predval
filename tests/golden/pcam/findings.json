@@ -1070,7 +1070,7 @@
         "effnet_scratch"
       ]
     },
-    "git_commit": "5a8e5d753afcf23b2139a200d610303765d414a4-dirty",
+    "git_commit": "b0c3511a0cf930ac57efcd71aa63a4904b18b508-dirty",
     "input_hashes": {
       "cohort_data": "766930b2c511c5bd7056743cec118396b314cee3e4ff729e97bdd6c3b253d48f",
       "cohort_spec": "b506a70f554a6c817ec37565bbe825dcbd8d64850a99fd85038724b8905f59e9",

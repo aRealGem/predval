@@ -4,8 +4,11 @@
     uv run python examples/pcam/reproduce.py [--campaign PATH] [--out DIR] [--golden DIR]
 
 This is a local, single-machine reproduction, not a from-anywhere clean-clone one, and that
-limit is deliberate: `examples/pcam/cohort.parquet` and `predictions.parquet` are derived from
-real histopathology predictions and are intentionally not committed to this repository (see
+limit is deliberate. `examples/pcam/cohort.parquet` and `predictions.parquet` are not excluded
+because the data is sensitive -- PatchCamelyon derives from Camelyon16, released CC0, i.e. public
+domain. They are excluded because they are generated derivatives: `build_fixture.py` regenerates
+them deterministically from a local campaign checkout, and a repository does not need to carry
+regenerable multi-megabyte binary artefacts alongside the script that makes them (see
 `.gitignore`). What "clean checkout" means here is: given either the fixture parquet files or a
 local `~/histopath-cancer-detection` campaign checkout to build them from, one command produces
 the full report and findings with no other manual steps.
@@ -75,10 +78,11 @@ def ensure_fixture(campaign: Path) -> None:
         print(
             "PCam fixture is not built, and no campaign checkout was found to build it from.\n"
             f"  looked for: {campaign}\n"
-            "This example evaluates real histopathology predictions that are not committed to "
-            "this repository. Either point --campaign at a local "
-            "~/histopath-cancer-detection checkout, or copy in the two fixture files "
-            "(cohort.parquet, predictions.parquet) directly.",
+            "The fixture files are not committed to this repository -- not because the data is "
+            "sensitive (PatchCamelyon is CC0/public domain), but because they are generated "
+            "derivatives, and a repo does not need to carry regenerable binary artefacts. "
+            "Either point --campaign at a local ~/histopath-cancer-detection checkout, or copy "
+            "in the two fixture files (cohort.parquet, predictions.parquet) directly.",
             file=sys.stderr,
         )
         raise SystemExit(2)

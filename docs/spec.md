@@ -603,3 +603,10 @@ this harness cannot detect that: predval evaluates the predictions it is handed 
 their construction. Only a cohort the ensemble was never tuned on could expose that bias. The report
 renders this verbatim in a Limitations block so the optimism gap is never mis-read as covering more
 than it does.
+
+**The paired cross-fit gain interval (§4.5) conditions on the fitted correction, not free of it
+(S5.1).** The interval resamples the *slide-level loss difference* between rung0 and the held-out
+recalibrated rung, but it holds the cross-fit mapping fixed within each resample rather than
+refitting the correction inside every bootstrap replicate — so it does not carry the variance of
+the correction-fitting step itself. Propagating that variance is exactly the refit-in-replicate
+interval §4.5 already names as deferred, not a new gap.
