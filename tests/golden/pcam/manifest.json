@@ -1,0 +1,295 @@
+{
+  "cells_reused_identical": 45,
+  "cohort_id": "pcam-holdout-wsi-grouped",
+  "contract_version": 0,
+  "coverage": {
+    "common_warn_frac": 0.2,
+    "compare_on": "both",
+    "min_fraction": 0.95
+  },
+  "dropped_subjects": [],
+  "expected_models": [
+    "champion",
+    "tinyvgg",
+    "p4m_reg",
+    "p4m_reg_vl",
+    "p4m_seed7",
+    "p4m_dense",
+    "e2cnn",
+    "e2cnn_s21",
+    "e2cnn_s99",
+    "swin",
+    "phikon",
+    "macenko",
+    "tinyvgg_vl",
+    "p4m_s13",
+    "p4m_svm",
+    "effnet_scratch"
+  ],
+  "flags": [
+    {
+      "code": "declared_but_absent",
+      "message": "declared in expected_models but absent from predictions: ['p4m_reg']",
+      "severity": "warning"
+    },
+    {
+      "code": "few_clusters",
+      "message": "tail quantiles approximate with few clusters (G=11); percentile bootstrap intervals below 40 clusters are coarse",
+      "severity": "note"
+    },
+    {
+      "code": "few_clusters",
+      "message": "tail quantiles approximate with few clusters (G=22); percentile bootstrap intervals below 40 clusters are coarse",
+      "severity": "note"
+    },
+    {
+      "code": "recalibration_non_monotone",
+      "message": "rung3 materially non-monotone for effnet_scratch (overall): delta_auroc=+0.0020 exceeds tol 0.001 (secondary note: largest local decrease on the probability-scale transform = 0.0171, not a flag driver)",
+      "severity": "note"
+    },
+    {
+      "code": "recalibration_non_monotone",
+      "message": "rung3 materially non-monotone for effnet_scratch (scanner_domain=1): delta_auroc=+0.0039 exceeds tol 0.001 (secondary note: largest local decrease on the probability-scale transform = 0.0601, not a flag driver)",
+      "severity": "note"
+    },
+    {
+      "code": "recalibration_non_monotone",
+      "message": "rung3 materially non-monotone for tinyvgg (scanner_domain=1): delta_auroc=-0.0012 exceeds tol 0.001 (secondary note: largest local decrease on the probability-scale transform = 0.0019, not a flag driver)",
+      "severity": "note"
+    },
+    {
+      "code": "recalibration_unavailable",
+      "message": "rung3 withheld for e2cnn (scanner_domain=0): non-convergence",
+      "severity": "note"
+    },
+    {
+      "code": "recalibration_unavailable",
+      "message": "rung3 withheld for macenko (scanner_domain=0): non-convergence",
+      "severity": "note"
+    },
+    {
+      "code": "recalibration_unavailable",
+      "message": "rung3 withheld for p4m_dense (scanner_domain=0): non-convergence",
+      "severity": "note"
+    },
+    {
+      "code": "recalibration_unavailable",
+      "message": "rung3 withheld for tinyvgg_vl (scanner_domain=0): non-convergence",
+      "severity": "note"
+    }
+  ],
+  "inputs": {
+    "cohort_data": "766930b2c511c5bd7056743cec118396b314cee3e4ff729e97bdd6c3b253d48f",
+    "cohort_spec": "b506a70f554a6c817ec37565bbe825dcbd8d64850a99fd85038724b8905f59e9",
+    "predictions": "27ceeff32d91f7fae5a3e9a11253cb728540c55eb3d7662f08536b5fdf4dbaeb"
+  },
+  "models_present": [
+    "champion",
+    "e2cnn",
+    "e2cnn_s21",
+    "e2cnn_s99",
+    "effnet_scratch",
+    "macenko",
+    "p4m_dense",
+    "p4m_reg_vl",
+    "p4m_s13",
+    "p4m_seed7",
+    "p4m_svm",
+    "phikon",
+    "swin",
+    "tinyvgg",
+    "tinyvgg_vl"
+  ],
+  "n_subjects": 19999,
+  "roster": {
+    "absent": [
+      "p4m_reg"
+    ],
+    "declared": 16,
+    "present": 15
+  },
+  "uncertainty": {
+    "ci_level": 0.95,
+    "clustered": true,
+    "clustering_field": "wsi",
+    "n_boot": 2000,
+    "seed": 1337,
+    "show_naive_ci": true
+  },
+  "verdict": {
+    "champion": {
+      "best_rung": "rung0",
+      "best_rung_brier": 0.10463354553329983,
+      "bss": 0.49163102459700425,
+      "bss_ci_high": 0.5875351392452611,
+      "bss_ci_low": 0.16809668288509552,
+      "n": 19999,
+      "n_clusters": 22,
+      "prevalence": 0.28981449072453624,
+      "rung0_brier": 0.10463354553329983
+    },
+    "e2cnn": {
+      "best_rung": "rung0",
+      "best_rung_brier": 0.03978988327576024,
+      "bss": 0.8066782303017206,
+      "bss_ci_high": 0.8469727016231637,
+      "bss_ci_low": 0.755960378741162,
+      "n": 19999,
+      "n_clusters": 22,
+      "prevalence": 0.28981449072453624,
+      "rung0_brier": 0.03978988327576024
+    },
+    "e2cnn_s21": {
+      "best_rung": "rung0",
+      "best_rung_brier": 0.03407978054530161,
+      "bss": 0.8344211406631521,
+      "bss_ci_high": 0.8692960971334577,
+      "bss_ci_low": 0.7898970231887528,
+      "n": 19999,
+      "n_clusters": 22,
+      "prevalence": 0.28981449072453624,
+      "rung0_brier": 0.03407978054530161
+    },
+    "e2cnn_s99": {
+      "best_rung": "rung0",
+      "best_rung_brier": 0.03890640377140762,
+      "bss": 0.8109706736871389,
+      "bss_ci_high": 0.8658813686251097,
+      "bss_ci_low": 0.7556496974142801,
+      "n": 19999,
+      "n_clusters": 22,
+      "prevalence": 0.28981449072453624,
+      "rung0_brier": 0.03890640377140762
+    },
+    "effnet_scratch": {
+      "best_rung": "rung0",
+      "best_rung_brier": 0.056155403761802586,
+      "bss": 0.7271652706765656,
+      "bss_ci_high": 0.7740943356162361,
+      "bss_ci_low": 0.5824756060247616,
+      "n": 19999,
+      "n_clusters": 22,
+      "prevalence": 0.28981449072453624,
+      "rung0_brier": 0.056155403761802586
+    },
+    "macenko": {
+      "best_rung": "rung2",
+      "best_rung_brier": 0.17992532101365946,
+      "bss": 0.12582097236054046,
+      "bss_ci_high": 0.2472171152256986,
+      "bss_ci_low": -0.22416967721747946,
+      "n": 19999,
+      "n_clusters": 22,
+      "prevalence": 0.28981449072453624,
+      "rung0_brier": 0.19482878985674792
+    },
+    "p4m_dense": {
+      "best_rung": "rung3",
+      "best_rung_brier": 0.04002312039254909,
+      "bss": 0.8055450324015293,
+      "bss_ci_high": 0.8470034069124565,
+      "bss_ci_low": 0.7202462862602601,
+      "n": 19999,
+      "n_clusters": 22,
+      "prevalence": 0.28981449072453624,
+      "rung0_brier": 0.041901010092681885
+    },
+    "p4m_reg_vl": {
+      "best_rung": "rung0",
+      "best_rung_brier": 0.037648203119081854,
+      "bss": 0.8170837244608095,
+      "bss_ci_high": 0.8401477533668998,
+      "bss_ci_low": 0.7255669969222596,
+      "n": 19999,
+      "n_clusters": 22,
+      "prevalence": 0.28981449072453624,
+      "rung0_brier": 0.037648203119081854
+    },
+    "p4m_s13": {
+      "best_rung": "rung3",
+      "best_rung_brier": 0.05699303085818102,
+      "bss": 0.7230956042365597,
+      "bss_ci_high": 0.7821262896280124,
+      "bss_ci_low": 0.5658927235350817,
+      "n": 19999,
+      "n_clusters": 22,
+      "prevalence": 0.28981449072453624,
+      "rung0_brier": 0.059803225667180215
+    },
+    "p4m_seed7": {
+      "best_rung": "rung3",
+      "best_rung_brier": 0.033402113659185155,
+      "bss": 0.8377136298816305,
+      "bss_ci_high": 0.8609959372038294,
+      "bss_ci_low": 0.7674124322450924,
+      "n": 19999,
+      "n_clusters": 22,
+      "prevalence": 0.28981449072453624,
+      "rung0_brier": 0.035347567564064
+    },
+    "p4m_svm": {
+      "best_rung": "rung3",
+      "best_rung_brier": 0.04165860775650236,
+      "bss": 0.7975989092795439,
+      "bss_ci_high": 0.8242079101600285,
+      "bss_ci_low": 0.7289909265368394,
+      "n": 19999,
+      "n_clusters": 22,
+      "prevalence": 0.28981449072453624,
+      "rung0_brier": 0.04206154424503885
+    },
+    "phikon": {
+      "best_rung": "rung0",
+      "best_rung_brier": 0.03389916774527836,
+      "bss": 0.8352986598528584,
+      "bss_ci_high": 0.8597651997799152,
+      "bss_ci_low": 0.7675145226015665,
+      "n": 19999,
+      "n_clusters": 22,
+      "prevalence": 0.28981449072453624,
+      "rung0_brier": 0.03389916774527836
+    },
+    "swin": {
+      "best_rung": "rung0",
+      "best_rung_brier": 0.024481662644892446,
+      "bss": 0.881054228913758,
+      "bss_ci_high": 0.916553744749753,
+      "bss_ci_low": 0.8401131509695223,
+      "n": 19999,
+      "n_clusters": 22,
+      "prevalence": 0.28981449072453624,
+      "rung0_brier": 0.024481662644892446
+    },
+    "tinyvgg": {
+      "best_rung": "rung0",
+      "best_rung_brier": 0.037706423395696534,
+      "bss": 0.8168008574106734,
+      "bss_ci_high": 0.8496277394313078,
+      "bss_ci_low": 0.7327390012075711,
+      "n": 19999,
+      "n_clusters": 22,
+      "prevalence": 0.28981449072453624,
+      "rung0_brier": 0.037706423395696534
+    },
+    "tinyvgg_vl": {
+      "best_rung": "rung2",
+      "best_rung_brier": 0.1657753587019739,
+      "bss": 0.19456949660980505,
+      "bss_ci_high": 0.38454617179215683,
+      "bss_ci_low": -0.17587391532098046,
+      "n": 19999,
+      "n_clusters": 22,
+      "prevalence": 0.28981449072453624,
+      "rung0_brier": 0.19720647238731095
+    }
+  },
+  "versions": {
+    "numpy": "2.4.6",
+    "pandas": "3.0.5",
+    "predval": "0.0.0",
+    "python": "3.13.5",
+    "scikit-learn": "1.9.0",
+    "scipy": "1.17.1",
+    "statsmodels": "0.14.6"
+  }
+}

@@ -5,7 +5,36 @@ A predictions-in validation harness for clinical prediction models.
 predval answers one question: **do a model's published probabilities hold up on your cohort?**
 It takes predictions that already exist and evaluates them — discrimination, calibration,
 prespecified subgroup behaviour, and a recalibration ladder that reports how much of any
-miscalibration is repairable without touching the model.
+miscalibration is repairable without touching the model, and discloses the ladder's own
+optimism rather than reporting only its best face.
+
+## The pitch, narrowed
+
+Most tools in this space either train something (a new calibration layer, a monitoring model)
+or assume you have live inference access to watch a model over time. predval assumes neither. It
+is for the moment you have a `predictions.parquet` — a batch of probabilities a model already
+produced on a cohort — and a validation question that has to be answered from that file alone.
+Three things follow from that scope, and they are what predval spends its effort on:
+
+- **Absence is a fact, not a gap to fill.** A model that did not score a subject gets no row.
+  predval measures coverage per model against a declared floor and refuses to silently treat
+  "no opinion" as "confidently negative" — the direction every naive join gets wrong, because it
+  flatters the model.
+- **The unit of analysis and the unit of independence are usually not the same file column.**
+  When predictions come from grouped data — patients with repeat visits, patches from the same
+  slide, images from the same device — per-row confidence intervals are not slightly optimistic,
+  they are wrong by roughly the square root of the cluster size. predval takes a declared
+  clustering unit and resamples whole clusters everywhere it computes uncertainty, and renders
+  the naive-vs-cluster comparison once so the gap is a number, not a caveat in a footnote.
+- **A recalibration that improves the numbers is a finding about the ladder's own fit, not a
+  promotion of the model, until it survives being scored on clusters it never saw.** Every rung of
+  predval's ladder — intercept, intercept+slope, spline — is fit twice: once on the rows it will
+  be judged on (apparent, optimistic by construction) and once cross-fitted with whole clusters
+  held out. The report shows both, states in an unconditional framing block that no rung is a
+  validated model, and — this is the part most recalibration tooling skips — refuses to
+  manufacture a gain where none exists: on the PCam fixture below, two badly miscalibrated
+  ensemble members get a real, interval-backed repair, and the already-calibrated members get
+  none.
 
 ## What predval deliberately does not do
 
@@ -19,10 +48,79 @@ miscalibration is repairable without touching the model.
 These are permanent design constraints, not a roadmap. A validation harness that could quietly
 retrain the thing it is validating would not be a validation harness.
 
-## Status
+## Prior art, and where predval sits relative to it
 
-Session 1: schema, IO, and hashing. Metrics (S2) and the recalibration ladder (S3) are specified
-in [`docs/spec.md`](docs/spec.md) but not yet implemented.
+None of this is invented from nothing. predval borrows from, and narrows against, several
+existing traditions:
+
+- **`sklearn.calibration` (`CalibratedClassifierCV`, `calibration_curve`)** is the closest
+  sibling in mechanism — fitting a correction (sigmoid or isotonic) to already-scored
+  predictions. It does not, however, distinguish apparent from cross-fitted correction quality by
+  default, has no notion of a declared clustering unit for uncertainty, and has no concept of
+  prediction *absence* as distinct from a missing row being an error. predval's rung ladder is
+  narrower in what it fits (link-scale only, never isotonic — see §4.2 of the spec) but wider in
+  what it reports about the fit.
+- **Harrell's `rms::val.prob`** (R) is the closest tradition in *intent*: externally validating a
+  single published prediction model's calibration-in-the-large and calibration slope on a new
+  cohort. predval generalizes this to many models at once, adds a cluster-aware uncertainty layer
+  `val.prob` does not have, and extends the single calibration check into a ladder that also
+  reports which correction was needed and whether it holds up out-of-fold.
+- **TRIPOD-AI** and similar reporting guidelines specify *what a validation study should state*.
+  predval does not replace that judgment — it is closer to an executable subset of it: the
+  coverage table, the calibration diagnosis, and the subgroup gating are the kind of checks a
+  TRIPOD-AI-conformant report has to make somewhere, produced as artefacts rather than prose a
+  reader has to trust.
+- **Decision curve analysis** (e.g. the `dcurves` family) answers a question predval does not yet
+  ask — net benefit at a chosen treatment threshold. It is deliberately deferred (see the
+  `pyproject.toml` dependency notes and the spec's backlog): a decision-curve number is only
+  meaningful once a specific clinical action is on the table, and the fixture below does not have
+  one.
+- **Production ML monitoring tools** (drift dashboards, live-inference observability platforms)
+  solve an adjacent but different problem: watching a *deployed* model's inputs and outputs
+  change over time. predval has no notion of time-ordering or a live pipeline; it validates one
+  static batch of predictions against one cohort, once, and says so.
+
+## Example: a real fixture, not a synthetic one
+
+`examples/pcam/` runs predval end to end against a real 15-member PatchCamelyon histopathology
+ensemble: 19,999 image patches drawn from only 22 whole slides across two scanner/stain domains.
+It is worth more than a clean synthetic dataset for exactly the reasons predval exists:
+
+- Patches within a slide are heavily correlated, so the unit of analysis and the unit of
+  independence genuinely differ — this is where the naive-vs-cluster exhibit is not academic.
+- Two of the fifteen members are badly miscalibrated (one spans AUROC-implied confidence from
+  0.216 to 0.865 at AUROC 0.764); the recalibration ladder gives both a real, interval-backed
+  repair while leaving the already-calibrated members alone.
+- One published ensemble member's predictions were permanently lost — weights lived in ephemeral
+  storage, re-inference is impossible — so the fixture carries a genuine coverage gap rather than
+  one manufactured by deleting rows.
+- 732 predictions sit at exactly 0.0 or 1.0, where `logit` is undefined, making the eps-clip in
+  the recalibration ladder load-bearing from the first rung, not a theoretical edge case.
+
+### Reproducing the example
+
+```bash
+uv sync
+uv run python examples/pcam/reproduce.py
+```
+
+This is a **local, single-machine reproduction**, not a from-anywhere clean-clone one, and that
+limit is deliberate rather than an oversight: `examples/pcam/cohort.parquet` and
+`predictions.parquet` are derived from real histopathology predictions and are intentionally not
+committed to this repository (see `.gitignore`). `reproduce.py` will:
+
+1. Use the fixture parquet files if they are already present, or build them from a local
+   `~/histopath-cancer-detection` campaign checkout if one is found (pass `--campaign PATH`
+   otherwise) — this is read-only over that directory.
+2. Run the full evaluation (`B=2000`, seed `1337`) and write `metrics.parquet`, `fragility.parquet`,
+   `calibration.parquet`, `coverage.parquet`, `manifest.json`, `findings.json`, and `report.html`
+   to `examples/pcam/out/`.
+3. Compare every artefact byte-for-byte against the frozen baseline in `tests/golden/pcam/` and
+   report PASS/FAIL per file.
+
+If neither the fixture files nor the campaign checkout is available, the script says so and
+exits non-zero rather than guessing — the same refusal-over-guessing rule the harness applies to
+its own inputs (see `docs/spec.md` §8).
 
 ## Install
 
@@ -44,15 +142,17 @@ See [`docs/spec.md`](docs/spec.md) for the frozen v0 contracts. In short:
 The central rule: **a model that did not score a subject has no row.** Absence is never
 imputed as zero. predval reports coverage instead of silently filling gaps.
 
-`cohort.yaml` declares the outcome, the prespecified subgroups, and the coverage and
-completeness policies that decide whether a run is allowed to proceed at all.
+`cohort.yaml` declares the outcome, the clustering unit, the prespecified subgroups, and the
+coverage and completeness policies that decide whether a run is allowed to proceed at all.
 
-## Example
+## Status
 
-`examples/pcam/` builds a real fixture from a 15-model PatchCamelyon ensemble: 19,999
-whole-slide-grouped holdout patches drawn from 22 slides, with a scanner/stain subgroup and one
-ensemble member whose predictions were permanently lost — a genuine coverage gap to validate
-against rather than a synthetic one.
+S0–S4.2 done: schema, IO, and hashing; discrimination/calibration/threshold metrics with
+cluster-aware uncertainty; the recalibration ladder (rungs 0–3, apparent and cross-fitted, with
+paired-gain intervals and a verdict layer); the standalone HTML report and machine-readable
+`findings.json`. 171 tests pass, `ruff` clean. See [`docs/spec.md`](docs/spec.md) for what is
+implemented versus still backlog (wild cluster bootstrap, decision curves, per-rung refit-in-
+replicate intervals).
 
 ## License
 

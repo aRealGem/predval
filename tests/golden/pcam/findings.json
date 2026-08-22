@@ -1,0 +1,1099 @@
+{
+  "cohort_id": "pcam-holdout-wsi-grouped",
+  "flags": [
+    {
+      "code": "declared_but_absent",
+      "message": "declared in expected_models but absent from predictions: ['p4m_reg']",
+      "severity": "warning"
+    },
+    {
+      "code": "few_clusters",
+      "message": "tail quantiles approximate with few clusters (G=11); percentile bootstrap intervals below 40 clusters are coarse",
+      "severity": "note"
+    },
+    {
+      "code": "few_clusters",
+      "message": "tail quantiles approximate with few clusters (G=22); percentile bootstrap intervals below 40 clusters are coarse",
+      "severity": "note"
+    },
+    {
+      "code": "recalibration_non_monotone",
+      "message": "rung3 materially non-monotone for effnet_scratch (overall): delta_auroc=+0.0020 exceeds tol 0.001 (secondary note: largest local decrease on the probability-scale transform = 0.0171, not a flag driver)",
+      "severity": "note"
+    },
+    {
+      "code": "recalibration_non_monotone",
+      "message": "rung3 materially non-monotone for effnet_scratch (scanner_domain=1): delta_auroc=+0.0039 exceeds tol 0.001 (secondary note: largest local decrease on the probability-scale transform = 0.0601, not a flag driver)",
+      "severity": "note"
+    },
+    {
+      "code": "recalibration_non_monotone",
+      "message": "rung3 materially non-monotone for tinyvgg (scanner_domain=1): delta_auroc=-0.0012 exceeds tol 0.001 (secondary note: largest local decrease on the probability-scale transform = 0.0019, not a flag driver)",
+      "severity": "note"
+    },
+    {
+      "code": "recalibration_unavailable",
+      "message": "rung3 withheld for e2cnn (scanner_domain=0): non-convergence",
+      "severity": "note"
+    },
+    {
+      "code": "recalibration_unavailable",
+      "message": "rung3 withheld for macenko (scanner_domain=0): non-convergence",
+      "severity": "note"
+    },
+    {
+      "code": "recalibration_unavailable",
+      "message": "rung3 withheld for p4m_dense (scanner_domain=0): non-convergence",
+      "severity": "note"
+    },
+    {
+      "code": "recalibration_unavailable",
+      "message": "rung3 withheld for tinyvgg_vl (scanner_domain=0): non-convergence",
+      "severity": "note"
+    }
+  ],
+  "members": [
+    {
+      "analytic_ci_truncated": false,
+      "metrics": {
+        "auroc": {
+          "ci_high": 0.962226,
+          "ci_low": 0.869647,
+          "ci_method": "cluster_bootstrap",
+          "value": 0.916338
+        },
+        "average_precision": {
+          "ci_high": 0.911601,
+          "ci_low": 0.690722,
+          "ci_method": "cluster_bootstrap",
+          "value": 0.844587
+        },
+        "brier": {
+          "ci_high": 0.134602,
+          "ci_low": 0.079672,
+          "ci_method": "cluster_bootstrap",
+          "value": 0.104634
+        },
+        "calibration_intercept": {
+          "ci_high": 0.485284,
+          "ci_low": -1.254213,
+          "ci_method": "cluster_robust_t",
+          "value": -0.384465
+        },
+        "calibration_slope": {
+          "ci_high": 1.862535,
+          "ci_low": 0.920471,
+          "ci_method": "cluster_robust_t",
+          "value": 1.391503
+        }
+      },
+      "model_id": "champion",
+      "recalibration_gains": [
+        {
+          "ci_high": 0.0155,
+          "ci_low": -0.026188,
+          "ci_method": "paired_cluster_bootstrap",
+          "gain": -0.005122,
+          "rung": "rung1"
+        },
+        {
+          "ci_high": 0.015837,
+          "ci_low": -0.022414,
+          "ci_method": "paired_cluster_bootstrap",
+          "gain": -0.001971,
+          "rung": "rung2"
+        },
+        {
+          "ci_high": 0.016895,
+          "ci_low": -0.021405,
+          "ci_method": "paired_cluster_bootstrap",
+          "gain": -0.00107,
+          "rung": "rung3"
+        }
+      ],
+      "verdict": {
+        "best_rung": "rung0",
+        "bss": 0.491631,
+        "bss_ci_high": 0.587535,
+        "bss_ci_low": 0.168097,
+        "gauge_label": "none -- well-calibrated as published"
+      }
+    },
+    {
+      "analytic_ci_truncated": false,
+      "metrics": {
+        "auroc": {
+          "ci_high": 0.992206,
+          "ci_low": 0.980476,
+          "ci_method": "cluster_bootstrap",
+          "value": 0.98512
+        },
+        "average_precision": {
+          "ci_high": 0.980541,
+          "ci_low": 0.95055,
+          "ci_method": "cluster_bootstrap",
+          "value": 0.970451
+        },
+        "brier": {
+          "ci_high": 0.058282,
+          "ci_low": 0.01799,
+          "ci_method": "cluster_bootstrap",
+          "value": 0.03979
+        },
+        "calibration_intercept": {
+          "ci_high": 1.763811,
+          "ci_low": -0.086007,
+          "ci_method": "cluster_robust_t",
+          "value": 0.838902
+        },
+        "calibration_slope": {
+          "ci_high": 1.074849,
+          "ci_low": 0.708186,
+          "ci_method": "cluster_robust_t",
+          "value": 0.891517
+        }
+      },
+      "model_id": "e2cnn",
+      "recalibration_gains": [
+        {
+          "ci_high": 0.00368,
+          "ci_low": -0.004955,
+          "ci_method": "paired_cluster_bootstrap",
+          "gain": -0.000278,
+          "rung": "rung1"
+        },
+        {
+          "ci_high": 0.002892,
+          "ci_low": -0.004814,
+          "ci_method": "paired_cluster_bootstrap",
+          "gain": -0.000645,
+          "rung": "rung2"
+        },
+        {
+          "ci_high": 0.004513,
+          "ci_low": -0.005862,
+          "ci_method": "paired_cluster_bootstrap",
+          "gain": -0.000269,
+          "rung": "rung3"
+        }
+      ],
+      "verdict": {
+        "best_rung": "rung0",
+        "bss": 0.806678,
+        "bss_ci_high": 0.846973,
+        "bss_ci_low": 0.75596,
+        "gauge_label": "none -- well-calibrated as published"
+      }
+    },
+    {
+      "analytic_ci_truncated": false,
+      "metrics": {
+        "auroc": {
+          "ci_high": 0.994197,
+          "ci_low": 0.978699,
+          "ci_method": "cluster_bootstrap",
+          "value": 0.985457
+        },
+        "average_precision": {
+          "ci_high": 0.983609,
+          "ci_low": 0.961368,
+          "ci_method": "cluster_bootstrap",
+          "value": 0.973536
+        },
+        "brier": {
+          "ci_high": 0.04965,
+          "ci_low": 0.01653,
+          "ci_method": "cluster_bootstrap",
+          "value": 0.03408
+        },
+        "calibration_intercept": {
+          "ci_high": 1.377679,
+          "ci_low": -1.030123,
+          "ci_method": "cluster_robust_t",
+          "value": 0.173778
+        },
+        "calibration_slope": {
+          "ci_high": 1.012763,
+          "ci_low": 0.667449,
+          "ci_method": "cluster_robust_t",
+          "value": 0.840106
+        }
+      },
+      "model_id": "e2cnn_s21",
+      "recalibration_gains": [
+        {
+          "ci_high": -0.001929,
+          "ci_low": -0.005022,
+          "ci_method": "paired_cluster_bootstrap",
+          "gain": -0.0035,
+          "rung": "rung1"
+        },
+        {
+          "ci_high": -0.001582,
+          "ci_low": -0.005529,
+          "ci_method": "paired_cluster_bootstrap",
+          "gain": -0.003687,
+          "rung": "rung2"
+        },
+        {
+          "ci_high": -0.00211,
+          "ci_low": -0.004564,
+          "ci_method": "paired_cluster_bootstrap",
+          "gain": -0.003363,
+          "rung": "rung3"
+        }
+      ],
+      "verdict": {
+        "best_rung": "rung0",
+        "bss": 0.834421,
+        "bss_ci_high": 0.869296,
+        "bss_ci_low": 0.789897,
+        "gauge_label": "none -- well-calibrated as published"
+      }
+    },
+    {
+      "analytic_ci_truncated": false,
+      "metrics": {
+        "auroc": {
+          "ci_high": 0.994526,
+          "ci_low": 0.973206,
+          "ci_method": "cluster_bootstrap",
+          "value": 0.981791
+        },
+        "average_precision": {
+          "ci_high": 0.982916,
+          "ci_low": 0.952866,
+          "ci_method": "cluster_bootstrap",
+          "value": 0.968645
+        },
+        "brier": {
+          "ci_high": 0.058389,
+          "ci_low": 0.016452,
+          "ci_method": "cluster_bootstrap",
+          "value": 0.038906
+        },
+        "calibration_intercept": {
+          "ci_high": 1.330978,
+          "ci_low": -0.593466,
+          "ci_method": "cluster_robust_t",
+          "value": 0.368756
+        },
+        "calibration_slope": {
+          "ci_high": 1.343676,
+          "ci_low": 0.828164,
+          "ci_method": "cluster_robust_t",
+          "value": 1.08592
+        }
+      },
+      "model_id": "e2cnn_s99",
+      "recalibration_gains": [
+        {
+          "ci_high": -0.001906,
+          "ci_low": -0.005545,
+          "ci_method": "paired_cluster_bootstrap",
+          "gain": -0.00343,
+          "rung": "rung1"
+        },
+        {
+          "ci_high": -0.001451,
+          "ci_low": -0.006039,
+          "ci_method": "paired_cluster_bootstrap",
+          "gain": -0.003501,
+          "rung": "rung2"
+        },
+        {
+          "ci_high": -0.000116,
+          "ci_low": -0.006775,
+          "ci_method": "paired_cluster_bootstrap",
+          "gain": -0.003147,
+          "rung": "rung3"
+        }
+      ],
+      "verdict": {
+        "best_rung": "rung0",
+        "bss": 0.810971,
+        "bss_ci_high": 0.865881,
+        "bss_ci_low": 0.75565,
+        "gauge_label": "none -- well-calibrated as published"
+      }
+    },
+    {
+      "analytic_ci_truncated": false,
+      "metrics": {
+        "auroc": {
+          "ci_high": 0.985351,
+          "ci_low": 0.95598,
+          "ci_method": "cluster_bootstrap",
+          "value": 0.968522
+        },
+        "average_precision": {
+          "ci_high": 0.965625,
+          "ci_low": 0.861187,
+          "ci_method": "cluster_bootstrap",
+          "value": 0.940172
+        },
+        "brier": {
+          "ci_high": 0.070817,
+          "ci_low": 0.039478,
+          "ci_method": "cluster_bootstrap",
+          "value": 0.056155
+        },
+        "calibration_intercept": {
+          "ci_high": 0.415488,
+          "ci_low": -0.971688,
+          "ci_method": "cluster_robust_t",
+          "value": -0.2781
+        },
+        "calibration_slope": {
+          "ci_high": 1.546378,
+          "ci_low": 1.140845,
+          "ci_method": "cluster_robust_t",
+          "value": 1.343611
+        }
+      },
+      "model_id": "effnet_scratch",
+      "recalibration_gains": [
+        {
+          "ci_high": 0.002775,
+          "ci_low": -0.009115,
+          "ci_method": "paired_cluster_bootstrap",
+          "gain": -0.003222,
+          "rung": "rung1"
+        },
+        {
+          "ci_high": 0.003062,
+          "ci_low": -0.006048,
+          "ci_method": "paired_cluster_bootstrap",
+          "gain": -0.001492,
+          "rung": "rung2"
+        },
+        {
+          "ci_high": 0.002382,
+          "ci_low": -0.004083,
+          "ci_method": "paired_cluster_bootstrap",
+          "gain": -0.000892,
+          "rung": "rung3"
+        }
+      ],
+      "verdict": {
+        "best_rung": "rung0",
+        "bss": 0.727165,
+        "bss_ci_high": 0.774094,
+        "bss_ci_low": 0.582476,
+        "gauge_label": "none -- well-calibrated as published"
+      }
+    },
+    {
+      "analytic_ci_truncated": false,
+      "metrics": {
+        "auroc": {
+          "ci_high": 0.847894,
+          "ci_low": 0.637788,
+          "ci_method": "cluster_bootstrap",
+          "value": 0.76414
+        },
+        "average_precision": {
+          "ci_high": 0.697741,
+          "ci_low": 0.167778,
+          "ci_method": "cluster_bootstrap",
+          "value": 0.520326
+        },
+        "brier": {
+          "ci_high": 0.218778,
+          "ci_low": 0.165768,
+          "ci_method": "cluster_bootstrap",
+          "value": 0.194829
+        },
+        "calibration_intercept": {
+          "ci_high": 0.303837,
+          "ci_low": -1.263949,
+          "ci_method": "cluster_robust_t",
+          "value": -0.480056
+        },
+        "calibration_slope": {
+          "ci_high": 4.612705,
+          "ci_low": 1.753621,
+          "ci_method": "cluster_robust_t",
+          "value": 3.183163
+        }
+      },
+      "model_id": "macenko",
+      "recalibration_gains": [
+        {
+          "ci_high": 0.039307,
+          "ci_low": -0.037795,
+          "ci_method": "paired_cluster_bootstrap",
+          "gain": -0.002165,
+          "rung": "rung1"
+        },
+        {
+          "ci_high": 0.044074,
+          "ci_low": -0.011842,
+          "ci_method": "paired_cluster_bootstrap",
+          "gain": 0.014903,
+          "rung": "rung2"
+        },
+        {
+          "ci_high": 0.040776,
+          "ci_low": -0.009766,
+          "ci_method": "paired_cluster_bootstrap",
+          "gain": 0.0132,
+          "rung": "rung3"
+        }
+      ],
+      "verdict": {
+        "best_rung": "rung2",
+        "bss": 0.125821,
+        "bss_ci_high": 0.247217,
+        "bss_ci_low": -0.22417,
+        "gauge_label": "level and spread (intercept + slope)"
+      }
+    },
+    {
+      "analytic_ci_truncated": false,
+      "metrics": {
+        "auroc": {
+          "ci_high": 0.991337,
+          "ci_low": 0.972325,
+          "ci_method": "cluster_bootstrap",
+          "value": 0.980537
+        },
+        "average_precision": {
+          "ci_high": 0.980844,
+          "ci_low": 0.927108,
+          "ci_method": "cluster_bootstrap",
+          "value": 0.967668
+        },
+        "brier": {
+          "ci_high": 0.051955,
+          "ci_low": 0.029845,
+          "ci_method": "cluster_bootstrap",
+          "value": 0.041901
+        },
+        "calibration_intercept": {
+          "ci_high": -0.083096,
+          "ci_low": -1.704501,
+          "ci_method": "cluster_robust_t",
+          "value": -0.893799
+        },
+        "calibration_slope": {
+          "ci_high": 1.122684,
+          "ci_low": 0.814745,
+          "ci_method": "cluster_robust_t",
+          "value": 0.968715
+        }
+      },
+      "model_id": "p4m_dense",
+      "recalibration_gains": [
+        {
+          "ci_high": 0.009269,
+          "ci_low": -0.005532,
+          "ci_method": "paired_cluster_bootstrap",
+          "gain": 0.001625,
+          "rung": "rung1"
+        },
+        {
+          "ci_high": 0.009356,
+          "ci_low": -0.005724,
+          "ci_method": "paired_cluster_bootstrap",
+          "gain": 0.001557,
+          "rung": "rung2"
+        },
+        {
+          "ci_high": 0.008304,
+          "ci_low": -0.004274,
+          "ci_method": "paired_cluster_bootstrap",
+          "gain": 0.001878,
+          "rung": "rung3"
+        }
+      ],
+      "verdict": {
+        "best_rung": "rung3",
+        "bss": 0.805545,
+        "bss_ci_high": 0.847003,
+        "bss_ci_low": 0.720246,
+        "gauge_label": "non-monotone shape"
+      }
+    },
+    {
+      "analytic_ci_truncated": false,
+      "metrics": {
+        "auroc": {
+          "ci_high": 0.992975,
+          "ci_low": 0.980532,
+          "ci_method": "cluster_bootstrap",
+          "value": 0.985116
+        },
+        "average_precision": {
+          "ci_high": 0.979216,
+          "ci_low": 0.949769,
+          "ci_method": "cluster_bootstrap",
+          "value": 0.969481
+        },
+        "brier": {
+          "ci_high": 0.046485,
+          "ci_low": 0.026708,
+          "ci_method": "cluster_bootstrap",
+          "value": 0.037648
+        },
+        "calibration_intercept": {
+          "ci_high": 0.279282,
+          "ci_low": -1.321551,
+          "ci_method": "cluster_robust_t",
+          "value": -0.521135
+        },
+        "calibration_slope": {
+          "ci_high": 1.297468,
+          "ci_low": 1.022511,
+          "ci_method": "cluster_robust_t",
+          "value": 1.15999
+        }
+      },
+      "model_id": "p4m_reg_vl",
+      "recalibration_gains": [
+        {
+          "ci_high": 0.004858,
+          "ci_low": -0.008511,
+          "ci_method": "paired_cluster_bootstrap",
+          "gain": -0.002178,
+          "rung": "rung1"
+        },
+        {
+          "ci_high": 0.004414,
+          "ci_low": -0.007588,
+          "ci_method": "paired_cluster_bootstrap",
+          "gain": -0.001918,
+          "rung": "rung2"
+        },
+        {
+          "ci_high": 0.00358,
+          "ci_low": -0.006312,
+          "ci_method": "paired_cluster_bootstrap",
+          "gain": -0.001606,
+          "rung": "rung3"
+        }
+      ],
+      "verdict": {
+        "best_rung": "rung0",
+        "bss": 0.817084,
+        "bss_ci_high": 0.840148,
+        "bss_ci_low": 0.725567,
+        "gauge_label": "none -- well-calibrated as published"
+      }
+    },
+    {
+      "analytic_ci_truncated": false,
+      "metrics": {
+        "auroc": {
+          "ci_high": 0.985697,
+          "ci_low": 0.955422,
+          "ci_method": "cluster_bootstrap",
+          "value": 0.970673
+        },
+        "average_precision": {
+          "ci_high": 0.970269,
+          "ci_low": 0.865426,
+          "ci_method": "cluster_bootstrap",
+          "value": 0.945156
+        },
+        "brier": {
+          "ci_high": 0.079928,
+          "ci_low": 0.03795,
+          "ci_method": "cluster_bootstrap",
+          "value": 0.059803
+        },
+        "calibration_intercept": {
+          "ci_high": 0.7108,
+          "ci_low": -0.588623,
+          "ci_method": "cluster_robust_t",
+          "value": 0.061089
+        },
+        "calibration_slope": {
+          "ci_high": 2.063745,
+          "ci_low": 1.392864,
+          "ci_method": "cluster_robust_t",
+          "value": 1.728305
+        }
+      },
+      "model_id": "p4m_s13",
+      "recalibration_gains": [
+        {
+          "ci_high": -0.000648,
+          "ci_low": -0.006494,
+          "ci_method": "paired_cluster_bootstrap",
+          "gain": -0.003832,
+          "rung": "rung1"
+        },
+        {
+          "ci_high": 0.009367,
+          "ci_low": -0.005446,
+          "ci_method": "paired_cluster_bootstrap",
+          "gain": 0.002488,
+          "rung": "rung2"
+        },
+        {
+          "ci_high": 0.009997,
+          "ci_low": -0.006079,
+          "ci_method": "paired_cluster_bootstrap",
+          "gain": 0.00281,
+          "rung": "rung3"
+        }
+      ],
+      "verdict": {
+        "best_rung": "rung3",
+        "bss": 0.723096,
+        "bss_ci_high": 0.782126,
+        "bss_ci_low": 0.565893,
+        "gauge_label": "non-monotone shape"
+      }
+    },
+    {
+      "analytic_ci_truncated": false,
+      "metrics": {
+        "auroc": {
+          "ci_high": 0.989703,
+          "ci_low": 0.981725,
+          "ci_method": "cluster_bootstrap",
+          "value": 0.985561
+        },
+        "average_precision": {
+          "ci_high": 0.981823,
+          "ci_low": 0.939106,
+          "ci_method": "cluster_bootstrap",
+          "value": 0.973054
+        },
+        "brier": {
+          "ci_high": 0.0465,
+          "ci_low": 0.021352,
+          "ci_method": "cluster_bootstrap",
+          "value": 0.035348
+        },
+        "calibration_intercept": {
+          "ci_high": 0.519151,
+          "ci_low": -0.591898,
+          "ci_method": "cluster_robust_t",
+          "value": -0.036373
+        },
+        "calibration_slope": {
+          "ci_high": 1.645267,
+          "ci_low": 1.240242,
+          "ci_method": "cluster_robust_t",
+          "value": 1.442755
+        }
+      },
+      "model_id": "p4m_seed7",
+      "recalibration_gains": [
+        {
+          "ci_high": -3e-05,
+          "ci_low": -0.001789,
+          "ci_method": "paired_cluster_bootstrap",
+          "gain": -0.000982,
+          "rung": "rung1"
+        },
+        {
+          "ci_high": 0.003441,
+          "ci_low": 0.000198,
+          "ci_method": "paired_cluster_bootstrap",
+          "gain": 0.001773,
+          "rung": "rung2"
+        },
+        {
+          "ci_high": 0.004467,
+          "ci_low": -0.000538,
+          "ci_method": "paired_cluster_bootstrap",
+          "gain": 0.001945,
+          "rung": "rung3"
+        }
+      ],
+      "verdict": {
+        "best_rung": "rung3",
+        "bss": 0.837714,
+        "bss_ci_high": 0.860996,
+        "bss_ci_low": 0.767412,
+        "gauge_label": "non-monotone shape"
+      }
+    },
+    {
+      "analytic_ci_truncated": false,
+      "metrics": {
+        "auroc": {
+          "ci_high": 0.991901,
+          "ci_low": 0.978093,
+          "ci_method": "cluster_bootstrap",
+          "value": 0.983302
+        },
+        "average_precision": {
+          "ci_high": 0.976756,
+          "ci_low": 0.944214,
+          "ci_method": "cluster_bootstrap",
+          "value": 0.965926
+        },
+        "brier": {
+          "ci_high": 0.049749,
+          "ci_low": 0.033225,
+          "ci_method": "cluster_bootstrap",
+          "value": 0.042062
+        },
+        "calibration_intercept": {
+          "ci_high": -0.0013,
+          "ci_low": -1.881688,
+          "ci_method": "cluster_robust_t",
+          "value": -0.941494
+        },
+        "calibration_slope": {
+          "ci_high": 1.107569,
+          "ci_low": 0.833919,
+          "ci_method": "cluster_robust_t",
+          "value": 0.970744
+        }
+      },
+      "model_id": "p4m_svm",
+      "recalibration_gains": [
+        {
+          "ci_high": 0.01113,
+          "ci_low": -0.009567,
+          "ci_method": "paired_cluster_bootstrap",
+          "gain": 0.000153,
+          "rung": "rung1"
+        },
+        {
+          "ci_high": 0.011181,
+          "ci_low": -0.009968,
+          "ci_method": "paired_cluster_bootstrap",
+          "gain": 4.2e-05,
+          "rung": "rung2"
+        },
+        {
+          "ci_high": 0.01001,
+          "ci_low": -0.008154,
+          "ci_method": "paired_cluster_bootstrap",
+          "gain": 0.000403,
+          "rung": "rung3"
+        }
+      ],
+      "verdict": {
+        "best_rung": "rung3",
+        "bss": 0.797599,
+        "bss_ci_high": 0.824208,
+        "bss_ci_low": 0.728991,
+        "gauge_label": "non-monotone shape"
+      }
+    },
+    {
+      "analytic_ci_truncated": false,
+      "metrics": {
+        "auroc": {
+          "ci_high": 0.995955,
+          "ci_low": 0.976387,
+          "ci_method": "cluster_bootstrap",
+          "value": 0.98352
+        },
+        "average_precision": {
+          "ci_high": 0.985094,
+          "ci_low": 0.962534,
+          "ci_method": "cluster_bootstrap",
+          "value": 0.972913
+        },
+        "brier": {
+          "ci_high": 0.044116,
+          "ci_low": 0.021789,
+          "ci_method": "cluster_bootstrap",
+          "value": 0.033899
+        },
+        "calibration_intercept": {
+          "ci_high": 0.309851,
+          "ci_low": -1.502303,
+          "ci_method": "cluster_robust_t",
+          "value": -0.596226
+        },
+        "calibration_slope": {
+          "ci_high": 1.722534,
+          "ci_low": 1.085624,
+          "ci_method": "cluster_robust_t",
+          "value": 1.404079
+        }
+      },
+      "model_id": "phikon",
+      "recalibration_gains": [
+        {
+          "ci_high": 0.007545,
+          "ci_low": -0.013343,
+          "ci_method": "paired_cluster_bootstrap",
+          "gain": -0.003117,
+          "rung": "rung1"
+        },
+        {
+          "ci_high": 0.007442,
+          "ci_low": -0.007868,
+          "ci_method": "paired_cluster_bootstrap",
+          "gain": -0.000653,
+          "rung": "rung2"
+        },
+        {
+          "ci_high": 0.006674,
+          "ci_low": -0.005844,
+          "ci_method": "paired_cluster_bootstrap",
+          "gain": -1.4e-05,
+          "rung": "rung3"
+        }
+      ],
+      "verdict": {
+        "best_rung": "rung0",
+        "bss": 0.835299,
+        "bss_ci_high": 0.859765,
+        "bss_ci_low": 0.767515,
+        "gauge_label": "none -- well-calibrated as published"
+      }
+    },
+    {
+      "analytic_ci_truncated": false,
+      "metrics": {
+        "auroc": {
+          "ci_high": 0.995452,
+          "ci_low": 0.981783,
+          "ci_method": "cluster_bootstrap",
+          "value": 0.98657
+        },
+        "average_precision": {
+          "ci_high": 0.988653,
+          "ci_low": 0.960311,
+          "ci_method": "cluster_bootstrap",
+          "value": 0.975211
+        },
+        "brier": {
+          "ci_high": 0.035921,
+          "ci_low": 0.010817,
+          "ci_method": "cluster_bootstrap",
+          "value": 0.024482
+        },
+        "calibration_intercept": {
+          "ci_high": 0.633331,
+          "ci_low": -1.043071,
+          "ci_method": "cluster_robust_t",
+          "value": -0.20487
+        },
+        "calibration_slope": {
+          "ci_high": 1.37419,
+          "ci_low": 0.971564,
+          "ci_method": "cluster_robust_t",
+          "value": 1.172877
+        }
+      },
+      "model_id": "swin",
+      "recalibration_gains": [
+        {
+          "ci_high": 0.000392,
+          "ci_low": -0.00383,
+          "ci_method": "paired_cluster_bootstrap",
+          "gain": -0.001768,
+          "rung": "rung1"
+        },
+        {
+          "ci_high": 0.000153,
+          "ci_low": -0.003532,
+          "ci_method": "paired_cluster_bootstrap",
+          "gain": -0.001845,
+          "rung": "rung2"
+        },
+        {
+          "ci_high": -0.000349,
+          "ci_low": -0.003821,
+          "ci_method": "paired_cluster_bootstrap",
+          "gain": -0.002151,
+          "rung": "rung3"
+        }
+      ],
+      "verdict": {
+        "best_rung": "rung0",
+        "bss": 0.881054,
+        "bss_ci_high": 0.916554,
+        "bss_ci_low": 0.840113,
+        "gauge_label": "none -- well-calibrated as published"
+      }
+    },
+    {
+      "analytic_ci_truncated": false,
+      "metrics": {
+        "auroc": {
+          "ci_high": 0.99068,
+          "ci_low": 0.968752,
+          "ci_method": "cluster_bootstrap",
+          "value": 0.978565
+        },
+        "average_precision": {
+          "ci_high": 0.981275,
+          "ci_low": 0.940063,
+          "ci_method": "cluster_bootstrap",
+          "value": 0.967271
+        },
+        "brier": {
+          "ci_high": 0.04947,
+          "ci_low": 0.024438,
+          "ci_method": "cluster_bootstrap",
+          "value": 0.037706
+        },
+        "calibration_intercept": {
+          "ci_high": 0.438003,
+          "ci_low": -1.215827,
+          "ci_method": "cluster_robust_t",
+          "value": -0.388912
+        },
+        "calibration_slope": {
+          "ci_high": 1.369251,
+          "ci_low": 0.814626,
+          "ci_method": "cluster_robust_t",
+          "value": 1.091938
+        }
+      },
+      "model_id": "tinyvgg",
+      "recalibration_gains": [
+        {
+          "ci_high": 0.00321,
+          "ci_low": -0.00732,
+          "ci_method": "paired_cluster_bootstrap",
+          "gain": -0.002363,
+          "rung": "rung1"
+        },
+        {
+          "ci_high": 0.003027,
+          "ci_low": -0.006231,
+          "ci_method": "paired_cluster_bootstrap",
+          "gain": -0.001894,
+          "rung": "rung2"
+        },
+        {
+          "ci_high": 0.002716,
+          "ci_low": -0.003859,
+          "ci_method": "paired_cluster_bootstrap",
+          "gain": -0.000767,
+          "rung": "rung3"
+        }
+      ],
+      "verdict": {
+        "best_rung": "rung0",
+        "bss": 0.816801,
+        "bss_ci_high": 0.849628,
+        "bss_ci_low": 0.732739,
+        "gauge_label": "none -- well-calibrated as published"
+      }
+    },
+    {
+      "analytic_ci_truncated": false,
+      "metrics": {
+        "auroc": {
+          "ci_high": 0.893495,
+          "ci_low": 0.68671,
+          "ci_method": "cluster_bootstrap",
+          "value": 0.79364
+        },
+        "average_precision": {
+          "ci_high": 0.780923,
+          "ci_low": 0.213732,
+          "ci_method": "cluster_bootstrap",
+          "value": 0.595959
+        },
+        "brier": {
+          "ci_high": 0.21992,
+          "ci_low": 0.170374,
+          "ci_method": "cluster_bootstrap",
+          "value": 0.197206
+        },
+        "calibration_intercept": {
+          "ci_high": 0.274109,
+          "ci_low": -1.30948,
+          "ci_method": "cluster_robust_t",
+          "value": -0.517686
+        },
+        "calibration_slope": {
+          "ci_high": 7.14053,
+          "ci_low": 2.718388,
+          "ci_method": "cluster_robust_t",
+          "value": 4.929459
+        }
+      },
+      "model_id": "tinyvgg_vl",
+      "recalibration_gains": [
+        {
+          "ci_high": 0.044897,
+          "ci_low": -0.04004,
+          "ci_method": "paired_cluster_bootstrap",
+          "gain": -0.001035,
+          "rung": "rung1"
+        },
+        {
+          "ci_high": 0.067678,
+          "ci_low": -0.003782,
+          "ci_method": "paired_cluster_bootstrap",
+          "gain": 0.031431,
+          "rung": "rung2"
+        },
+        {
+          "ci_high": 0.067194,
+          "ci_low": -0.006528,
+          "ci_method": "paired_cluster_bootstrap",
+          "gain": 0.029955,
+          "rung": "rung3"
+        }
+      ],
+      "verdict": {
+        "best_rung": "rung2",
+        "bss": 0.194569,
+        "bss_ci_high": 0.384546,
+        "bss_ci_low": -0.175874,
+        "gauge_label": "level and spread (intercept + slope)"
+      }
+    }
+  ],
+  "provenance": {
+    "ci_level": 0.95,
+    "config": {
+      "clustered": true,
+      "clustering_field": "wsi",
+      "coverage_compare_on": "both",
+      "coverage_min_fraction": 0.95,
+      "expected_models": [
+        "champion",
+        "tinyvgg",
+        "p4m_reg",
+        "p4m_reg_vl",
+        "p4m_seed7",
+        "p4m_dense",
+        "e2cnn",
+        "e2cnn_s21",
+        "e2cnn_s99",
+        "swin",
+        "phikon",
+        "macenko",
+        "tinyvgg_vl",
+        "p4m_s13",
+        "p4m_svm",
+        "effnet_scratch"
+      ]
+    },
+    "git_commit": "5a8e5d753afcf23b2139a200d610303765d414a4-dirty",
+    "input_hashes": {
+      "cohort_data": "766930b2c511c5bd7056743cec118396b314cee3e4ff729e97bdd6c3b253d48f",
+      "cohort_spec": "b506a70f554a6c817ec37565bbe825dcbd8d64850a99fd85038724b8905f59e9",
+      "predictions": "27ceeff32d91f7fae5a3e9a11253cb728540c55eb3d7662f08536b5fdf4dbaeb"
+    },
+    "n_boot": 2000,
+    "seed": 1337,
+    "versions": {
+      "numpy": "2.4.6",
+      "pandas": "3.0.5",
+      "predval": "0.0.0",
+      "python": "3.13.5",
+      "scikit-learn": "1.9.0",
+      "scipy": "1.17.1",
+      "statsmodels": "0.14.6"
+    }
+  },
+  "roster": {
+    "absent": [
+      "p4m_reg"
+    ],
+    "declared": 16,
+    "present": 15
+  },
+  "schema_version": "1.0"
+}
