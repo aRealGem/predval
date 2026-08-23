@@ -12,3 +12,11 @@ build/
 examples/pcam/cohort.parquet
 examples/pcam/predictions.parquet
 examples/pcam/out/
+
+# Same reasoning for GUSTO-I: raw_cache/ is an external fetched input (not a generated
+# derivative, and not sensitive -- GUSTO-I is a public dataset), and cohort.parquet/
+# predictions.parquet are make_predictions.py's regenerable output.
+examples/gusto/raw_cache/
+examples/gusto/cohort.parquet
+examples/gusto/predictions.parquet
+examples/gusto/out/

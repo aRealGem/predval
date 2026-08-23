@@ -35,6 +35,12 @@ dev = [
     "pytest==9.1.1",
     "ruff==0.16.3",
 ]
+# examples: dependencies used only by sidecar scripts under examples/, never by predval itself.
+# pyreadr reads the GUSTO-I .rda source in examples/gusto/fetch_data.py -- predval's own library
+# surface stays exactly what it was (no R interop, no new runtime dependency).
+examples = [
+    "pyreadr==0.5.6",
+]
 
 [build-system]
 requires = ["hatchling"]

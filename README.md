@@ -156,6 +156,55 @@ If neither the fixture files nor the campaign checkout is available, the script 
 exits non-zero rather than guessing — the same refusal-over-guessing rule the harness applies to
 its own inputs (see `docs/spec.md` §8).
 
+## Second example: GUSTO-I, a different cohort shape
+
+`examples/gusto/` runs predval against GUSTO-I, a public acute-MI thrombolytic trial (40,830
+patients). It is structurally the opposite of PCam in almost every way that matters: tabular, not
+imaging; a single prespecified logistic, not a 15-model ensemble; geographic external validation
+across trial regions, not a scanner/stain subgroup — the same shape as validating a model against
+a cohort it was never fit on.
+
+- **Path taken: A** (a region column exists and resolves to an unambiguous subset — see
+  `docs/DELTA-gusto.md` for the exact evidentiary basis, which is convergent row-count evidence,
+  not a literal codebook quote). The standard 8-predictor 30-day-mortality logistic (age, sex,
+  diabetes, hypotension, tachycardia, high-risk MI, shock, time-to-relief) is fit on the trial's
+  West region only (n=2,188) and scored on every other region (n=38,642) — five of the eight
+  predictors ship pre-derived in the raw data and were empirically verified against other raw
+  columns before being trusted, not assumed from column-name guesses (a third-party mirror's
+  auto-generated description of this dataset turned out to be wrong about two of them).
+- Source: `https://hbiostat.org/data/repo/gusto.rda`, fetched 2026-08-23, sha256
+  `e12bc58730894fa26f31b5b4ea963a878e855d7f2d53e47991cf8bb80b84d8e1`.
+- Model: `gusto_west_refit_logistic`, one model, one roster entry.
+- Clustering by trial region (15 distinct regions among the scored cohort) rather than by an
+  imaging artefact — the same mechanism as PCam's slide clustering, applied to a completely
+  different kind of correlation.
+- Unlike PCam, this cohort declares **no subgroups** and produces **zero** boundary predictions
+  (a fitted logistic never lands exactly on 0 or 1) — a useful contrast to PCam's 732.
+
+### Reproducing the example
+
+```bash
+uv sync --group examples
+uv run python examples/gusto/reproduce.py
+```
+
+Same non-sensitivity framing as PCam: `examples/gusto/cohort.parquet` and `predictions.parquet`
+are generated derivatives of a public dataset, excluded from git for size and provenance, not
+because GUSTO-I is restricted. **There is no golden-file baseline for GUSTO yet** — that's an
+explicit backlog item, not an oversight; see `docs/DELTA-gusto.md`.
+
+**Honest read of the verdict:** AUROC 0.791, comfortably inside the literature's expected
+0.72–0.82 range on the first attempt. Calibration slope 0.835 shows real, if modest, displacement
+scoring off the development region — the recalibration ladder finds a small but statistically
+real gain at rungs 2–3 (both exclude zero), while rung 1 alone is actually slightly negative. This
+is a much milder miscalibration story than PCam's two badly-miscalibrated members, which is an
+honest property of this cohort rather than something to chase. The real finding of this example
+isn't the numbers — it's that predval's ingestion, coverage, roster, clustering, and ladder code
+all ran end to end on a genuinely different cohort shape with **zero** changes to `src/predval`.
+That's evidence the contract generalizes past the one fixture it was built against; it is not, on
+its own, evidence predval is ready for a blind, operator-run external validation, since the
+region split here was chosen by inspecting the data rather than prespecified by an outside party.
+
 ## Install
 
 ```bash
