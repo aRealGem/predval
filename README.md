@@ -193,8 +193,10 @@ uv run python examples/gusto/reproduce.py
 
 Same non-sensitivity framing as PCam: `examples/gusto/cohort.parquet` and `predictions.parquet`
 are generated derivatives of a public dataset, excluded from git for size and provenance, not
-because GUSTO-I is restricted. **There is no golden-file baseline for GUSTO yet** — that's an
-explicit backlog item, not an oversight; see `docs/DELTA-gusto.md`.
+because GUSTO-I is restricted. GUSTO now has a **golden-file baseline** at `tests/golden/gusto/`,
+matching PCam's — the full B=2000 run is frozen and regression-checked by
+`tests/test_golden_gusto.py` (opt-in via `PREDVAL_RUN_GOLDEN=1`), so a silent shift in the example's
+headline numbers fails loudly.
 
 **Honest read of the verdict:** AUROC 0.791, comfortably inside the literature's expected
 0.72–0.82 range on the first attempt. Calibration slope 0.835 shows real, if modest, displacement
