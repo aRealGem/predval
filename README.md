@@ -175,9 +175,12 @@ a cohort it was never fit on.
 - Source: `https://hbiostat.org/data/repo/gusto.rda`, fetched 2026-08-23, sha256
   `e12bc58730894fa26f31b5b4ea963a878e855d7f2d53e47991cf8bb80b84d8e1`.
 - Model: `gusto_west_refit_logistic`, one model, one roster entry.
-- Clustering by trial region (15 distinct regions among the scored cohort) rather than by an
-  imaging artefact — the same mechanism as PCam's slide clustering, applied to a completely
-  different kind of correlation.
+- Clustering by trial region — **exactly `G = 15` clusters** among the scored cohort (16 region
+  codes exist in the full trial; the West development region is removed, leaving 15 non-West
+  regions) — rather than by an imaging artefact, the same mechanism as PCam's slide clustering
+  applied to a completely different kind of correlation. Every reported interval, AUROC included, is
+  a cluster-level percentile bootstrap interval (whole regions resampled, `B = 2000`; see
+  `docs/spec.md` §5.1).
 - Unlike PCam, this cohort declares **no subgroups** and produces **zero** boundary predictions
   (a fitted logistic never lands exactly on 0 or 1) — a useful contrast to PCam's 732.
 

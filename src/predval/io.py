@@ -153,12 +153,39 @@ def load_cohort(path: str | Path) -> Cohort:
 
     table, dropped = _apply_completeness(table, spec, data_path)
 
+    if spec.clustering is not None:
+        cluster_col = table[spec.clustering.field]
+        if cluster_col.isna().any():
+            raise CohortSpecError(
+                "clustering column contains nulls; every subject must belong to a cluster, "
+                "because a null cluster cannot be resampled by the cluster bootstrap",
+                path=data_path,
+                column=spec.clustering.field,
+                n_offending=int(cluster_col.isna().sum()),
+            )
+
     outcome_col = table[spec.outcome.field]
     if not (outcome_col == spec.outcome.positive_label).any():
         raise CohortSpecError(
             f"outcome.positive_label {spec.outcome.positive_label!r} never occurs in the "
             f"outcome column; every subject would be a non-event\n"
             f"  values present: {sorted(pd.unique(outcome_col.dropna()))[:10]}",
+            path=data_path,
+            column=spec.outcome.field,
+        )
+
+    distinct = sorted(pd.unique(outcome_col.dropna()).tolist())
+    if len(distinct) < 2:
+        raise CohortSpecError(
+            f"outcome column has only one distinct value ({distinct}); a binary outcome needs "
+            f"both an event and a non-event class present to compute anything",
+            path=data_path,
+            column=spec.outcome.field,
+        )
+    if len(distinct) > 2:
+        raise CohortSpecError(
+            f"outcome column has {len(distinct)} distinct values ({distinct[:10]}); a binary "
+            f"outcome must have exactly two -- is one of these a missing-value sentinel (e.g. -9)?",
             path=data_path,
             column=spec.outcome.field,
         )
@@ -234,6 +261,13 @@ def load_predictions(path: str | Path) -> Predictions:
             path=pred_path,
         )
 
+    if len(frame) == 0:
+        raise PredictionsError(
+            "predictions file has no rows; a header with no data (or an all-empty file) is not a "
+            "valid predictions table -- there is nothing to evaluate",
+            path=pred_path,
+        )
+
     frame = frame.copy()
 
     for col in ("subject_id", "model_id"):
@@ -285,7 +319,8 @@ def load_predictions(path: str | Path) -> Predictions:
     out_of_range = (values < 0.0) | (values > 1.0)
     if out_of_range.any():
         raise PredictionsError(
-            "predicted must be a probability in [0, 1]",
+            "predicted must be a probability in [0, 1]; values fall outside [0, 1] -- if these "
+            "are log-odds/logits, apply a sigmoid before writing predictions",
             path=pred_path,
             column="predicted",
             n_offending=int(out_of_range.sum()),
