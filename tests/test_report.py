@@ -29,8 +29,14 @@ N_CLUSTERS = 8
 PER_CLUSTER = 80
 
 
-def _build(tmp_path: Path, expected_models=None):
-    """A small clustered cohort: 2 models, a 2-level subgroup (4 clusters each -> gated)."""
+#: Distinguishes "clustering_name not passed" (keep the old undeclared-name behaviour) from an
+#: explicit `clustering_name=None` (also undeclared, but on purpose -- S6 items 5/14).
+_UNSET = object()
+
+
+def _build(tmp_path: Path, expected_models=None, clustering_name=_UNSET, single_model=False):
+    """A small clustered cohort: 2 models (or 1, if single_model), a 2-level subgroup (4 clusters
+    each -> gated)."""
     rng = np.random.default_rng(11)
     rows, preds = [], []
     for c in range(N_CLUSTERS):
@@ -42,17 +48,21 @@ def _build(tmp_path: Path, expected_models=None):
             rows.append({"subject_id": sid, "label": int(rng.binomial(1, p)),
                          "wsi": f"c{c:02d}", "arm": "x" if c % 2 == 0 else "y"})
             preds.append({"subject_id": sid, "model_id": "good", "predicted": float(p)})
-            # weak: over-confident (stretched logits) so the ladder has something to diagnose
-            preds.append({"subject_id": sid, "model_id": "weak",
-                          "predicted": float(1.0 / (1.0 + np.exp(-2.0 * z)))})
+            if not single_model:
+                # weak: over-confident (stretched logits) so the ladder has something to diagnose
+                preds.append({"subject_id": sid, "model_id": "weak",
+                              "predicted": float(1.0 / (1.0 + np.exp(-2.0 * z)))})
 
     pd.DataFrame(rows).to_parquet(tmp_path / "cohort.parquet", index=False)
     pd.DataFrame(preds).to_parquet(tmp_path / "predictions.parquet", index=False)
+    clustering = {"field": "wsi"}
+    if clustering_name is not _UNSET and clustering_name is not None:
+        clustering["name"] = clustering_name
     spec = {
         "cohort_id": "toy-report", "version": 0, "subject_key": "subject_id",
         "data": "cohort.parquet",
         "outcome": {"type": "binary", "field": "label", "positive_label": 1},
-        "clustering": {"field": "wsi"},
+        "clustering": clustering,
         "coverage": {"min_fraction": 0.5, "compare_on": "both"},
         "completeness": {"require_outcome": True, "on_violation": "drop_and_report"},
         "subgroups": [{"name": "arm_group", "field": "arm"}],
@@ -259,6 +269,73 @@ def test_limitations_block_is_present(html) -> None:
     assert "Limitations" in html
     assert "recalibration step" in html.lower()
     assert "ensemble" in html
+
+
+# ------------------------------------------------------------------------------------- S6 items
+
+
+def test_section3_gains_use_milli_units(html) -> None:
+    """Item 4: section-3 gain cells are scaled to x10⁻³ with two decimals, not raw 4dp."""
+    assert "x10⁻³" in html
+    # the old 4-decimal-place raw format ("+0.0314") should not appear for a gain cell
+    import re
+
+    assert re.search(r"[+-]\d+\.\d{2} \[[+-]?\d+\.\d{2}, [+-]?\d+\.\d{2}\] x10⁻³", html)
+
+
+def test_cluster_noun_is_threaded_from_cohort_yaml(tmp_path: Path) -> None:
+    """Item 5: a cohort declaring clustering.name: region reads 'region' in the report, not the
+    PCam-flavoured 'slide' hardcoded in earlier versions of the template."""
+    ev = _build(tmp_path, clustering_name="region")
+    html = render_evaluation(ev)
+    assert "region" in html
+    assert "slide" not in html.lower()
+
+
+def test_cluster_noun_defaults_to_cluster_when_undeclared(tmp_path: Path) -> None:
+    ev = _build(tmp_path, clustering_name=None)
+    html = render_evaluation(ev)
+    assert "cluster" in html.lower()
+    assert "slide" not in html.lower()
+
+
+def test_ensemble_paragraph_omitted_for_a_single_model_roster(tmp_path: Path) -> None:
+    """Item 5: the ensemble-construction-bias caution only makes sense with >1 model in the
+    roster; a single-model cohort (like GUSTO) must not see a dangling reference to it."""
+    ev = _build(tmp_path, single_model=True)
+    html = render_evaluation(ev)
+    assert "Limitations" in html
+    assert "ensemble" not in html.lower()
+    # the always-shown gain-interval sentence must still be present
+    assert "does not carry the correction" in html
+
+
+def test_fold4_reference_omitted_without_a_rung3_withholding(html) -> None:
+    """Item 5: the fold4 diagnosis doc is a PCam-specific writeup; citing it when this run has no
+    rung3-could-not-cross-fit withholding would be a dangling, misleading reference."""
+    assert "fold4" not in html.lower()
+    assert "diagnosis-rung3-scanner_domain0" not in html
+
+
+def test_exhibit_note_is_conditional_on_the_ratio() -> None:
+    """Item 6: never claim the naive interval is narrower when the two intervals actually agree."""
+    from predval.report import _exhibit_note
+
+    understates = _exhibit_note([{"_ratio": 3.5}, {"_ratio": 1.2}], "slide")
+    assert "understates" in understates
+    assert "narrower" not in understates
+
+    agrees = _exhibit_note([{"_ratio": 0.9}, {"_ratio": 0.6}], "region")
+    assert "nearly agree" in agrees
+    assert "understates" not in agrees
+    assert "narrower" not in agrees
+    assert "region" in agrees
+
+
+def test_few_clusters_flags_name_their_stratum(html) -> None:
+    """Item 7: two few_clusters flags at different G must be distinguishable by stratum."""
+    assert "for overall" in html
+    assert "for arm_group=" in html
 
 
 # ---------------------------------------------------------------------------- appendix (item 5)

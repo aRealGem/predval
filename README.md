@@ -119,13 +119,22 @@ It is worth more than a clean synthetic dataset for exactly the reasons predval 
 - Patches within a slide are heavily correlated, so the unit of analysis and the unit of
   independence genuinely differ — this is where the naive-vs-cluster exhibit is not academic.
 - Two of the fifteen members are badly miscalibrated (one spans AUROC-implied confidence from
-  0.216 to 0.865 at AUROC 0.764); the recalibration ladder gives both a real, interval-backed
-  repair while leaving the already-calibrated members alone.
+  0.216 to 0.865 at AUROC 0.764); the recalibration ladder finds a large apparent Brier gain for
+  both at rung2 (+0.031 and +0.015) -- but with only G=22 slides to resample, the paired
+  cross-fit interval on that gain **crosses zero** for both, so the ladder correctly declines to
+  call either a real repair (S6: an earlier write-up of this fixture claimed both gains excluded
+  zero -- a transcription error, not a code bug; corrected in `docs/spec.md` section 4.8 and the
+  card log). That refusal to overclaim from a large point estimate at small G is itself the
+  finding predval exists to make legible.
 - One published ensemble member's predictions were permanently lost — weights lived in ephemeral
   storage, re-inference is impossible — so the fixture carries a genuine coverage gap rather than
   one manufactured by deleting rows.
 - 732 predictions sit at exactly 0.0 or 1.0, where `logit` is undefined, making the eps-clip in
   the recalibration ladder load-bearing from the first rung, not a theoretical edge case.
+- One member, `champion`, is a single trained baseline model (its own solo out-of-fold AUROC
+  0.916) — not, despite the name, the campaign's separately-tracked 11-member ensemble recipe,
+  which shares the label internally but was never exported as its own set of predictions and does
+  not appear in this fixture at all (see `examples/pcam/cohort.yaml` for the full disambiguation).
 
 ### Reproducing the example
 

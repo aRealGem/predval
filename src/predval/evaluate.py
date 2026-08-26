@@ -128,14 +128,62 @@ def _common_overall_cells(
     return cells
 
 
-def _verdict_layer(cells, spec, unc, ci: float) -> dict[str, dict]:
+#: Ladder order for "lowest rung whose gain interval excludes zero" (S6 item 2; spec section 4.8).
+_LADDER_RUNGS_IN_ORDER = ("rung1", "rung2", "rung3")
+
+
+def _paired_gains_by_model(rows: list[dict]) -> dict[str, dict[str, tuple[float, float, float]]]:
+    """Index the common-subset/overall-stratum paired_gain_brier rows already computed in the main
+    per-cell loop, keyed by model then rung -> (value, ci_low, ci_high). Reused rather than
+    recomputed so the verdict's significance test draws on the exact same bootstrap resample as
+    the number section 3 of the report shows -- never a second, independently-seeded one.
+    """
+    gains: dict[str, dict[str, tuple[float, float, float]]] = {}
+    for r in rows:
+        if (
+            r["metric"] == "paired_gain_brier"
+            and r["subset"] == "common"
+            and r["stratum_kind"] == "overall"
+            and r["fit_mode"] == R.CROSSFIT
+        ):
+            gains.setdefault(r["model_id"], {})[r["rung"]] = (
+                r["value"],
+                r["ci_low"],
+                r["ci_high"],
+            )
+    return gains
+
+
+def _best_admissible_rung(model_gains: dict[str, tuple[float, float, float]]) -> str | None:
+    """Lowest rung whose paired cross-fit gain interval excludes zero on the improvement side.
+
+    `None` means no rung is admissible: every gain interval either straddles zero or -- for a
+    rung that reliably made Brier worse -- lies entirely below it. Neither counts as "excludes
+    zero" here; only `ci_low > 0` does, because a "best admissible repair" is required to be a
+    real improvement, not merely distinguishable from no-op. See docs/spec.md section 4.8.
+    """
+    for rung in _LADDER_RUNGS_IN_ORDER:
+        cell = model_gains.get(rung)
+        if cell is None:
+            continue
+        _, ci_low, _ = cell
+        if np.isfinite(ci_low) and ci_low > 0:
+            return rung
+    return None
+
+
+def _verdict_layer(cells, rows: list[dict], spec, unc, ci: float) -> dict[str, dict]:
     """Per member: Brier skill score at the best admissible rung, and which rung that was (item 3).
 
-    The best admissible repair is the rung -- including rung0 (as published) -- with the lowest
-    cross-fitted Brier. BSS is measured against that rung's held-out probabilities, anchored at
-    0 = no-skill (always predict prevalence) and 1 = perfect. The chosen rung is the "gauge fault":
-    rung0 means none was needed, rung1/2/3 name the shape of the miscalibration the ladder repaired.
+    The best admissible repair is the LOWEST rung whose paired cross-fit gain interval excludes
+    zero on the improvement side -- the ladder's own significance test (S6 item 2; spec section
+    4.8), not a point-estimate minimum. If no rung clears that bar, the verdict is rung0 (as
+    published): BSS is then reported at rung0's own held-out performance, and the gauge-fault
+    label (GAUGE_LABELS["rung0"]) already reads "none -- well-calibrated as published", so no
+    separate sentinel value is needed here. rung1/2/3 name the shape of the miscalibration the
+    ladder repaired when one is admissible.
     """
+    gains_by_model = _paired_gains_by_model(rows)
     verdict: dict[str, dict] = {}
     for model, y, p, groups in cells:
         if y.size == 0 or np.unique(y).size < 2:
@@ -146,11 +194,18 @@ def _verdict_layer(cells, spec, unc, ci: float) -> dict[str, dict]:
             for lr in ladder_rows
             if lr.fit_mode == R.CROSSFIT and lr.metric == "brier" and lr.threshold is None
         }
-        candidates = {"rung0": M.brier(y, p), **cf_brier}
-        candidates = {k: float(v) for k, v in candidates.items() if np.isfinite(v)}
-        if not candidates:
-            continue
-        best_rung = min(candidates, key=lambda k: candidates[k])
+        rung0_brier = float(M.brier(y, p))
+
+        best_rung = _best_admissible_rung(gains_by_model.get(model, {}))
+        if best_rung is not None and best_rung in cf_brier and np.isfinite(cf_brier[best_rung]):
+            best_rung_brier = float(cf_brier[best_rung])
+        else:
+            # No admissible rung, or the cross-fit Brier for the admissible rung is unavailable
+            # (should not happen if its gain interval was computed) -- fall back to rung0 either
+            # way, never crash on a missing cell.
+            best_rung = RUNG0
+            best_rung_brier = rung0_brier
+
         p_best = p if best_rung == RUNG0 else lrep.crossfit_predictions[best_rung]
         bss, bss_ci = U.brier_skill_interval(
             y, p_best, groups, ci, n_boot=unc.n_boot, seed=unc.seed
@@ -160,8 +215,8 @@ def _verdict_layer(cells, spec, unc, ci: float) -> dict[str, dict]:
             "bss_ci_low": bss_ci.low,
             "bss_ci_high": bss_ci.high,
             "best_rung": best_rung,
-            "best_rung_brier": candidates[best_rung],
-            "rung0_brier": candidates[RUNG0],
+            "best_rung_brier": best_rung_brier,
+            "rung0_brier": rung0_brier,
             "prevalence": float(np.mean(y)),
             "n": int(y.size),
             "n_clusters": int(np.unique(groups).size),
@@ -237,16 +292,21 @@ def _material_nonmonotone(max_local_decrease: float, delta_auroc: float | None, 
     return bool(delta_auroc is not None and np.isfinite(delta_auroc) and abs(delta_auroc) > tol)
 
 
-def _cell_label(ctx: dict) -> str:
-    """A model+stratum label for ladder-quality flags. Subset is omitted deliberately: cells with
-    identical coverage are reused across subsets, so the stratum is stable but the subset is not.
+def _stratum_label(ctx: dict) -> str:
+    """The stratum half of a cell label: 'overall' or 'subgroup_name=level'. Subset is omitted
+    deliberately: cells with identical coverage are reused across subsets, so the stratum is
+    stable but the subset is not.
     """
-    stratum = (
+    return (
         "overall"
         if ctx["stratum_kind"] == "overall"
         else f"{ctx['subgroup_name']}={ctx['subgroup_level']}"
     )
-    return f"{ctx['model_id']} ({stratum})"
+
+
+def _cell_label(ctx: dict) -> str:
+    """A model+stratum label for ladder-quality flags."""
+    return f"{ctx['model_id']} ({_stratum_label(ctx)})"
 
 
 def _strata(cohort: Cohort) -> list[tuple[str, str | None, str | None, np.ndarray]]:
@@ -362,7 +422,7 @@ def evaluate(cohort: Cohort, predictions: Predictions) -> Evaluation:
 
     # Verdict layer + calibration curves, both on the common subset / overall stratum (items 2a, 3).
     cells = _common_overall_cells(preds, y_all, groups_all, subject_ids, subsets["common"])
-    verdict = _verdict_layer(cells, spec, unc, ci)
+    verdict = _verdict_layer(cells, rows, spec, unc, ci)
     calibration_df = _calibration_curves(cells, unc, ci)
 
     metrics_df = pd.DataFrame(rows)
@@ -378,6 +438,10 @@ def evaluate(cohort: Cohort, predictions: Predictions) -> Evaluation:
             "show_naive_ci": unc.show_naive_ci,
             "clustered": clustered,
             "clustering_field": spec.clustering.field if spec.clustering else None,
+            # Human-readable noun for the clustering unit ("slide", "region", ...), threaded into
+            # the report's prose (S6 item 5); "cluster" when no clustering is declared at all, so
+            # report.py never needs a null-check of its own.
+            "clustering_name": spec.clustering.name if spec.clustering else "cluster",
         },
         "coverage": {
             "min_fraction": spec.coverage.min_fraction,
@@ -461,7 +525,7 @@ def _evaluate_one(
     if n == 0:
         return rows, frag, notes
 
-    if note := U.few_clusters_note(n_clusters):
+    if note := U.few_clusters_note(n_clusters, _stratum_label(ctx)):
         if clustered:
             notes.add(("few_clusters", note))
 

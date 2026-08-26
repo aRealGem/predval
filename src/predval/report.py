@@ -59,20 +59,35 @@ ANALYTIC_TRUNCATED_NOTE = (
 
 _LADDER_RUNGS = ("rung1", "rung2", "rung3")
 
-#: Limitations block (item 6b), verbatim in report and docs/spec.md section 9. The optimism
-#: correction disciplines the recalibration step; it says nothing about how the predictions were
-#: built, and it must not be read as if it did.
-LIMITATIONS = (
-    "The optimism correction in section 3 covers the recalibration step ONLY -- it does not cover "
-    "model or ensemble construction. If the ensemble weights (the champion) were selected on "
-    "slides inside this cohort, rung0 is itself optimistically biased, and this harness cannot "
-    "detect it: predval evaluates the predictions it is handed and has no view of how they were "
-    "produced. Only a cohort the ensemble was never tuned on could expose that bias. "
-    "Similarly, the paired cross-fit gain interval (section 3) conditions on the fitted "
-    "correction -- it resamples the slide-level loss difference but does not refit the "
-    "correction inside each bootstrap replicate, so it does not carry the correction's own "
-    "fitting variance; that refit-in-replicate interval remains backlog (spec section 4.5)."
+#: The recalibration-conditions-on-itself sentence (item 6b) applies to every cohort regardless of
+#: roster size; it is always shown.
+_LIMITATIONS_GAIN_INTERVAL = (
+    "The paired cross-fit gain interval (section 3) conditions on the fitted correction -- it "
+    "resamples the {noun}-level loss difference but does not refit the correction inside each "
+    "bootstrap replicate, so it does not carry the correction's own fitting variance; that "
+    "refit-in-replicate interval remains backlog (spec section 4.5)."
 )
+
+#: The ensemble-construction-bias caution (S6 item 5) makes sense only when the roster has more
+#: than one member -- with a single model there is nothing to have weighted an ensemble between,
+#: and naming a hypothetical blend in a single-model report would be a confusing non sequitur.
+_LIMITATIONS_ENSEMBLE = (
+    "The optimism correction in section 3 covers the recalibration step ONLY -- it does not cover "
+    "model or ensemble construction. If a roster member's own weights were selected on {noun}s "
+    "inside this cohort, rung0 is itself optimistically biased, and this harness cannot detect "
+    "it: predval evaluates the predictions it is handed and has no view of how they were "
+    "produced, including whether any given model_id is a single trained model or a blend of "
+    "several (a model_id's name is not evidence either way -- always verify composition against "
+    "its source). Only a cohort the ensemble was never tuned on could expose that bias. "
+)
+
+
+def _limitations(clustering_name: str, n_models: int) -> str:
+    """Limitations block (item 6b, S6 item 5), verbatim in report and docs/spec.md section 9."""
+    gain_sentence = _LIMITATIONS_GAIN_INTERVAL.format(noun=clustering_name)
+    if n_models <= 1:
+        return gain_sentence
+    return _LIMITATIONS_ENSEMBLE.format(noun=clustering_name) + gain_sentence
 
 #: Appendix concept-explainer (item 5): OFF by default; structure + placeholders this session, the
 #: static SVG assets arrive later. Rendered only when --appendix is passed, so default bytes are
@@ -218,7 +233,7 @@ def _brier_analytic_footnote(metrics: pd.DataFrame, models: list[str]) -> list[d
     return out
 
 
-def _exhibit_rows(metrics: pd.DataFrame, models: list[str]) -> list[dict]:
+def _exhibit_rows(metrics: pd.DataFrame, models: list[str], cluster_noun: str) -> list[dict]:
     """The unit-of-analysis exhibit: AUROC cluster interval vs the naive per-row interval."""
     auroc = metrics[
         (metrics["metric"] == "auroc")
@@ -237,13 +252,42 @@ def _exhibit_rows(metrics: pd.DataFrame, models: list[str]) -> list[dict]:
         nw = naive["ci_high"] - naive["ci_low"]
         if not (np.isfinite(cw) and np.isfinite(nw)) or nw <= 0:
             continue
+        ratio = cw / nw
         out.append({
             "model": model,
             "cluster_width": _f(cw, 4),
             "naive_width": _f(nw, 4),
-            "ratio": f"{cw / nw:.1f}x",
+            "ratio": f"{ratio:.1f}x",
+            "_ratio": ratio,
         })
     return out
+
+
+def _exhibit_note(rows: list[dict], cluster_noun: str) -> str:
+    """The exhibit's framing paragraph (S6 item 6): conditional on whether ANY shown model's
+    naive-vs-cluster ratio exceeds 1, never asserting "narrower" when the two intervals actually
+    agree.
+
+    The exhibit's whole point is to demonstrate what ignoring clustering costs; if the widest ratio
+    among the shown models exceeds 1, at least one model genuinely shows that cost, and the
+    "understates" framing is truthful of the exhibit even if some individual rows sit closer to
+    1x. If every model's ratio is at or below 1, clustering was never costing this cohort much --
+    the {noun}s here are large or homogeneous enough that the naive and cluster-aware intervals
+    nearly agree, and stating that plainly is the honest reading, not silence or a mismatched claim.
+    """
+    ratios = [r["_ratio"] for r in rows if np.isfinite(r["_ratio"])]
+    if not ratios or max(ratios) > 1.0:
+        return (
+            f"The naive per-row AUROC interval is <em>incorrect</em> when rows share a "
+            f"{cluster_noun}. It is shown only to make the cost of ignoring clustering concrete: "
+            f"the naive interval understates uncertainty by the shown ratio."
+        )
+    return (
+        f"The naive per-row AUROC interval is shown alongside the cluster-aware one for "
+        f"comparison. Here the two <em>nearly agree</em> -- the {cluster_noun}s in this cohort are "
+        f"large or homogeneous enough that ignoring clustering cost little in this exhibit; the "
+        f"check, not a dramatic gap, is the point."
+    )
 
 
 def _signed_ci(v: float, lo: float, hi: float) -> str:
@@ -252,6 +296,26 @@ def _signed_ci(v: float, lo: float, hi: float) -> str:
         return "n/a"
     ci = _ci(lo, hi)
     return f"{v:+.4f} {ci}".strip()
+
+
+#: Section 3 gains are order 1e-2 to 1e-3; four raw decimals buried the CI bounds in visual noise.
+_MILLI = 1000.0
+
+
+def _signed_ci_milli(v: float, lo: float, hi: float) -> str:
+    """A section-3 gain + its interval, scaled to 1e-3 with two decimals each, e.g.
+    '+31.43 [-3.78, 67.68] x10⁻³', or 'n/a'.
+
+    Two decimals at 1e-3 scale keeps whether an interval excludes zero legible straight off the
+    digits, which four raw decimals ('+0.0314 [-0.004, 0.068]') did not: the sign of the bound is
+    now a large, easy-to-compare number rather than a fourth decimal place (S6 item 4).
+    """
+    if v is None or not np.isfinite(v):
+        return "n/a"
+    vs = v * _MILLI
+    if lo is None or hi is None or not (np.isfinite(lo) and np.isfinite(hi)):
+        return f"{vs:+.2f} x10⁻³"
+    return f"{vs:+.2f} [{lo * _MILLI:.2f}, {hi * _MILLI:.2f}] x10⁻³"
 
 
 def _gain_lookup(metrics: pd.DataFrame) -> pd.DataFrame:
@@ -321,7 +385,7 @@ def _calibration_rows(metrics: pd.DataFrame, models: list[str]) -> list[dict]:
         cells = {}
         for rung in _LADDER_RUNGS:
             v, lo, hi = gain(model, rung)
-            cells[f"{rung}_gain"] = _signed_ci(v, lo, hi)
+            cells[f"{rung}_gain"] = _signed_ci_milli(v, lo, hi)
             if np.isfinite(v):
                 best = max(best, v)
         out.append({
@@ -498,6 +562,7 @@ def build_context(
 ) -> dict:
     """Assemble everything the template needs. All logic lives here; the template only arranges."""
     models = _models_by_auroc(metrics)
+    cluster_noun = manifest.get("uncertainty", {}).get("clustering_name", "cluster")
 
     cov = coverage_delta(metrics)
     finite = cov["cov_delta"].dropna()
@@ -515,10 +580,12 @@ def build_context(
     ]
 
     brier_footnote = _brier_analytic_footnote(metrics, models)
+    exhibit_rows = _exhibit_rows(metrics, models, cluster_noun)
 
     return {
         "framing": FRAMING,
         "cohort_id": manifest.get("cohort_id", ""),
+        "cluster_noun": cluster_noun,
         "roster": manifest.get("roster", {}),
         "identical_coverage": identical_coverage,
         "coverage_rows": coverage_rows,
@@ -530,13 +597,23 @@ def build_context(
         "calibration_svg": figures.calibration_small_multiples(
             _curves_by_model(calibration), models
         ),
-        "exhibit_rows": _exhibit_rows(metrics, models),
+        "exhibit_rows": exhibit_rows,
+        "exhibit_note": _exhibit_note(exhibit_rows, cluster_noun),
         "dumbbell_svg": figures.interval_dumbbell(_dumbbell_data(metrics, models)),
         "calibration_rows": _calibration_rows(metrics, models),
         "brier_rung_svg": figures.brier_by_rung(_brier_by_rung_data(metrics, models)),
         "subgroup_rows": _subgroup_rows(metrics),
         "fragility_rows": _fragility_rows(fragility, models),
-        "limitations": LIMITATIONS,
+        "limitations": _limitations(cluster_noun, len(models)),
+        # The fold4 diagnosis doc (docs/diagnosis-rung3-scanner_domain0.md) writes up one specific
+        # PCam finding; cross-reference it only when THIS run actually has a rung3-could-not-
+        # cross-fit withholding for it to be relevant to (S6 item 5) -- unconditionally citing it
+        # on a cohort with no such withholding (e.g. GUSTO's single, fully-converged model) would
+        # be a dangling, misleading reference.
+        "has_rung3_withholding": any(
+            f["code"] == "recalibration_unavailable" and f["message"].startswith("rung3 ")
+            for f in manifest.get("flags", [])
+        ),
         "provenance": {
             # Sorted, so the report is byte-identical whether it renders from the in-memory
             # manifest (insertion order) or from manifest.json (written with sort_keys).

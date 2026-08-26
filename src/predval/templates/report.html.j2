@@ -106,9 +106,7 @@ is <em>perfect</em>. Points below the diagonal over-predict risk; above, under-p
 
 {% if exhibit_rows %}
 <h3>Unit-of-analysis exhibit</h3>
-<p class="muted">The naive per-row AUROC interval is <em>incorrect</em> when patches share a slide.
-It is shown only to make the cost of ignoring clustering concrete: the ratio is how much narrower
-the wrong interval looks.</p>
+<p class="muted">{{ exhibit_note | safe }}</p>
 <table>
 <tr><th>model</th><th>cluster width</th><th>naive width (wrong)</th><th>ratio</th></tr>
 {% for r in exhibit_rows %}
@@ -124,18 +122,19 @@ the wrong interval looks.</p>
 best per-member gain. Each cell is the <strong>paired cross-fit Brier gain</strong> -- rung0 Brier
 minus that rung's held-out Brier, positive when recalibration helped -- with its paired
 cluster-bootstrap interval (a gain whose interval excludes 0 is a real out-of-fold improvement).
-The apparent, in-sample gains run larger; only the cross-fitted gains, which hold whole slides out,
-are shown. rung1's apparent intercept is ~0 and rung2's apparent slope is ~1
-<span class="byconstruction">by construction</span> (that is what each fit targets), so those are
+The apparent, in-sample gains run larger; only the cross-fitted gains, which hold whole
+{{ cluster_noun }}s out, are shown. rung1's apparent intercept is ~0 and rung2's apparent slope is
+~1 <span class="byconstruction">by construction</span> (that is what each fit targets), so those are
 not reported as findings. Recalibration cannot improve discrimination; the cross-fitted Brier is the
 expected loss after local recalibration, not a validated result.</p>
 <p class="subordinate">At small G the flexible rung is high-variance under cross-fitting: absence of
 a rung3 gain is evidence of linear miscalibration only insofar as rung3 had power to detect shape
-distortion. See the fold4 diagnosis (docs/diagnosis-rung3-scanner_domain0.md) for the members whose
-rung3 could not be cross-fit on this cohort.</p>
+distortion.{% if has_rung3_withholding %} See the fold4 diagnosis
+(docs/diagnosis-rung3-scanner_domain0.md) for the members whose rung3 could not be cross-fit on this
+cohort.{% endif %}</p>
 <table>
-<tr><th>model</th><th>Brier rung0</th><th>rung1 gain [CI]</th><th>rung2 gain [CI]</th>
-    <th>rung3 gain [CI]</th></tr>
+<tr><th>model</th><th>Brier rung0</th><th>rung1 gain [CI] (x10⁻³)</th><th>rung2 gain [CI] (x10⁻³)</th>
+    <th>rung3 gain [CI] (x10⁻³)</th></tr>
 {% for r in calibration_rows %}
 <tr><td>{{ r.model }}</td><td>{{ r.rung0 }}</td><td>{{ r.rung1_gain }}</td>
     <td>{{ r.rung2_gain }}</td><td>{{ r.rung3_gain }}</td></tr>
@@ -162,8 +161,8 @@ rung3 could not be cross-fit on this cohort.</p>
 
 <h2>5. Fragility -- not a confidence interval</h2>
 <p class="muted">The largest AUROC change from dropping any single cluster, and the culprit. This is
-deliberately <strong>not</strong> an interval: it answers whether a result is carried by one slide,
-which a tight bootstrap interval will not reveal.</p>
+deliberately <strong>not</strong> an interval: it answers whether a result is carried by one
+{{ cluster_noun }}, which a tight bootstrap interval will not reveal.</p>
 {% if fragility_rows %}
 <table>
 <tr><th>model</th><th>max |delta AUROC|</th><th>culprit cluster</th></tr>

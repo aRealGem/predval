@@ -138,9 +138,19 @@ def test_loso_returns_nan_for_a_single_cluster() -> None:
 
 
 def test_few_clusters_note_fires_below_the_threshold() -> None:
-    assert U.few_clusters_note(22) is not None
-    assert "G=22" in U.few_clusters_note(22)
-    assert U.few_clusters_note(100) is None
+    assert U.few_clusters_note(22, "overall") is not None
+    assert "G=22" in U.few_clusters_note(22, "overall")
+    assert U.few_clusters_note(100, "overall") is None
+
+
+def test_few_clusters_note_names_its_stratum() -> None:
+    """S6 item 7: the stratum must be in the message, or two flags at different G are
+    indistinguishable as to which cell each one describes."""
+    overall = U.few_clusters_note(11, "overall")
+    subgroup = U.few_clusters_note(22, "scanner_domain=0")
+    assert "overall" in overall
+    assert "scanner_domain=0" in subgroup
+    assert "G=11" in overall and "G=22" in subgroup
 
 
 def test_percentile_interval_ignores_undefined_replicates() -> None:

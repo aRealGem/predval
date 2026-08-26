@@ -289,6 +289,40 @@ def test_verdict_layer_in_manifest(result) -> None:
         assert v["bss_ci_low"] <= v["bss"] <= v["bss_ci_high"]
 
 
+def test_best_rung_requires_a_significant_gain(result) -> None:
+    """S6 item 2: best rung is the lowest whose paired gain interval excludes zero, not the
+    lowest cross-fitted Brier point estimate.
+
+    "good" is well-calibrated by construction; the ladder should find nothing admissible and fall
+    back to rung0. "weak" is deliberately, substantially miscalibrated; the ladder should find a
+    real, interval-backed gain. Locks the directionality choice (ci_low > 0, not merely "excludes
+    zero either way") and that the chosen rung is genuinely the lowest admissible one, not skipped
+    past.
+    """
+    verdict = result.manifest["verdict"]
+    assert verdict["good"]["best_rung"] == "rung0"
+
+    weak_best = verdict["weak"]["best_rung"]
+    assert weak_best in {"rung1", "rung2", "rung3"}
+
+    gains = result.metrics[
+        (result.metrics["metric"] == "paired_gain_brier")
+        & (result.metrics["subset"] == "common")
+        & (result.metrics["stratum_kind"] == "overall")
+        & (result.metrics["fit_mode"] == "crossfit")
+        & (result.metrics["model_id"] == "weak")
+    ].set_index("rung")
+
+    # the chosen rung's own gain interval excludes zero on the improvement side
+    assert gains.loc[weak_best, "ci_low"] > 0
+    # no lower rung was skipped past
+    for rung in ("rung1", "rung2", "rung3"):
+        if rung == weak_best:
+            break
+        if rung in gains.index:
+            assert not (gains.loc[rung, "ci_low"] > 0)
+
+
 def test_calibration_artefact_shape(result) -> None:
     """Item 2a: per-member decile points with a cluster band."""
     cal = result.calibration

@@ -22,6 +22,7 @@ outcome:
 # patches. See docs/spec.md section 2.1.
 clustering:
   field: wsi
+  name: slide
 
 coverage:
   min_fraction: 0.95
@@ -50,11 +51,22 @@ uncertainty:
 # in autoloop/members/ plus `p4m_reg_vl` recovered from autoloop/inbox/ -- the S0 note's "all 14"
 # counted only the members/ directory and missed the recovered file. `p4m_reg` is the 16th,
 # declared but permanently lost (its .keras weights lived in ephemeral Colab storage), so it is
-# the one absent id. (`champion` is a single model_id that is itself an 11-member ensemble; that
-# 11 is unrelated to the roster count.) Declaring `p4m_reg` is the point: it makes the gap appear
-# as a flag in every report instead of the model quietly not existing. The remaining ids are
-# probed members evaluated but not promoted -- declaring them keeps present-but-undeclared
-# meaningful.
+# the one absent id. Declaring `p4m_reg` is the point: it makes the gap appear as a flag in every
+# report instead of the model quietly not existing. The remaining ids are probed members
+# evaluated but not promoted -- declaring them keeps present-but-undeclared meaningful.
+#
+# CORRECTED S6 (2026-08-26): a prior version of this comment claimed "`champion` is a single
+# model_id that is itself an 11-member ensemble" -- that was WRONG, verified against the campaign
+# repo's autoloop/state.json (read-only). The campaign overloads the name "champion" for two
+# distinct things: (1) `state["members"]["champion"]` -- a single trained model (job0b, its own
+# solo OOF AUROC 0.916338), loaded here from autoloop/members/oof_champion.csv exactly like every
+# other member in MEMBERS_DIR_MODELS (build_fixture.py); this is what the fixture's `champion`
+# model_id actually contains, and it is an honest single model's predictions, not a blend. (2) the
+# top-level `state["champion"]` -- the campaign's CURRENT BEST recipe, an unrelated 11-member
+# weighted blend (private LB 0.9761) that happens to include member (1) as one of its 11
+# ingredients at weight 0.0672. That blend's OWN predictions were never exported as a model_id
+# and do not exist anywhere in this fixture -- there is no roster entry for it. The 11-member
+# count in the old comment described (2), not (1); conflating them was the bug.
 expected_models:
   - champion
   - tinyvgg

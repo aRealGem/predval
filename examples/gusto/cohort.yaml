@@ -27,6 +27,7 @@ outcome:
 # by slide, here it is by region rather than an imaging artifact.
 clustering:
   field: regl
+  name: region
 
 coverage:
   min_fraction: 0.95

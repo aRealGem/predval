@@ -62,6 +62,10 @@ class ClusteringSpec(StrictModel):
     """
 
     field: str = Field(min_length=1)
+    #: Human-readable noun for the clustering unit (e.g. "slide", "region"), threaded through the
+    #: report's prose so it reads correctly for whatever cohort shape declared it (S6 item 5).
+    #: Defaults to the generic "cluster" for cohorts that don't bother naming it.
+    name: str = Field(default="cluster", min_length=1)
 
 
 class CoverageSpec(StrictModel):

@@ -371,12 +371,21 @@ Per member, on the common subset / overall stratum, predval reports a single ski
 single plain-language line, stored in `manifest.verdict[model]` and rendered in report section 2.
 
 **Brier skill score.** `BSS = 1 − brier_bestrung_crossfit / (pbar·(1−pbar))`, where `pbar` is the
-observed prevalence on the common subset and the *best admissible rung* is the rung — including
-`rung0` (as published) — with the lowest cross-fitted Brier. `pbar·(1−pbar)` is the Brier of the
-no-skill model that always predicts prevalence, so BSS is anchored at **0 = no-skill** and
-**1 = perfect**: the fraction of the gap between them that the score closes. Its interval is a
-cluster bootstrap over slides, recomputing both the loss and the prevalence reference inside each
-resample (`ci_method = cluster_bootstrap`).
+observed prevalence on the common subset and the *best admissible rung* is the **lowest** rung
+whose paired cross-fit Brier-gain interval (§4.5) **excludes zero on the improvement side**
+(`ci_low > 0`) — the ladder's own significance test, checked in order `rung1` → `rung2` → `rung3`
+and stopped at the first rung that clears it. This replaced an earlier version of this rule (S6)
+that instead picked whichever rung had the lowest cross-fitted Brier *point estimate*, with no
+regard for whether that rung's apparent improvement was distinguishable from noise; the earlier
+rule could and did report a "best admissible repair" for members whose gain interval crossed zero
+by a wide margin. If no rung's interval excludes zero on the positive side — including a rung
+whose interval sits **entirely below** zero, evidence the correction reliably made Brier *worse*,
+which is not "admissible" under any reading — the verdict falls back to `rung0` (as published):
+"none — well-calibrated as published" is the honest report, not an absence of one. `pbar·(1−pbar)`
+is the Brier of the no-skill model that always predicts prevalence, so BSS is anchored at
+**0 = no-skill** and **1 = perfect**: the fraction of the gap between them that the score closes.
+Its interval is a cluster bootstrap over slides, recomputing both the loss and the prevalence
+reference inside each resample (`ci_method = cluster_bootstrap`).
 
 **Plain-language line, template-generated (item 3ii).** Exactly one line per member, assembled
 **only** from `(AUROC, BSS, best rung)` with **no free adjectives**. AUROC and BSS are inserted as
@@ -597,12 +606,14 @@ worse than no harness, because its output looks the same either way.
 **The optimism correction covers the recalibration step only, not model or ensemble construction
 (item 6b).** Section 3's cross-fit disciplines the *recalibration*: it holds whole slides out so a
 correction is never scored on the rows it was fitted on. It says nothing about how the predictions
-themselves were produced. If the ensemble weights of a member (the champion) were selected on slides
-inside this cohort, then `rung0` — the as-published score — is *itself* optimistically biased, and
-this harness cannot detect that: predval evaluates the predictions it is handed and has no view of
-their construction. Only a cohort the ensemble was never tuned on could expose that bias. The report
-renders this verbatim in a Limitations block so the optimism gap is never mis-read as covering more
-than it does.
+themselves were produced. If a roster member's own weights (an ensemble blend, say) were selected on
+slides inside this cohort, then `rung0` — the as-published score — is *itself* optimistically biased,
+and this harness cannot detect that: predval evaluates the predictions it is handed and has no view
+of their construction, including whether any given `model_id` is a single trained model or a blend
+(S6 item 1: a `model_id`'s *name* is not evidence either way — always verify composition against its
+source, never assume from a name alone). Only a cohort the ensemble was never tuned on could expose
+that bias. This caution is rendered in the report's Limitations block only when the roster has more
+than one member -- with a single model there is nothing to have weighted an ensemble between.
 
 **The paired cross-fit gain interval (§4.5) conditions on the fitted correction, not free of it
 (S5.1).** The interval resamples the *slide-level loss difference* between rung0 and the held-out

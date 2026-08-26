@@ -235,10 +235,14 @@ def loso_fragility(estimator, groups: np.ndarray, point: float) -> tuple[float, 
     return worst, culprit
 
 
-def few_clusters_note(n_clusters: int) -> str | None:
+def few_clusters_note(n_clusters: int, stratum: str) -> str | None:
+    """`stratum` names which cell this G belongs to (e.g. "overall", "scanner_domain=0") --
+    without it, a report with multiple few-clusters flags at different G values has no way to say
+    which stratum each one is about (S6 item 7).
+    """
     if n_clusters < FEW_CLUSTERS:
         return (
-            f"tail quantiles approximate with few clusters (G={n_clusters}); "
+            f"tail quantiles approximate with few clusters (G={n_clusters}) for {stratum}; "
             f"percentile bootstrap intervals below {FEW_CLUSTERS} clusters are coarse"
         )
     return None
