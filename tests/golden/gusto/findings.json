@@ -3,7 +3,7 @@
   "flags": [
     {
       "code": "few_clusters",
-      "message": "tail quantiles approximate with few clusters (G=15); percentile bootstrap intervals below 40 clusters are coarse",
+      "message": "tail quantiles approximate with few clusters (G=15) for overall; percentile bootstrap intervals below 40 clusters are coarse",
       "severity": "note"
     }
   ],
@@ -67,11 +67,11 @@
         }
       ],
       "verdict": {
-        "best_rung": "rung3",
-        "bss": 0.107122,
-        "bss_ci_high": 0.116391,
-        "bss_ci_low": 0.097484,
-        "gauge_label": "non-monotone shape"
+        "best_rung": "rung2",
+        "bss": 0.105138,
+        "bss_ci_high": 0.115543,
+        "bss_ci_low": 0.094747,
+        "gauge_label": "level and spread (intercept + slope)"
       }
     }
   ],
@@ -86,10 +86,10 @@
         "gusto_west_refit_logistic"
       ]
     },
-    "git_commit": "cff159d4a3a8b6288bd25849f077473f5a613042",
+    "git_commit": "cdcf689c94889a7b280614723cb1c93824eee6b1-dirty",
     "input_hashes": {
       "cohort_data": "f12cf9399b3b5add42faa72c9d44b342cef9192f68509f23ce9d1f9236657388",
-      "cohort_spec": "255177272cfb0965d560ca036e5038a910707342d29cc6c9dc5d68a30ca1e054",
+      "cohort_spec": "029e1a08c3c4a03a616d567227bcb5a53c66e02ac59ab91bf59b82f2c050ea23",
       "predictions": "49d003b038fdcaee7d38924fe92334c2f338f447c5ce6ae3ea4b79d86fbb1d0e"
     },
     "n_boot": 2000,

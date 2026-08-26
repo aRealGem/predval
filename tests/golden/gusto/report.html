@@ -71,7 +71,7 @@ best admissible rung -- no free adjectives. BSS is anchored at <strong>0 = no-sk
 predict prevalence) and <strong>1 = perfect</strong>; "closes Y% of the gap" is BSS as a percentage.
 The gauge fault names which rung, if any, the miscalibration needed.</p>
 <ul>
-<li><strong>gusto_west_refit_logistic</strong> -- Ranking: AUROC 0.7908 [0.783, 0.798]. Probability quality after best admissible repair: closes 10.7% [9.7%, 11.6%] of the gap from no-skill (always predict prevalence) to perfect. Gauge fault found: non-monotone shape.</li>
+<li><strong>gusto_west_refit_logistic</strong> -- Ranking: AUROC 0.7908 [0.783, 0.798]. Probability quality after best admissible repair: closes 10.5% [9.5%, 11.6%] of the gap from no-skill (always predict prevalence) to perfect. Gauge fault found: level and spread (intercept + slope).</li>
 </ul>
 
 <h3>Calibration (rung0, as published)</h3>
@@ -1019,9 +1019,7 @@ z
 </div>
 
 <h3>Unit-of-analysis exhibit</h3>
-<p class="muted">The naive per-row AUROC interval is <em>incorrect</em> when patches share a slide.
-It is shown only to make the cost of ignoring clustering concrete: the ratio is how much narrower
-the wrong interval looks.</p>
+<p class="muted">The naive per-row AUROC interval is shown alongside the cluster-aware one for comparison. Here the two <em>nearly agree</em> -- the regions in this cohort are large or homogeneous enough that ignoring clustering cost little in this exhibit; the check, not a dramatic gap, is the point.</p>
 <table>
 <tr><th>model</th><th>cluster width</th><th>naive width (wrong)</th><th>ratio</th></tr>
 <tr><td>gusto_west_refit_logistic</td><td>0.0151</td><td>0.0172</td>
@@ -2141,20 +2139,19 @@ z
 best per-member gain. Each cell is the <strong>paired cross-fit Brier gain</strong> -- rung0 Brier
 minus that rung's held-out Brier, positive when recalibration helped -- with its paired
 cluster-bootstrap interval (a gain whose interval excludes 0 is a real out-of-fold improvement).
-The apparent, in-sample gains run larger; only the cross-fitted gains, which hold whole slides out,
-are shown. rung1's apparent intercept is ~0 and rung2's apparent slope is ~1
-<span class="byconstruction">by construction</span> (that is what each fit targets), so those are
+The apparent, in-sample gains run larger; only the cross-fitted gains, which hold whole
+regions out, are shown. rung1's apparent intercept is ~0 and rung2's apparent slope is
+~1 <span class="byconstruction">by construction</span> (that is what each fit targets), so those are
 not reported as findings. Recalibration cannot improve discrimination; the cross-fitted Brier is the
 expected loss after local recalibration, not a validated result.</p>
 <p class="subordinate">At small G the flexible rung is high-variance under cross-fitting: absence of
 a rung3 gain is evidence of linear miscalibration only insofar as rung3 had power to detect shape
-distortion. See the fold4 diagnosis (docs/diagnosis-rung3-scanner_domain0.md) for the members whose
-rung3 could not be cross-fit on this cohort.</p>
+distortion.</p>
 <table>
-<tr><th>model</th><th>Brier rung0</th><th>rung1 gain [CI]</th><th>rung2 gain [CI]</th>
-    <th>rung3 gain [CI]</th></tr>
-<tr><td>gusto_west_refit_logistic</td><td>0.0589</td><td>-0.0001 [-0.000, -0.000]</td>
-    <td>+0.0004 [0.000, 0.001]</td><td>+0.0005 [0.000, 0.001]</td></tr>
+<tr><th>model</th><th>Brier rung0</th><th>rung1 gain [CI] (x10⁻³)</th><th>rung2 gain [CI] (x10⁻³)</th>
+    <th>rung3 gain [CI] (x10⁻³)</th></tr>
+<tr><td>gusto_west_refit_logistic</td><td>0.0589</td><td>-0.09 [-0.18, -0.01] x10⁻³</td>
+    <td>+0.41 [0.29, 0.53] x10⁻³</td><td>+0.54 [0.35, 0.73] x10⁻³</td></tr>
 </table>
 <div class="figure"><svg xmlns:xlink="http://www.w3.org/1999/xlink" width="310.5795pt" height="158.02275pt" viewBox="0 0 310.5795 158.02275" xmlns="http://www.w3.org/2000/svg" version="1.1">
  <metadata>
@@ -3281,22 +3278,22 @@ z
 
 <h2>5. Fragility -- not a confidence interval</h2>
 <p class="muted">The largest AUROC change from dropping any single cluster, and the culprit. This is
-deliberately <strong>not</strong> an interval: it answers whether a result is carried by one slide,
-which a tight bootstrap interval will not reveal.</p>
+deliberately <strong>not</strong> an interval: it answers whether a result is carried by one
+region, which a tight bootstrap interval will not reveal.</p>
 <table>
 <tr><th>model</th><th>max |delta AUROC|</th><th>culprit cluster</th></tr>
 <tr><td>gusto_west_refit_logistic</td><td>0.0021</td><td>7</td></tr>
 </table>
 
 <h3>Limitations</h3>
-<div class="limitations">The optimism correction in section 3 covers the recalibration step ONLY -- it does not cover model or ensemble construction. If the ensemble weights (the champion) were selected on slides inside this cohort, rung0 is itself optimistically biased, and this harness cannot detect it: predval evaluates the predictions it is handed and has no view of how they were produced. Only a cohort the ensemble was never tuned on could expose that bias. Similarly, the paired cross-fit gain interval (section 3) conditions on the fitted correction -- it resamples the slide-level loss difference but does not refit the correction inside each bootstrap replicate, so it does not carry the correction&#39;s own fitting variance; that refit-in-replicate interval remains backlog (spec section 4.5).</div>
+<div class="limitations">The paired cross-fit gain interval (section 3) conditions on the fitted correction -- it resamples the region-level loss difference but does not refit the correction inside each bootstrap replicate, so it does not carry the correction&#39;s own fitting variance; that refit-in-replicate interval remains backlog (spec section 4.5).</div>
 
 <h2>6. Provenance</h2>
 <p class="muted">Input digests (blake2b), the bootstrap seed and B, and library versions -- enough to
 reproduce every number.</p>
 <table>
 <tr><th>cohort_data</th><td><code>f12cf9399b3b5add42faa72c9d44b342cef9192f68509f23ce9d1f9236657388</code></td></tr>
-<tr><th>cohort_spec</th><td><code>255177272cfb0965d560ca036e5038a910707342d29cc6c9dc5d68a30ca1e054</code></td></tr>
+<tr><th>cohort_spec</th><td><code>029e1a08c3c4a03a616d567227bcb5a53c66e02ac59ab91bf59b82f2c050ea23</code></td></tr>
 <tr><th>predictions</th><td><code>49d003b038fdcaee7d38924fe92334c2f338f447c5ce6ae3ea4b79d86fbb1d0e</code></td></tr>
 <tr><th>contract version</th><td>0</td></tr>
 <tr><th>bootstrap</th><td>B=2000, seed=1337,
@@ -3311,7 +3308,7 @@ reproduce every number.</p>
 </table>
 
 <h3>Flags</h3>
-<ul class="muted"><li><strong>few_clusters</strong>: tail quantiles approximate with few clusters (G=15); percentile bootstrap intervals below 40 clusters are coarse</li></ul>
+<ul class="muted"><li><strong>few_clusters</strong>: tail quantiles approximate with few clusters (G=15) for overall; percentile bootstrap intervals below 40 clusters are coarse</li></ul>
 
 
 </body>

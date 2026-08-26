@@ -11,7 +11,7 @@ uv run --group examples python examples/gusto/run_evaluation.py
 
 | | |
 |---|---|
-| generated | 2026-08-25 |
+| generated | 2026-08-25, refreshed 2026-08-26 (S6) |
 | predval commit | golden-freeze commit (regenerated at `cff159d`, the adversarial-ingestion HEAD) |
 | GUSTO source | `https://hbiostat.org/data/repo/gusto.rda` (public GUSTO-I teaching release) |
 
@@ -19,6 +19,16 @@ Reproducibility was verified at freeze time: a fresh run reproduced the six byte
 artefacts exactly against the prior (the session record) run; `findings.json` differed only in
 `provenance.git_commit`, which is why that one field is normalized out of the comparison in
 `tests/test_golden_gusto.py`.
+
+**S6 refresh (2026-08-26):** `manifest.json`, `report.html`, `findings.json` changed;
+`metrics`/`fragility`/`calibration`/`coverage.parquet` did not (confirmed by hash). The verdict
+selection rule changed (docs/spec.md §4.8): best-admissible-rung is now the *lowest* rung whose
+paired cross-fit gain interval excludes zero, not the rung with the lowest point-estimate Brier.
+For this cohort both rung2 and rung3 clear that bar, so the verdict moved from rung3 to rung2 (the
+lower of the two) and BSS moved from 0.1071 to 0.1051 -- a small, expected shift from a genuine rule
+correction, not drift. Report prose also picked up the cluster-noun templating (now says "region"
+via `cohort.yaml`'s new `clustering.name`) and the x10⁻³ section-3 display precision (S6 items 4-5).
+Reproducibility re-verified: two independent runs at this commit were byte-identical.
 
 To refresh deliberately after an intentional change, see the docstring of
 `tests/test_golden_gusto.py`.

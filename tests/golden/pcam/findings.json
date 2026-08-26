@@ -8,12 +8,17 @@
     },
     {
       "code": "few_clusters",
-      "message": "tail quantiles approximate with few clusters (G=11); percentile bootstrap intervals below 40 clusters are coarse",
+      "message": "tail quantiles approximate with few clusters (G=11) for scanner_domain=0; percentile bootstrap intervals below 40 clusters are coarse",
       "severity": "note"
     },
     {
       "code": "few_clusters",
-      "message": "tail quantiles approximate with few clusters (G=22); percentile bootstrap intervals below 40 clusters are coarse",
+      "message": "tail quantiles approximate with few clusters (G=11) for scanner_domain=1; percentile bootstrap intervals below 40 clusters are coarse",
+      "severity": "note"
+    },
+    {
+      "code": "few_clusters",
+      "message": "tail quantiles approximate with few clusters (G=22) for overall; percentile bootstrap intervals below 40 clusters are coarse",
       "severity": "note"
     },
     {
@@ -442,11 +447,11 @@
         }
       ],
       "verdict": {
-        "best_rung": "rung2",
-        "bss": 0.125821,
-        "bss_ci_high": 0.247217,
-        "bss_ci_low": -0.22417,
-        "gauge_label": "level and spread (intercept + slope)"
+        "best_rung": "rung0",
+        "bss": 0.053411,
+        "bss_ci_high": 0.135418,
+        "bss_ci_low": -0.578832,
+        "gauge_label": "none -- well-calibrated as published"
       }
     },
     {
@@ -508,11 +513,11 @@
         }
       ],
       "verdict": {
-        "best_rung": "rung3",
-        "bss": 0.805545,
-        "bss_ci_high": 0.847003,
-        "bss_ci_low": 0.720246,
-        "gauge_label": "non-monotone shape"
+        "best_rung": "rung0",
+        "bss": 0.796421,
+        "bss_ci_high": 0.833715,
+        "bss_ci_low": 0.660927,
+        "gauge_label": "none -- well-calibrated as published"
       }
     },
     {
@@ -640,11 +645,11 @@
         }
       ],
       "verdict": {
-        "best_rung": "rung3",
-        "bss": 0.723096,
-        "bss_ci_high": 0.782126,
-        "bss_ci_low": 0.565893,
-        "gauge_label": "non-monotone shape"
+        "best_rung": "rung0",
+        "bss": 0.709442,
+        "bss_ci_high": 0.756926,
+        "bss_ci_low": 0.590165,
+        "gauge_label": "none -- well-calibrated as published"
       }
     },
     {
@@ -706,11 +711,11 @@
         }
       ],
       "verdict": {
-        "best_rung": "rung3",
-        "bss": 0.837714,
-        "bss_ci_high": 0.860996,
-        "bss_ci_low": 0.767412,
-        "gauge_label": "non-monotone shape"
+        "best_rung": "rung2",
+        "bss": 0.836877,
+        "bss_ci_high": 0.86059,
+        "bss_ci_low": 0.771083,
+        "gauge_label": "level and spread (intercept + slope)"
       }
     },
     {
@@ -772,11 +777,11 @@
         }
       ],
       "verdict": {
-        "best_rung": "rung3",
-        "bss": 0.797599,
-        "bss_ci_high": 0.824208,
-        "bss_ci_low": 0.728991,
-        "gauge_label": "non-monotone shape"
+        "best_rung": "rung0",
+        "bss": 0.795641,
+        "bss_ci_high": 0.825215,
+        "bss_ci_low": 0.642565,
+        "gauge_label": "none -- well-calibrated as published"
       }
     },
     {
@@ -1036,11 +1041,11 @@
         }
       ],
       "verdict": {
-        "best_rung": "rung2",
-        "bss": 0.194569,
-        "bss_ci_high": 0.384546,
-        "bss_ci_low": -0.175874,
-        "gauge_label": "level and spread (intercept + slope)"
+        "best_rung": "rung0",
+        "bss": 0.041859,
+        "bss_ci_high": 0.128059,
+        "bss_ci_low": -0.623295,
+        "gauge_label": "none -- well-calibrated as published"
       }
     }
   ],
@@ -1070,10 +1075,10 @@
         "effnet_scratch"
       ]
     },
-    "git_commit": "b0c3511a0cf930ac57efcd71aa63a4904b18b508-dirty",
+    "git_commit": "cdcf689c94889a7b280614723cb1c93824eee6b1-dirty",
     "input_hashes": {
       "cohort_data": "766930b2c511c5bd7056743cec118396b314cee3e4ff729e97bdd6c3b253d48f",
-      "cohort_spec": "b506a70f554a6c817ec37565bbe825dcbd8d64850a99fd85038724b8905f59e9",
+      "cohort_spec": "29b7eb83a5fa6708512841e1d47720ade5dcdd87fecd9969f21fcd5eede86ae5",
       "predictions": "27ceeff32d91f7fae5a3e9a11253cb728540c55eb3d7662f08536b5fdf4dbaeb"
     },
     "n_boot": 2000,

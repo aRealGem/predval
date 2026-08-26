@@ -10,13 +10,26 @@ uv run python examples/pcam/run_evaluation.py
 
 | | |
 |---|---|
-| generated | 2026-08-22 (refreshed in S5.1 -- `report.html`/`findings.json` only, after the item-3 Limitations sentence; metrics/fragility/calibration/coverage/manifest unchanged since S5) |
-| predval commit | S5.1 (pre-commit at generation time) |
+| generated | 2026-08-22 (refreshed S5.1, S6) |
+| predval commit | S6 golden-refresh commit (regenerated at `cdcf689`) |
 | PCam campaign source (`~/histopath-cancer-detection`) HEAD | `5646c80eef04029543f5ad317a9cbf87653be7ce`, clean |
 
 `findings.json` here has its `provenance.git_commit` field taken as-is from that generation run;
 `tests/test_golden_pcam.py` and `examples/pcam/reproduce.py` both normalize that one field out of
 the comparison, since it legitimately changes on every commit to this repo.
+
+**S6 refresh (2026-08-26):** `manifest.json`, `report.html`, `findings.json` changed;
+`metrics`/`fragility`/`calibration`/`coverage.parquet` did not (confirmed by hash -- no statistics
+changed, only the verdict-selection rule and report display/prose). The verdict rule (docs/spec.md
+section 4.8) now picks the *lowest* rung whose paired cross-fit gain interval excludes zero, not
+the rung with the lowest point-estimate Brier. Consequence for this fixture: `tinyvgg_vl` and
+`macenko` -- previously verdicted at rung2 as "real repairs" -- now correctly verdict at rung0,
+"none -- well-calibrated as published", because both members' rung1-3 gain intervals cross zero at
+the common/overall cell (a prior write-up of this fixture's S4.2 session claimed both excluded
+zero; that was a transcription error in the card log, not a code bug -- corrected on the session record). `p4m_seed7` is the only member whose gain interval excludes zero (rung2), unchanged from
+before. Report prose also picked up the x10⁻³ section-3 display precision and cluster-noun
+templating (S6 items 4-5; this cohort declares `clustering.name: slide`). Determinism re-verified
+across three independent full B=2000 runs at this commit, byte-identical on every artefact.
 
 To refresh deliberately after an intentional change, see the docstring of
 `tests/test_golden_pcam.py`.

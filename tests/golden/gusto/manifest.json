@@ -14,13 +14,13 @@
   "flags": [
     {
       "code": "few_clusters",
-      "message": "tail quantiles approximate with few clusters (G=15); percentile bootstrap intervals below 40 clusters are coarse",
+      "message": "tail quantiles approximate with few clusters (G=15) for overall; percentile bootstrap intervals below 40 clusters are coarse",
       "severity": "note"
     }
   ],
   "inputs": {
     "cohort_data": "f12cf9399b3b5add42faa72c9d44b342cef9192f68509f23ce9d1f9236657388",
-    "cohort_spec": "255177272cfb0965d560ca036e5038a910707342d29cc6c9dc5d68a30ca1e054",
+    "cohort_spec": "029e1a08c3c4a03a616d567227bcb5a53c66e02ac59ab91bf59b82f2c050ea23",
     "predictions": "49d003b038fdcaee7d38924fe92334c2f338f447c5ce6ae3ea4b79d86fbb1d0e"
   },
   "models_present": [
@@ -36,17 +36,18 @@
     "ci_level": 0.95,
     "clustered": true,
     "clustering_field": "regl",
+    "clustering_name": "region",
     "n_boot": 2000,
     "seed": 1337,
     "show_naive_ci": true
   },
   "verdict": {
     "gusto_west_refit_logistic": {
-      "best_rung": "rung3",
-      "best_rung_brier": 0.05834608648863978,
-      "bss": 0.10712164989098172,
-      "bss_ci_high": 0.11639142525504537,
-      "bss_ci_low": 0.09748350325046605,
+      "best_rung": "rung2",
+      "best_rung_brier": 0.05847567959994254,
+      "bss": 0.10513846832098839,
+      "bss_ci_high": 0.11554307055052539,
+      "bss_ci_low": 0.09474715028889998,
       "n": 38642,
       "n_clusters": 15,
       "prevalence": 0.07028621706950985,
