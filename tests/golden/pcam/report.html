@@ -45,9 +45,6 @@
    <strong>1</strong> absent   (<span class="warn">p4m_reg</span> -- declared but no predictions).</p>
 <table>
 <tr><th>model</th><th>coverage</th><th>scored</th><th>dropped if common</th><th>meets minimum</th></tr>
-<tr><td>champion</td><td>1.0000</td><td>19999</td>
-    <td>0</td>
-    <td>yes</td></tr>
 <tr><td>e2cnn</td><td>1.0000</td><td>19999</td>
     <td>0</td>
     <td>yes</td></tr>
@@ -61,6 +58,9 @@
     <td>0</td>
     <td>yes</td></tr>
 <tr><td>macenko</td><td>1.0000</td><td>19999</td>
+    <td>0</td>
+    <td>yes</td></tr>
+<tr><td>mobilenetv3</td><td>1.0000</td><td>19999</td>
     <td>0</td>
     <td>yes</td></tr>
 <tr><td>p4m_dense</td><td>1.0000</td><td>19999</td>
@@ -136,7 +136,7 @@ column is omitted (every value would be zero).</p>
 <tr><td>effnet_scratch</td><td>0.9685 [0.956, 0.985]</td><td>0.9402 [0.861, 0.966]</td>
     <td>0.0562 [0.039, 0.071]</td><td>1.3436 [1.141, 1.546]</td><td>-0.2781 [-0.972, 0.415]</td>
 </tr>
-<tr><td>champion</td><td>0.9163 [0.870, 0.962]</td><td>0.8446 [0.691, 0.912]</td>
+<tr><td>mobilenetv3</td><td>0.9163 [0.870, 0.962]</td><td>0.8446 [0.691, 0.912]</td>
     <td>0.1046 [0.080, 0.135]</td><td>1.3915 [0.920, 1.863]</td><td>-0.3845 [-1.254, 0.485]</td>
 </tr>
 <tr><td>tinyvgg_vl</td><td>0.7936 [0.687, 0.893]</td><td>0.5960 [0.214, 0.781]</td>
@@ -155,21 +155,21 @@ best admissible rung -- no free adjectives. BSS is anchored at <strong>0 = no-sk
 predict prevalence) and <strong>1 = perfect</strong>; "closes Y% of the gap" is BSS as a percentage.
 The gauge fault names which rung, if any, the miscalibration needed.</p>
 <ul>
-<li><strong>swin</strong> -- Ranking: AUROC 0.9866 [0.982, 0.995]. Probability quality after best admissible repair: closes 88.1% [84.0%, 91.7%] of the gap from no-skill (always predict prevalence) to perfect. Gauge fault found: none -- well-calibrated as published.</li>
-<li><strong>p4m_seed7</strong> -- Ranking: AUROC 0.9856 [0.982, 0.990]. Probability quality after best admissible repair: closes 83.7% [77.1%, 86.1%] of the gap from no-skill (always predict prevalence) to perfect. Gauge fault found: level and spread (intercept + slope).</li>
-<li><strong>e2cnn_s21</strong> -- Ranking: AUROC 0.9855 [0.979, 0.994]. Probability quality after best admissible repair: closes 83.4% [79.0%, 86.9%] of the gap from no-skill (always predict prevalence) to perfect. Gauge fault found: none -- well-calibrated as published.</li>
+<li><strong>swin</strong> -- Ranking: AUROC 0.9866 [0.982, 0.995]. Probability quality after best admissible repair: closes 88.1% [84.0%, 91.7%] of the gap from no-skill (always predict prevalence) to perfect. Gauge fault found: none -- well-calibrated as published; recalibration demonstrably counterproductive at rung3.</li>
+<li><strong>p4m_seed7</strong> -- Ranking: AUROC 0.9856 [0.982, 0.990]. Probability quality after best admissible repair: closes 83.7% [77.1%, 86.1%] of the gap from no-skill (always predict prevalence) to perfect. Gauge fault found: miscalibrated (slope 1.4428 [1.240, 1.645]); repair demonstrated at rung2 (level and spread (intercept + slope)).</li>
+<li><strong>e2cnn_s21</strong> -- Ranking: AUROC 0.9855 [0.979, 0.994]. Probability quality after best admissible repair: closes 83.4% [79.0%, 86.9%] of the gap from no-skill (always predict prevalence) to perfect. Gauge fault found: none -- well-calibrated as published; recalibration demonstrably counterproductive at rung1, rung2, rung3.</li>
 <li><strong>e2cnn</strong> -- Ranking: AUROC 0.9851 [0.980, 0.992]. Probability quality after best admissible repair: closes 80.7% [75.6%, 84.7%] of the gap from no-skill (always predict prevalence) to perfect. Gauge fault found: none -- well-calibrated as published.</li>
-<li><strong>p4m_reg_vl</strong> -- Ranking: AUROC 0.9851 [0.981, 0.993]. Probability quality after best admissible repair: closes 81.7% [72.6%, 84.0%] of the gap from no-skill (always predict prevalence) to perfect. Gauge fault found: none -- well-calibrated as published.</li>
-<li><strong>phikon</strong> -- Ranking: AUROC 0.9835 [0.976, 0.996]. Probability quality after best admissible repair: closes 83.5% [76.8%, 86.0%] of the gap from no-skill (always predict prevalence) to perfect. Gauge fault found: none -- well-calibrated as published.</li>
-<li><strong>p4m_svm</strong> -- Ranking: AUROC 0.9833 [0.978, 0.992]. Probability quality after best admissible repair: closes 79.6% [64.3%, 82.5%] of the gap from no-skill (always predict prevalence) to perfect. Gauge fault found: none -- well-calibrated as published.</li>
-<li><strong>e2cnn_s99</strong> -- Ranking: AUROC 0.9818 [0.973, 0.995]. Probability quality after best admissible repair: closes 81.1% [75.6%, 86.6%] of the gap from no-skill (always predict prevalence) to perfect. Gauge fault found: none -- well-calibrated as published.</li>
-<li><strong>p4m_dense</strong> -- Ranking: AUROC 0.9805 [0.972, 0.991]. Probability quality after best admissible repair: closes 79.6% [66.1%, 83.4%] of the gap from no-skill (always predict prevalence) to perfect. Gauge fault found: none -- well-calibrated as published.</li>
+<li><strong>p4m_reg_vl</strong> -- Ranking: AUROC 0.9851 [0.981, 0.993]. Probability quality after best admissible repair: closes 81.7% [72.6%, 84.0%] of the gap from no-skill (always predict prevalence) to perfect. Gauge fault found: miscalibrated (slope 1.1600 [1.023, 1.297]); repair benefit unproven at this cohort&#39;s power (G=22) -- tail quantiles approximate with few clusters (G=22) for overall; percentile bootstrap intervals below 40 clusters are coarse.</li>
+<li><strong>phikon</strong> -- Ranking: AUROC 0.9835 [0.976, 0.996]. Probability quality after best admissible repair: closes 83.5% [76.8%, 86.0%] of the gap from no-skill (always predict prevalence) to perfect. Gauge fault found: miscalibrated (slope 1.4041 [1.086, 1.723]); repair benefit unproven at this cohort&#39;s power (G=22) -- tail quantiles approximate with few clusters (G=22) for overall; percentile bootstrap intervals below 40 clusters are coarse.</li>
+<li><strong>p4m_svm</strong> -- Ranking: AUROC 0.9833 [0.978, 0.992]. Probability quality after best admissible repair: closes 79.6% [64.3%, 82.5%] of the gap from no-skill (always predict prevalence) to perfect. Gauge fault found: miscalibrated (intercept -0.9415 [-1.882, -0.001]); repair benefit unproven at this cohort&#39;s power (G=22) -- tail quantiles approximate with few clusters (G=22) for overall; percentile bootstrap intervals below 40 clusters are coarse.</li>
+<li><strong>e2cnn_s99</strong> -- Ranking: AUROC 0.9818 [0.973, 0.995]. Probability quality after best admissible repair: closes 81.1% [75.6%, 86.6%] of the gap from no-skill (always predict prevalence) to perfect. Gauge fault found: none -- well-calibrated as published; recalibration demonstrably counterproductive at rung1, rung2, rung3.</li>
+<li><strong>p4m_dense</strong> -- Ranking: AUROC 0.9805 [0.972, 0.991]. Probability quality after best admissible repair: closes 79.6% [66.1%, 83.4%] of the gap from no-skill (always predict prevalence) to perfect. Gauge fault found: miscalibrated (intercept -0.8938 [-1.705, -0.083]); repair benefit unproven at this cohort&#39;s power (G=22) -- tail quantiles approximate with few clusters (G=22) for overall; percentile bootstrap intervals below 40 clusters are coarse.</li>
 <li><strong>tinyvgg</strong> -- Ranking: AUROC 0.9786 [0.969, 0.991]. Probability quality after best admissible repair: closes 81.7% [73.3%, 85.0%] of the gap from no-skill (always predict prevalence) to perfect. Gauge fault found: none -- well-calibrated as published.</li>
-<li><strong>p4m_s13</strong> -- Ranking: AUROC 0.9707 [0.955, 0.986]. Probability quality after best admissible repair: closes 70.9% [59.0%, 75.7%] of the gap from no-skill (always predict prevalence) to perfect. Gauge fault found: none -- well-calibrated as published.</li>
-<li><strong>effnet_scratch</strong> -- Ranking: AUROC 0.9685 [0.956, 0.985]. Probability quality after best admissible repair: closes 72.7% [58.2%, 77.4%] of the gap from no-skill (always predict prevalence) to perfect. Gauge fault found: none -- well-calibrated as published.</li>
-<li><strong>champion</strong> -- Ranking: AUROC 0.9163 [0.870, 0.962]. Probability quality after best admissible repair: closes 49.2% [16.8%, 58.8%] of the gap from no-skill (always predict prevalence) to perfect. Gauge fault found: none -- well-calibrated as published.</li>
-<li><strong>tinyvgg_vl</strong> -- Ranking: AUROC 0.7936 [0.687, 0.893]. Probability quality after best admissible repair: closes 4.2% [-62.3%, 12.8%] of the gap from no-skill (always predict prevalence) to perfect. Gauge fault found: none -- well-calibrated as published.</li>
-<li><strong>macenko</strong> -- Ranking: AUROC 0.7641 [0.638, 0.848]. Probability quality after best admissible repair: closes 5.3% [-57.9%, 13.5%] of the gap from no-skill (always predict prevalence) to perfect. Gauge fault found: none -- well-calibrated as published.</li>
+<li><strong>p4m_s13</strong> -- Ranking: AUROC 0.9707 [0.955, 0.986]. Probability quality after best admissible repair: closes 70.9% [59.0%, 75.7%] of the gap from no-skill (always predict prevalence) to perfect. Gauge fault found: miscalibrated (slope 1.7283 [1.393, 2.064]); recalibration demonstrably counterproductive at rung1.</li>
+<li><strong>effnet_scratch</strong> -- Ranking: AUROC 0.9685 [0.956, 0.985]. Probability quality after best admissible repair: closes 72.7% [58.2%, 77.4%] of the gap from no-skill (always predict prevalence) to perfect. Gauge fault found: miscalibrated (slope 1.3436 [1.141, 1.546]); repair benefit unproven at this cohort&#39;s power (G=22) -- tail quantiles approximate with few clusters (G=22) for overall; percentile bootstrap intervals below 40 clusters are coarse.</li>
+<li><strong>mobilenetv3</strong> -- Ranking: AUROC 0.9163 [0.870, 0.962]. Probability quality after best admissible repair: closes 49.2% [16.8%, 58.8%] of the gap from no-skill (always predict prevalence) to perfect. Gauge fault found: none -- well-calibrated as published.</li>
+<li><strong>tinyvgg_vl</strong> -- Ranking: AUROC 0.7936 [0.687, 0.893]. Probability quality after best admissible repair: closes 4.2% [-62.3%, 12.8%] of the gap from no-skill (always predict prevalence) to perfect. Gauge fault found: miscalibrated (slope 4.9295 [2.718, 7.141]); repair benefit unproven at this cohort&#39;s power (G=22) -- tail quantiles approximate with few clusters (G=22) for overall; percentile bootstrap intervals below 40 clusters are coarse.</li>
+<li><strong>macenko</strong> -- Ranking: AUROC 0.7641 [0.638, 0.848]. Probability quality after best admissible repair: closes 5.3% [-57.9%, 13.5%] of the gap from no-skill (always predict prevalence) to perfect. Gauge fault found: miscalibrated (slope 3.1832 [1.754, 4.613]); repair benefit unproven at this cohort&#39;s power (G=22) -- tail quantiles approximate with few clusters (G=22) for overall; percentile bootstrap intervals below 40 clusters are coarse.</li>
 </ul>
 
 <h3>Calibration (rung0, as published)</h3>
@@ -4135,16 +4135,47 @@ L 153.811692 531.202629
 " clip-path="url(#pcca640d163)" style="fill: none; stroke: #123b5e; stroke-width: 1.1; stroke-linecap: square"/>
    </g>
    <g id="text_92">
-    <!-- champion -->
-    <g transform="translate(91.539824 517.973922) scale(0.08 -0.08)">
-     <use xlink:href="#DejaVuSans-46"/>
-     <use xlink:href="#DejaVuSans-4b" transform="translate(54.984375 0)"/>
-     <use xlink:href="#DejaVuSans-44" transform="translate(118.359375 0)"/>
-     <use xlink:href="#DejaVuSans-50" transform="translate(179.640625 0)"/>
-     <use xlink:href="#DejaVuSans-53" transform="translate(277.046875 0)"/>
-     <use xlink:href="#DejaVuSans-4c" transform="translate(340.53125 0)"/>
-     <use xlink:href="#DejaVuSans-52" transform="translate(368.3125 0)"/>
-     <use xlink:href="#DejaVuSans-51" transform="translate(429.5 0)"/>
+    <!-- mobilenetv3 -->
+    <g transform="translate(86.211074 517.973922) scale(0.08 -0.08)">
+     <defs>
+      <path id="DejaVuSans-45" d="M 3116 1747 
+Q 3116 2381 2855 2742 
+Q 2594 3103 2138 3103 
+Q 1681 3103 1420 2742 
+Q 1159 2381 1159 1747 
+Q 1159 1113 1420 752 
+Q 1681 391 2138 391 
+Q 2594 391 2855 752 
+Q 3116 1113 3116 1747 
+z
+M 1159 2969 
+Q 1341 3281 1617 3432 
+Q 1894 3584 2278 3584 
+Q 2916 3584 3314 3078 
+Q 3713 2572 3713 1747 
+Q 3713 922 3314 415 
+Q 2916 -91 2278 -91 
+Q 1894 -91 1617 61 
+Q 1341 213 1159 525 
+L 1159 0 
+L 581 0 
+L 581 4863 
+L 1159 4863 
+L 1159 2969 
+z
+" transform="scale(0.015625)"/>
+     </defs>
+     <use xlink:href="#DejaVuSans-50"/>
+     <use xlink:href="#DejaVuSans-52" transform="translate(97.40625 0)"/>
+     <use xlink:href="#DejaVuSans-45" transform="translate(158.59375 0)"/>
+     <use xlink:href="#DejaVuSans-4c" transform="translate(222.078125 0)"/>
+     <use xlink:href="#DejaVuSans-4f" transform="translate(249.859375 0)"/>
+     <use xlink:href="#DejaVuSans-48" transform="translate(277.640625 0)"/>
+     <use xlink:href="#DejaVuSans-51" transform="translate(339.171875 0)"/>
+     <use xlink:href="#DejaVuSans-48" transform="translate(402.546875 0)"/>
+     <use xlink:href="#DejaVuSans-57" transform="translate(464.078125 0)"/>
+     <use xlink:href="#DejaVuSans-59" transform="translate(503.28125 0)"/>
+     <use xlink:href="#DejaVuSans-16" transform="translate(562.46875 0)"/>
     </g>
    </g>
    <g id="PathCollection_13">
@@ -4668,32 +4699,6 @@ L 374.346424 562.695527
    <g transform="translate(193.706625 706.396875) scale(0.08 -0.08)">
     <defs>
      <path id="DejaVuSans-3" transform="scale(0.015625)"/>
-     <path id="DejaVuSans-45" d="M 3116 1747 
-Q 3116 2381 2855 2742 
-Q 2594 3103 2138 3103 
-Q 1681 3103 1420 2742 
-Q 1159 2381 1159 1747 
-Q 1159 1113 1420 752 
-Q 1681 391 2138 391 
-Q 2594 391 2855 752 
-Q 3116 1113 3116 1747 
-z
-M 1159 2969 
-Q 1341 3281 1617 3432 
-Q 1894 3584 2278 3584 
-Q 2916 3584 3314 3078 
-Q 3713 2572 3713 1747 
-Q 3713 922 3314 415 
-Q 2916 -91 2278 -91 
-Q 1894 -91 1617 61 
-Q 1341 213 1159 525 
-L 1159 0 
-L 581 0 
-L 581 4863 
-L 1159 4863 
-L 1159 2969 
-z
-" transform="scale(0.015625)"/>
     </defs>
     <use xlink:href="#DejaVuSans-53"/>
     <use xlink:href="#DejaVuSans-55" transform="translate(63.484375 0)"/>
@@ -4870,7 +4875,7 @@ z
     <td>6.1x</td></tr>
 <tr><td>effnet_scratch</td><td>0.0294</td><td>0.0058</td>
     <td>5.1x</td></tr>
-<tr><td>champion</td><td>0.0926</td><td>0.0087</td>
+<tr><td>mobilenetv3</td><td>0.0926</td><td>0.0087</td>
     <td>10.7x</td></tr>
 <tr><td>tinyvgg_vl</td><td>0.2068</td><td>0.0135</td>
     <td>15.3x</td></tr>
@@ -6222,16 +6227,47 @@ z
       </g>
      </g>
      <g id="text_22">
-      <!-- champion -->
-      <g transform="translate(24.695 341.059062) scale(0.08 -0.08)">
-       <use xlink:href="#DejaVuSans-46"/>
-       <use xlink:href="#DejaVuSans-4b" transform="translate(54.984375 0)"/>
-       <use xlink:href="#DejaVuSans-44" transform="translate(118.359375 0)"/>
-       <use xlink:href="#DejaVuSans-50" transform="translate(179.640625 0)"/>
-       <use xlink:href="#DejaVuSans-53" transform="translate(277.046875 0)"/>
-       <use xlink:href="#DejaVuSans-4c" transform="translate(340.53125 0)"/>
-       <use xlink:href="#DejaVuSans-52" transform="translate(368.3125 0)"/>
-       <use xlink:href="#DejaVuSans-51" transform="translate(429.5 0)"/>
+      <!-- mobilenetv3 -->
+      <g transform="translate(14.0375 341.059062) scale(0.08 -0.08)">
+       <defs>
+        <path id="DejaVuSans-45" d="M 3116 1747 
+Q 3116 2381 2855 2742 
+Q 2594 3103 2138 3103 
+Q 1681 3103 1420 2742 
+Q 1159 2381 1159 1747 
+Q 1159 1113 1420 752 
+Q 1681 391 2138 391 
+Q 2594 391 2855 752 
+Q 3116 1113 3116 1747 
+z
+M 1159 2969 
+Q 1341 3281 1617 3432 
+Q 1894 3584 2278 3584 
+Q 2916 3584 3314 3078 
+Q 3713 2572 3713 1747 
+Q 3713 922 3314 415 
+Q 2916 -91 2278 -91 
+Q 1894 -91 1617 61 
+Q 1341 213 1159 525 
+L 1159 0 
+L 581 0 
+L 581 4863 
+L 1159 4863 
+L 1159 2969 
+z
+" transform="scale(0.015625)"/>
+       </defs>
+       <use xlink:href="#DejaVuSans-50"/>
+       <use xlink:href="#DejaVuSans-52" transform="translate(97.40625 0)"/>
+       <use xlink:href="#DejaVuSans-45" transform="translate(158.59375 0)"/>
+       <use xlink:href="#DejaVuSans-4c" transform="translate(222.078125 0)"/>
+       <use xlink:href="#DejaVuSans-4f" transform="translate(249.859375 0)"/>
+       <use xlink:href="#DejaVuSans-48" transform="translate(277.640625 0)"/>
+       <use xlink:href="#DejaVuSans-51" transform="translate(339.171875 0)"/>
+       <use xlink:href="#DejaVuSans-48" transform="translate(402.546875 0)"/>
+       <use xlink:href="#DejaVuSans-57" transform="translate(464.078125 0)"/>
+       <use xlink:href="#DejaVuSans-59" transform="translate(503.28125 0)"/>
+       <use xlink:href="#DejaVuSans-16" transform="translate(562.46875 0)"/>
       </g>
      </g>
     </g>
@@ -6685,7 +6721,7 @@ cohort.</p>
     <td>-1.89 [-6.23, 3.03] x10⁻³</td><td>-0.77 [-3.86, 2.72] x10⁻³</td></tr>
 <tr><td>effnet_scratch</td><td>0.0562</td><td>-3.22 [-9.12, 2.78] x10⁻³</td>
     <td>-1.49 [-6.05, 3.06] x10⁻³</td><td>-0.89 [-4.08, 2.38] x10⁻³</td></tr>
-<tr><td>champion</td><td>0.1046</td><td>-5.12 [-26.19, 15.50] x10⁻³</td>
+<tr><td>mobilenetv3</td><td>0.1046</td><td>-5.12 [-26.19, 15.50] x10⁻³</td>
     <td>-1.97 [-22.41, 15.84] x10⁻³</td><td>-1.07 [-21.41, 16.90] x10⁻³</td></tr>
 <tr><td>p4m_reg_vl</td><td>0.0376</td><td>-2.18 [-8.51, 4.86] x10⁻³</td>
     <td>-1.92 [-7.59, 4.41] x10⁻³</td><td>-1.61 [-6.31, 3.58] x10⁻³</td></tr>
@@ -10388,16 +10424,47 @@ L 174.425583 515.723424
     </g>
    </g>
    <g id="text_125">
-    <!-- champion -->
-    <g transform="translate(100.999353 495.033233) scale(0.08 -0.08)">
-     <use xlink:href="#DejaVuSans-46"/>
-     <use xlink:href="#DejaVuSans-4b" transform="translate(54.984375 0)"/>
-     <use xlink:href="#DejaVuSans-44" transform="translate(118.359375 0)"/>
-     <use xlink:href="#DejaVuSans-50" transform="translate(179.640625 0)"/>
-     <use xlink:href="#DejaVuSans-53" transform="translate(277.046875 0)"/>
-     <use xlink:href="#DejaVuSans-4c" transform="translate(340.53125 0)"/>
-     <use xlink:href="#DejaVuSans-52" transform="translate(368.3125 0)"/>
-     <use xlink:href="#DejaVuSans-51" transform="translate(429.5 0)"/>
+    <!-- mobilenetv3 -->
+    <g transform="translate(95.670603 495.033233) scale(0.08 -0.08)">
+     <defs>
+      <path id="DejaVuSans-45" d="M 3116 1747 
+Q 3116 2381 2855 2742 
+Q 2594 3103 2138 3103 
+Q 1681 3103 1420 2742 
+Q 1159 2381 1159 1747 
+Q 1159 1113 1420 752 
+Q 1681 391 2138 391 
+Q 2594 391 2855 752 
+Q 3116 1113 3116 1747 
+z
+M 1159 2969 
+Q 1341 3281 1617 3432 
+Q 1894 3584 2278 3584 
+Q 2916 3584 3314 3078 
+Q 3713 2572 3713 1747 
+Q 3713 922 3314 415 
+Q 2916 -91 2278 -91 
+Q 1894 -91 1617 61 
+Q 1341 213 1159 525 
+L 1159 0 
+L 581 0 
+L 581 4863 
+L 1159 4863 
+L 1159 2969 
+z
+" transform="scale(0.015625)"/>
+     </defs>
+     <use xlink:href="#DejaVuSans-50"/>
+     <use xlink:href="#DejaVuSans-52" transform="translate(97.40625 0)"/>
+     <use xlink:href="#DejaVuSans-45" transform="translate(158.59375 0)"/>
+     <use xlink:href="#DejaVuSans-4c" transform="translate(222.078125 0)"/>
+     <use xlink:href="#DejaVuSans-4f" transform="translate(249.859375 0)"/>
+     <use xlink:href="#DejaVuSans-48" transform="translate(277.640625 0)"/>
+     <use xlink:href="#DejaVuSans-51" transform="translate(339.171875 0)"/>
+     <use xlink:href="#DejaVuSans-48" transform="translate(402.546875 0)"/>
+     <use xlink:href="#DejaVuSans-57" transform="translate(464.078125 0)"/>
+     <use xlink:href="#DejaVuSans-59" transform="translate(503.28125 0)"/>
+     <use xlink:href="#DejaVuSans-16" transform="translate(562.46875 0)"/>
     </g>
    </g>
    <g id="line2d_164">
@@ -10922,32 +10989,6 @@ L 678 1100
 L 678 1631 
 z
 " transform="scale(0.015625)"/>
-     <path id="DejaVuSans-45" d="M 3116 1747 
-Q 3116 2381 2855 2742 
-Q 2594 3103 2138 3103 
-Q 1681 3103 1420 2742 
-Q 1159 2381 1159 1747 
-Q 1159 1113 1420 752 
-Q 1681 391 2138 391 
-Q 2594 391 2855 752 
-Q 3116 1113 3116 1747 
-z
-M 1159 2969 
-Q 1341 3281 1617 3432 
-Q 1894 3584 2278 3584 
-Q 2916 3584 3314 3078 
-Q 3713 2572 3713 1747 
-Q 3713 922 3314 415 
-Q 2916 -91 2278 -91 
-Q 1894 -91 1617 61 
-Q 1341 213 1159 525 
-L 1159 0 
-L 581 0 
-L 581 4863 
-L 1159 4863 
-L 1159 2969 
-z
-" transform="scale(0.015625)"/>
      <path id="DejaVuSans-c" d="M 513 4856 
 L 1013 4856 
 Q 1481 4119 1714 3412 
@@ -11132,12 +11173,12 @@ z
 <h2>4. Subgroups</h2>
 <table>
 <tr><th>subgroup</th><th>model</th><th>AUROC</th><th>Brier</th></tr>
-<tr><td>scanner_domain=0</td><td>champion</td><td>0.9600 [0.952, 0.969]</td><td>0.0788 [0.063, 0.094]</td></tr>
 <tr><td>scanner_domain=0</td><td>e2cnn</td><td>0.9892 [0.982, 0.995]</td><td>0.0348 [0.003, 0.063]</td></tr>
 <tr><td>scanner_domain=0</td><td>e2cnn_s21</td><td>0.9899 [0.988, 0.992]</td><td>0.0274 [0.008, 0.042]</td></tr>
 <tr><td>scanner_domain=0</td><td>e2cnn_s99</td><td>0.9853 [0.975, 0.993]</td><td>0.0356 [0.007, 0.059]</td></tr>
 <tr><td>scanner_domain=0</td><td>effnet_scratch</td><td>0.9785 [0.955, 0.993]</td><td>0.0457 [0.024, 0.067]</td></tr>
 <tr><td>scanner_domain=0</td><td>macenko</td><td>0.8489 [0.694, 0.953]</td><td>0.1813 [0.142, 0.208]</td></tr>
+<tr><td>scanner_domain=0</td><td>mobilenetv3</td><td>0.9600 [0.952, 0.969]</td><td>0.0788 [0.063, 0.094]</td></tr>
 <tr><td>scanner_domain=0</td><td>p4m_dense</td><td>0.9844 [0.967, 0.996]</td><td>0.0375 [0.023, 0.050]</td></tr>
 <tr><td>scanner_domain=0</td><td>p4m_reg_vl</td><td>0.9850 [0.980, 0.992]</td><td>0.0344 [0.018, 0.049]</td></tr>
 <tr><td>scanner_domain=0</td><td>p4m_s13</td><td>0.9756 [0.945, 0.994]</td><td>0.0495 [0.015, 0.080]</td></tr>
@@ -11147,12 +11188,12 @@ z
 <tr><td>scanner_domain=0</td><td>swin</td><td>0.9872 [0.983, 0.991]</td><td>0.0191 [0.005, 0.031]</td></tr>
 <tr><td>scanner_domain=0</td><td>tinyvgg</td><td>0.9849 [0.970, 0.994]</td><td>0.0320 [0.017, 0.046]</td></tr>
 <tr><td>scanner_domain=0</td><td>tinyvgg_vl</td><td>0.8578 [0.638, 0.986]</td><td>0.1840 [0.147, 0.211]</td></tr>
-<tr><td>scanner_domain=1</td><td>champion</td><td>0.8842 [0.839, 0.958]</td><td>0.1278 [0.086, 0.168]</td></tr>
 <tr><td>scanner_domain=1</td><td>e2cnn</td><td>0.9822 [0.975, 0.993]</td><td>0.0442 [0.017, 0.067]</td></tr>
 <tr><td>scanner_domain=1</td><td>e2cnn_s21</td><td>0.9827 [0.975, 0.998]</td><td>0.0401 [0.012, 0.064]</td></tr>
 <tr><td>scanner_domain=1</td><td>e2cnn_s99</td><td>0.9800 [0.970, 0.999]</td><td>0.0419 [0.011, 0.071]</td></tr>
 <tr><td>scanner_domain=1</td><td>effnet_scratch</td><td>0.9612 [0.950, 0.983]</td><td>0.0655 [0.042, 0.084]</td></tr>
 <tr><td>scanner_domain=1</td><td>macenko</td><td>0.7437 [0.575, 0.802]</td><td>0.2070 [0.164, 0.240]</td></tr>
+<tr><td>scanner_domain=1</td><td>mobilenetv3</td><td>0.8842 [0.839, 0.958]</td><td>0.1278 [0.086, 0.168]</td></tr>
 <tr><td>scanner_domain=1</td><td>p4m_dense</td><td>0.9783 [0.969, 0.992]</td><td>0.0459 [0.027, 0.060]</td></tr>
 <tr><td>scanner_domain=1</td><td>p4m_reg_vl</td><td>0.9843 [0.976, 0.995]</td><td>0.0405 [0.026, 0.052]</td></tr>
 <tr><td>scanner_domain=1</td><td>p4m_s13</td><td>0.9658 [0.945, 0.984]</td><td>0.0691 [0.041, 0.093]</td></tr>
@@ -11172,7 +11213,7 @@ slide, which a tight bootstrap interval will not reveal.</p>
 <tr><th>model</th><th>max |delta AUROC|</th><th>culprit cluster</th></tr>
 <tr><td>tinyvgg_vl</td><td>0.0427</td><td>camelyon16_train_tumor_108</td></tr>
 <tr><td>macenko</td><td>0.0406</td><td>camelyon16_train_tumor_108</td></tr>
-<tr><td>champion</td><td>0.0325</td><td>camelyon16_train_tumor_075</td></tr>
+<tr><td>mobilenetv3</td><td>0.0325</td><td>camelyon16_train_tumor_075</td></tr>
 <tr><td>effnet_scratch</td><td>0.0080</td><td>camelyon16_train_tumor_075</td></tr>
 <tr><td>tinyvgg</td><td>0.0067</td><td>camelyon16_train_tumor_075</td></tr>
 <tr><td>e2cnn_s99</td><td>0.0066</td><td>camelyon16_train_tumor_075</td></tr>
@@ -11188,15 +11229,15 @@ slide, which a tight bootstrap interval will not reveal.</p>
 </table>
 
 <h3>Limitations</h3>
-<div class="limitations">The optimism correction in section 3 covers the recalibration step ONLY -- it does not cover model or ensemble construction. If a roster member&#39;s own weights were selected on slides inside this cohort, rung0 is itself optimistically biased, and this harness cannot detect it: predval evaluates the predictions it is handed and has no view of how they were produced, including whether any given model_id is a single trained model or a blend of several (a model_id&#39;s name is not evidence either way -- always verify composition against its source). Only a cohort the ensemble was never tuned on could expose that bias. The paired cross-fit gain interval (section 3) conditions on the fitted correction -- it resamples the slide-level loss difference but does not refit the correction inside each bootstrap replicate, so it does not carry the correction&#39;s own fitting variance; that refit-in-replicate interval remains backlog (spec section 4.5).</div>
+<div class="limitations">The paired cross-fit gain interval (section 3) conditions on the fitted correction -- it resamples the slide-level loss difference but does not refit the correction inside each bootstrap replicate, so it does not carry the correction&#39;s own fitting variance; that refit-in-replicate interval remains backlog (spec section 4.5).</div>
 
 <h2>6. Provenance</h2>
 <p class="muted">Input digests (blake2b), the bootstrap seed and B, and library versions -- enough to
 reproduce every number.</p>
 <table>
 <tr><th>cohort_data</th><td><code>766930b2c511c5bd7056743cec118396b314cee3e4ff729e97bdd6c3b253d48f</code></td></tr>
-<tr><th>cohort_spec</th><td><code>29b7eb83a5fa6708512841e1d47720ade5dcdd87fecd9969f21fcd5eede86ae5</code></td></tr>
-<tr><th>predictions</th><td><code>27ceeff32d91f7fae5a3e9a11253cb728540c55eb3d7662f08536b5fdf4dbaeb</code></td></tr>
+<tr><th>cohort_spec</th><td><code>b859642cc5f350b372da2fc1a41f6256b80ab1da5bd34da4ed2159a2dc1c4ced</code></td></tr>
+<tr><th>predictions</th><td><code>109dcdedb3211718fd437efe18d63e14f3c2e1f08d5300572494648b13167f7b</code></td></tr>
 <tr><th>contract version</th><td>0</td></tr>
 <tr><th>bootstrap</th><td>B=2000, seed=1337,
     ci=0.95</td></tr>

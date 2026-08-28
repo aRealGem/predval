@@ -30,6 +30,7 @@
   "roster": {
     "absent": [],
     "declared": 1,
+    "ensemble_members": [],
     "present": 1
   },
   "uncertainty": {
@@ -43,6 +44,9 @@
   },
   "verdict": {
     "gusto_west_refit_logistic": {
+      "axis_a_miscalibrated": true,
+      "axis_b": "demonstrated",
+      "axis_b_counterproductive_rungs": [],
       "best_rung": "rung2",
       "best_rung_brier": 0.05847567959994254,
       "bss": 0.10513846832098839,

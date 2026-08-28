@@ -62,72 +62,6 @@
       "analytic_ci_truncated": false,
       "metrics": {
         "auroc": {
-          "ci_high": 0.962226,
-          "ci_low": 0.869647,
-          "ci_method": "cluster_bootstrap",
-          "value": 0.916338
-        },
-        "average_precision": {
-          "ci_high": 0.911601,
-          "ci_low": 0.690722,
-          "ci_method": "cluster_bootstrap",
-          "value": 0.844587
-        },
-        "brier": {
-          "ci_high": 0.134602,
-          "ci_low": 0.079672,
-          "ci_method": "cluster_bootstrap",
-          "value": 0.104634
-        },
-        "calibration_intercept": {
-          "ci_high": 0.485284,
-          "ci_low": -1.254213,
-          "ci_method": "cluster_robust_t",
-          "value": -0.384465
-        },
-        "calibration_slope": {
-          "ci_high": 1.862535,
-          "ci_low": 0.920471,
-          "ci_method": "cluster_robust_t",
-          "value": 1.391503
-        }
-      },
-      "model_id": "champion",
-      "recalibration_gains": [
-        {
-          "ci_high": 0.0155,
-          "ci_low": -0.026188,
-          "ci_method": "paired_cluster_bootstrap",
-          "gain": -0.005122,
-          "rung": "rung1"
-        },
-        {
-          "ci_high": 0.015837,
-          "ci_low": -0.022414,
-          "ci_method": "paired_cluster_bootstrap",
-          "gain": -0.001971,
-          "rung": "rung2"
-        },
-        {
-          "ci_high": 0.016895,
-          "ci_low": -0.021405,
-          "ci_method": "paired_cluster_bootstrap",
-          "gain": -0.00107,
-          "rung": "rung3"
-        }
-      ],
-      "verdict": {
-        "best_rung": "rung0",
-        "bss": 0.491631,
-        "bss_ci_high": 0.587535,
-        "bss_ci_low": 0.168097,
-        "gauge_label": "none -- well-calibrated as published"
-      }
-    },
-    {
-      "analytic_ci_truncated": false,
-      "metrics": {
-        "auroc": {
           "ci_high": 0.992206,
           "ci_low": 0.980476,
           "ci_method": "cluster_bootstrap",
@@ -183,6 +117,8 @@
         }
       ],
       "verdict": {
+        "axis_a_miscalibrated": false,
+        "axis_b": "unproven",
         "best_rung": "rung0",
         "bss": 0.806678,
         "bss_ci_high": 0.846973,
@@ -249,11 +185,13 @@
         }
       ],
       "verdict": {
+        "axis_a_miscalibrated": false,
+        "axis_b": "counterproductive",
         "best_rung": "rung0",
         "bss": 0.834421,
         "bss_ci_high": 0.869296,
         "bss_ci_low": 0.789897,
-        "gauge_label": "none -- well-calibrated as published"
+        "gauge_label": "none -- well-calibrated as published; recalibration demonstrably counterproductive at rung1, rung2, rung3"
       }
     },
     {
@@ -315,11 +253,13 @@
         }
       ],
       "verdict": {
+        "axis_a_miscalibrated": false,
+        "axis_b": "counterproductive",
         "best_rung": "rung0",
         "bss": 0.810971,
         "bss_ci_high": 0.865881,
         "bss_ci_low": 0.75565,
-        "gauge_label": "none -- well-calibrated as published"
+        "gauge_label": "none -- well-calibrated as published; recalibration demonstrably counterproductive at rung1, rung2, rung3"
       }
     },
     {
@@ -381,11 +321,13 @@
         }
       ],
       "verdict": {
+        "axis_a_miscalibrated": true,
+        "axis_b": "unproven",
         "best_rung": "rung0",
         "bss": 0.727165,
         "bss_ci_high": 0.774094,
         "bss_ci_low": 0.582476,
-        "gauge_label": "none -- well-calibrated as published"
+        "gauge_label": "miscalibrated (slope 1.3436 [1.141, 1.546]); repair benefit unproven at this cohort's power (G=22) -- tail quantiles approximate with few clusters (G=22) for overall; percentile bootstrap intervals below 40 clusters are coarse"
       }
     },
     {
@@ -447,10 +389,80 @@
         }
       ],
       "verdict": {
+        "axis_a_miscalibrated": true,
+        "axis_b": "unproven",
         "best_rung": "rung0",
         "bss": 0.053411,
         "bss_ci_high": 0.135418,
         "bss_ci_low": -0.578832,
+        "gauge_label": "miscalibrated (slope 3.1832 [1.754, 4.613]); repair benefit unproven at this cohort's power (G=22) -- tail quantiles approximate with few clusters (G=22) for overall; percentile bootstrap intervals below 40 clusters are coarse"
+      }
+    },
+    {
+      "analytic_ci_truncated": false,
+      "metrics": {
+        "auroc": {
+          "ci_high": 0.962226,
+          "ci_low": 0.869647,
+          "ci_method": "cluster_bootstrap",
+          "value": 0.916338
+        },
+        "average_precision": {
+          "ci_high": 0.911601,
+          "ci_low": 0.690722,
+          "ci_method": "cluster_bootstrap",
+          "value": 0.844587
+        },
+        "brier": {
+          "ci_high": 0.134602,
+          "ci_low": 0.079672,
+          "ci_method": "cluster_bootstrap",
+          "value": 0.104634
+        },
+        "calibration_intercept": {
+          "ci_high": 0.485284,
+          "ci_low": -1.254213,
+          "ci_method": "cluster_robust_t",
+          "value": -0.384465
+        },
+        "calibration_slope": {
+          "ci_high": 1.862535,
+          "ci_low": 0.920471,
+          "ci_method": "cluster_robust_t",
+          "value": 1.391503
+        }
+      },
+      "model_id": "mobilenetv3",
+      "recalibration_gains": [
+        {
+          "ci_high": 0.0155,
+          "ci_low": -0.026188,
+          "ci_method": "paired_cluster_bootstrap",
+          "gain": -0.005122,
+          "rung": "rung1"
+        },
+        {
+          "ci_high": 0.015837,
+          "ci_low": -0.022414,
+          "ci_method": "paired_cluster_bootstrap",
+          "gain": -0.001971,
+          "rung": "rung2"
+        },
+        {
+          "ci_high": 0.016895,
+          "ci_low": -0.021405,
+          "ci_method": "paired_cluster_bootstrap",
+          "gain": -0.00107,
+          "rung": "rung3"
+        }
+      ],
+      "verdict": {
+        "axis_a_miscalibrated": false,
+        "axis_b": "unproven",
+        "best_rung": "rung0",
+        "bss": 0.491631,
+        "bss_ci_high": 0.587535,
+        "bss_ci_low": 0.168097,
         "gauge_label": "none -- well-calibrated as published"
       }
     },
@@ -513,11 +525,13 @@
         }
       ],
       "verdict": {
+        "axis_a_miscalibrated": true,
+        "axis_b": "unproven",
         "best_rung": "rung0",
         "bss": 0.796421,
         "bss_ci_high": 0.833715,
         "bss_ci_low": 0.660927,
-        "gauge_label": "none -- well-calibrated as published"
+        "gauge_label": "miscalibrated (intercept -0.8938 [-1.705, -0.083]); repair benefit unproven at this cohort's power (G=22) -- tail quantiles approximate with few clusters (G=22) for overall; percentile bootstrap intervals below 40 clusters are coarse"
       }
     },
     {
@@ -579,11 +593,13 @@
         }
       ],
       "verdict": {
+        "axis_a_miscalibrated": true,
+        "axis_b": "unproven",
         "best_rung": "rung0",
         "bss": 0.817084,
         "bss_ci_high": 0.840148,
         "bss_ci_low": 0.725567,
-        "gauge_label": "none -- well-calibrated as published"
+        "gauge_label": "miscalibrated (slope 1.1600 [1.023, 1.297]); repair benefit unproven at this cohort's power (G=22) -- tail quantiles approximate with few clusters (G=22) for overall; percentile bootstrap intervals below 40 clusters are coarse"
       }
     },
     {
@@ -645,11 +661,13 @@
         }
       ],
       "verdict": {
+        "axis_a_miscalibrated": true,
+        "axis_b": "counterproductive",
         "best_rung": "rung0",
         "bss": 0.709442,
         "bss_ci_high": 0.756926,
         "bss_ci_low": 0.590165,
-        "gauge_label": "none -- well-calibrated as published"
+        "gauge_label": "miscalibrated (slope 1.7283 [1.393, 2.064]); recalibration demonstrably counterproductive at rung1"
       }
     },
     {
@@ -711,11 +729,13 @@
         }
       ],
       "verdict": {
+        "axis_a_miscalibrated": true,
+        "axis_b": "demonstrated",
         "best_rung": "rung2",
         "bss": 0.836877,
         "bss_ci_high": 0.86059,
         "bss_ci_low": 0.771083,
-        "gauge_label": "level and spread (intercept + slope)"
+        "gauge_label": "miscalibrated (slope 1.4428 [1.240, 1.645]); repair demonstrated at rung2 (level and spread (intercept + slope))"
       }
     },
     {
@@ -777,11 +797,13 @@
         }
       ],
       "verdict": {
+        "axis_a_miscalibrated": true,
+        "axis_b": "unproven",
         "best_rung": "rung0",
         "bss": 0.795641,
         "bss_ci_high": 0.825215,
         "bss_ci_low": 0.642565,
-        "gauge_label": "none -- well-calibrated as published"
+        "gauge_label": "miscalibrated (intercept -0.9415 [-1.882, -0.001]); repair benefit unproven at this cohort's power (G=22) -- tail quantiles approximate with few clusters (G=22) for overall; percentile bootstrap intervals below 40 clusters are coarse"
       }
     },
     {
@@ -843,11 +865,13 @@
         }
       ],
       "verdict": {
+        "axis_a_miscalibrated": true,
+        "axis_b": "unproven",
         "best_rung": "rung0",
         "bss": 0.835299,
         "bss_ci_high": 0.859765,
         "bss_ci_low": 0.767515,
-        "gauge_label": "none -- well-calibrated as published"
+        "gauge_label": "miscalibrated (slope 1.4041 [1.086, 1.723]); repair benefit unproven at this cohort's power (G=22) -- tail quantiles approximate with few clusters (G=22) for overall; percentile bootstrap intervals below 40 clusters are coarse"
       }
     },
     {
@@ -909,11 +933,13 @@
         }
       ],
       "verdict": {
+        "axis_a_miscalibrated": false,
+        "axis_b": "counterproductive",
         "best_rung": "rung0",
         "bss": 0.881054,
         "bss_ci_high": 0.916554,
         "bss_ci_low": 0.840113,
-        "gauge_label": "none -- well-calibrated as published"
+        "gauge_label": "none -- well-calibrated as published; recalibration demonstrably counterproductive at rung3"
       }
     },
     {
@@ -975,6 +1001,8 @@
         }
       ],
       "verdict": {
+        "axis_a_miscalibrated": false,
+        "axis_b": "unproven",
         "best_rung": "rung0",
         "bss": 0.816801,
         "bss_ci_high": 0.849628,
@@ -1041,11 +1069,13 @@
         }
       ],
       "verdict": {
+        "axis_a_miscalibrated": true,
+        "axis_b": "unproven",
         "best_rung": "rung0",
         "bss": 0.041859,
         "bss_ci_high": 0.128059,
         "bss_ci_low": -0.623295,
-        "gauge_label": "none -- well-calibrated as published"
+        "gauge_label": "miscalibrated (slope 4.9295 [2.718, 7.141]); repair benefit unproven at this cohort's power (G=22) -- tail quantiles approximate with few clusters (G=22) for overall; percentile bootstrap intervals below 40 clusters are coarse"
       }
     }
   ],
@@ -1057,7 +1087,7 @@
       "coverage_compare_on": "both",
       "coverage_min_fraction": 0.95,
       "expected_models": [
-        "champion",
+        "mobilenetv3",
         "tinyvgg",
         "p4m_reg",
         "p4m_reg_vl",
@@ -1075,11 +1105,11 @@
         "effnet_scratch"
       ]
     },
-    "git_commit": "cdcf689c94889a7b280614723cb1c93824eee6b1-dirty",
+    "git_commit": "bfb50b21a3b76bcbea6f765d565ed18775c72d92-dirty",
     "input_hashes": {
       "cohort_data": "766930b2c511c5bd7056743cec118396b314cee3e4ff729e97bdd6c3b253d48f",
-      "cohort_spec": "29b7eb83a5fa6708512841e1d47720ade5dcdd87fecd9969f21fcd5eede86ae5",
-      "predictions": "27ceeff32d91f7fae5a3e9a11253cb728540c55eb3d7662f08536b5fdf4dbaeb"
+      "cohort_spec": "b859642cc5f350b372da2fc1a41f6256b80ab1da5bd34da4ed2159a2dc1c4ced",
+      "predictions": "109dcdedb3211718fd437efe18d63e14f3c2e1f08d5300572494648b13167f7b"
     },
     "n_boot": 2000,
     "seed": 1337,
@@ -1100,5 +1130,5 @@
     "declared": 16,
     "present": 15
   },
-  "schema_version": "1.0"
+  "schema_version": "1.1"
 }

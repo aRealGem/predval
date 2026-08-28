@@ -9,7 +9,7 @@
   },
   "dropped_subjects": [],
   "expected_models": [
-    "champion",
+    "mobilenetv3",
     "tinyvgg",
     "p4m_reg",
     "p4m_reg_vl",
@@ -85,16 +85,16 @@
   ],
   "inputs": {
     "cohort_data": "766930b2c511c5bd7056743cec118396b314cee3e4ff729e97bdd6c3b253d48f",
-    "cohort_spec": "29b7eb83a5fa6708512841e1d47720ade5dcdd87fecd9969f21fcd5eede86ae5",
-    "predictions": "27ceeff32d91f7fae5a3e9a11253cb728540c55eb3d7662f08536b5fdf4dbaeb"
+    "cohort_spec": "b859642cc5f350b372da2fc1a41f6256b80ab1da5bd34da4ed2159a2dc1c4ced",
+    "predictions": "109dcdedb3211718fd437efe18d63e14f3c2e1f08d5300572494648b13167f7b"
   },
   "models_present": [
-    "champion",
     "e2cnn",
     "e2cnn_s21",
     "e2cnn_s99",
     "effnet_scratch",
     "macenko",
+    "mobilenetv3",
     "p4m_dense",
     "p4m_reg_vl",
     "p4m_s13",
@@ -111,6 +111,7 @@
       "p4m_reg"
     ],
     "declared": 16,
+    "ensemble_members": [],
     "present": 15
   },
   "uncertainty": {
@@ -123,18 +124,10 @@
     "show_naive_ci": true
   },
   "verdict": {
-    "champion": {
-      "best_rung": "rung0",
-      "best_rung_brier": 0.10463354553329983,
-      "bss": 0.49163102459700425,
-      "bss_ci_high": 0.5875351392452611,
-      "bss_ci_low": 0.16809668288509552,
-      "n": 19999,
-      "n_clusters": 22,
-      "prevalence": 0.28981449072453624,
-      "rung0_brier": 0.10463354553329983
-    },
     "e2cnn": {
+      "axis_a_miscalibrated": false,
+      "axis_b": "unproven",
+      "axis_b_counterproductive_rungs": [],
       "best_rung": "rung0",
       "best_rung_brier": 0.03978988327576024,
       "bss": 0.8066782303017206,
@@ -146,6 +139,13 @@
       "rung0_brier": 0.03978988327576024
     },
     "e2cnn_s21": {
+      "axis_a_miscalibrated": false,
+      "axis_b": "counterproductive",
+      "axis_b_counterproductive_rungs": [
+        "rung1",
+        "rung2",
+        "rung3"
+      ],
       "best_rung": "rung0",
       "best_rung_brier": 0.03407978054530161,
       "bss": 0.8344211406631521,
@@ -157,6 +157,13 @@
       "rung0_brier": 0.03407978054530161
     },
     "e2cnn_s99": {
+      "axis_a_miscalibrated": false,
+      "axis_b": "counterproductive",
+      "axis_b_counterproductive_rungs": [
+        "rung1",
+        "rung2",
+        "rung3"
+      ],
       "best_rung": "rung0",
       "best_rung_brier": 0.03890640377140762,
       "bss": 0.8109706736871389,
@@ -168,6 +175,9 @@
       "rung0_brier": 0.03890640377140762
     },
     "effnet_scratch": {
+      "axis_a_miscalibrated": true,
+      "axis_b": "unproven",
+      "axis_b_counterproductive_rungs": [],
       "best_rung": "rung0",
       "best_rung_brier": 0.056155403761802586,
       "bss": 0.7271652706765656,
@@ -179,6 +189,9 @@
       "rung0_brier": 0.056155403761802586
     },
     "macenko": {
+      "axis_a_miscalibrated": true,
+      "axis_b": "unproven",
+      "axis_b_counterproductive_rungs": [],
       "best_rung": "rung0",
       "best_rung_brier": 0.19482878985674792,
       "bss": 0.05341148697900833,
@@ -189,7 +202,24 @@
       "prevalence": 0.28981449072453624,
       "rung0_brier": 0.19482878985674792
     },
+    "mobilenetv3": {
+      "axis_a_miscalibrated": false,
+      "axis_b": "unproven",
+      "axis_b_counterproductive_rungs": [],
+      "best_rung": "rung0",
+      "best_rung_brier": 0.10463354553329983,
+      "bss": 0.49163102459700425,
+      "bss_ci_high": 0.5875351392452611,
+      "bss_ci_low": 0.16809668288509552,
+      "n": 19999,
+      "n_clusters": 22,
+      "prevalence": 0.28981449072453624,
+      "rung0_brier": 0.10463354553329983
+    },
     "p4m_dense": {
+      "axis_a_miscalibrated": true,
+      "axis_b": "unproven",
+      "axis_b_counterproductive_rungs": [],
       "best_rung": "rung0",
       "best_rung_brier": 0.041901010092681885,
       "bss": 0.7964211815570358,
@@ -201,6 +231,9 @@
       "rung0_brier": 0.041901010092681885
     },
     "p4m_reg_vl": {
+      "axis_a_miscalibrated": true,
+      "axis_b": "unproven",
+      "axis_b_counterproductive_rungs": [],
       "best_rung": "rung0",
       "best_rung_brier": 0.037648203119081854,
       "bss": 0.8170837244608095,
@@ -212,6 +245,11 @@
       "rung0_brier": 0.037648203119081854
     },
     "p4m_s13": {
+      "axis_a_miscalibrated": true,
+      "axis_b": "counterproductive",
+      "axis_b_counterproductive_rungs": [
+        "rung1"
+      ],
       "best_rung": "rung0",
       "best_rung_brier": 0.059803225667180215,
       "bss": 0.7094420875899401,
@@ -223,6 +261,9 @@
       "rung0_brier": 0.059803225667180215
     },
     "p4m_seed7": {
+      "axis_a_miscalibrated": true,
+      "axis_b": "demonstrated",
+      "axis_b_counterproductive_rungs": [],
       "best_rung": "rung2",
       "best_rung_brier": 0.0335743621856683,
       "bss": 0.8368767490660507,
@@ -234,6 +275,9 @@
       "rung0_brier": 0.035347567564064
     },
     "p4m_svm": {
+      "axis_a_miscalibrated": true,
+      "axis_b": "unproven",
+      "axis_b_counterproductive_rungs": [],
       "best_rung": "rung0",
       "best_rung_brier": 0.04206154424503885,
       "bss": 0.7956412158000222,
@@ -245,6 +289,9 @@
       "rung0_brier": 0.04206154424503885
     },
     "phikon": {
+      "axis_a_miscalibrated": true,
+      "axis_b": "unproven",
+      "axis_b_counterproductive_rungs": [],
       "best_rung": "rung0",
       "best_rung_brier": 0.03389916774527836,
       "bss": 0.8352986598528584,
@@ -256,6 +303,11 @@
       "rung0_brier": 0.03389916774527836
     },
     "swin": {
+      "axis_a_miscalibrated": false,
+      "axis_b": "counterproductive",
+      "axis_b_counterproductive_rungs": [
+        "rung3"
+      ],
       "best_rung": "rung0",
       "best_rung_brier": 0.024481662644892446,
       "bss": 0.881054228913758,
@@ -267,6 +319,9 @@
       "rung0_brier": 0.024481662644892446
     },
     "tinyvgg": {
+      "axis_a_miscalibrated": false,
+      "axis_b": "unproven",
+      "axis_b_counterproductive_rungs": [],
       "best_rung": "rung0",
       "best_rung_brier": 0.037706423395696534,
       "bss": 0.8168008574106734,
@@ -278,6 +333,9 @@
       "rung0_brier": 0.037706423395696534
     },
     "tinyvgg_vl": {
+      "axis_a_miscalibrated": true,
+      "axis_b": "unproven",
+      "axis_b_counterproductive_rungs": [],
       "best_rung": "rung0",
       "best_rung_brier": 0.19720647238731095,
       "bss": 0.04185935973592214,

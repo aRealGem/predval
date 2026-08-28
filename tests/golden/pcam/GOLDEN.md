@@ -10,8 +10,8 @@ uv run python examples/pcam/run_evaluation.py
 
 | | |
 |---|---|
-| generated | 2026-08-22 (refreshed S5.1, S6) |
-| predval commit | S6 golden-refresh commit (regenerated at `cdcf689`) |
+| generated | 2026-08-22 (refreshed S5.1, S6, S6.1) |
+| predval commit | S6.1 golden-refresh commit |
 | PCam campaign source (`~/histopath-cancer-detection`) HEAD | `5646c80eef04029543f5ad317a9cbf87653be7ce`, clean |
 
 `findings.json` here has its `provenance.git_commit` field taken as-is from that generation run;
@@ -30,6 +30,33 @@ zero; that was a transcription error in the card log, not a code bug -- correcte
 before. Report prose also picked up the x10⁻³ section-3 display precision and cluster-noun
 templating (S6 items 4-5; this cohort declares `clustering.name: slide`). Determinism re-verified
 across three independent full B=2000 runs at this commit, byte-identical on every artefact.
+
+**S6.1 refresh (2026-08-28):** all seven artefacts changed this time, unlike S6's refresh --
+`metrics`/`fragility`/`calibration`/`coverage.parquet` changed too, because the fixture's
+`predictions.parquet` itself was regenerated: `champion` was renamed to `mobilenetv3`, its true
+architecture (a solo MobileNetV3-Small transfer baseline, verified against three independent
+campaign sources; see `examples/pcam/cohort.yaml`). Confirmed the rename carried zero numeric
+change: `mobilenetv3`'s AUROC is exactly the old `champion`'s (0.916338), and every other member's
+numbers are untouched -- only the `model_id` string differs anywhere in the four metric tables.
+
+The verdict layer also gained a second axis (docs/spec.md section 4.8): S6's single "best rung"
+became (miscalibration-detected x repair-outcome), so a report line now reads e.g. "miscalibrated
+(slope ...); repair benefit unproven at this cohort's power (G=22)" instead of a bare "none --
+well-calibrated as published" for members like `tinyvgg_vl`/`macenko` that ARE detectably
+miscalibrated even though S6 already correctly found their repair unproven -- strictly more
+informative, no change to which rung is admissible for any member. Across all 15 members: only
+`p4m_seed7` demonstrates a real repair (rung2, unchanged since S6); `swin`, `e2cnn_s21`,
+`e2cnn_s99`, `p4m_s13` are well-calibrated but recalibration was reliably counterproductive for at
+least one rung; the rest are either well-calibrated with nothing to report or miscalibrated with
+the repair's benefit unproven at this cohort's small G.
+
+The Limitations block's ensemble-construction-bias caution is also gone from this report: it is
+now gated on a declared `ensemble_members` list (empty for this fixture -- no member is a known
+blend, after the rename and a blocked attempt to export the campaign's real 11-member blend; see
+cohort.yaml), not on roster size as S6's rule used as a proxy.
+
+Determinism re-verified across three independent full B=2000 runs at this commit (2 direct runs +
+the golden test's own regeneration), byte-identical on every artefact.
 
 To refresh deliberately after an intentional change, see the docstring of
 `tests/test_golden_pcam.py`.

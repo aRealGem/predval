@@ -11,7 +11,7 @@ uv run --group examples python examples/gusto/run_evaluation.py
 
 | | |
 |---|---|
-| generated | 2026-08-25, refreshed 2026-08-26 (S6) |
+| generated | 2026-08-25, refreshed 2026-08-26 (S6), 2026-08-28 (S6.1) |
 | predval commit | golden-freeze commit (regenerated at `cff159d`, the adversarial-ingestion HEAD) |
 | GUSTO source | `https://hbiostat.org/data/repo/gusto.rda` (public GUSTO-I teaching release) |
 
@@ -28,6 +28,18 @@ For this cohort both rung2 and rung3 clear that bar, so the verdict moved from r
 lower of the two) and BSS moved from 0.1071 to 0.1051 -- a small, expected shift from a genuine rule
 correction, not drift. Report prose also picked up the cluster-noun templating (now says "region"
 via `cohort.yaml`'s new `clustering.name`) and the x10⁻³ section-3 display precision (S6 items 4-5).
+Reproducibility re-verified: two independent runs at this commit were byte-identical.
+
+**S6.1 refresh (2026-08-28):** `manifest.json`, `report.html`, `findings.json` changed again;
+the four raw metric tables did not (confirmed by hash) -- the roster and every statistic are
+unchanged, only the verdict layer's message taxonomy. The single-axis "best rung" verdict became a
+two-axis (miscalibration-detected x repair-outcome) taxonomy (docs/spec.md §4.8); for this cohort
+axis A is miscalibrated (slope AND intercept CIs both exclude their null) and axis B is
+demonstrated at rung2 (unchanged from S6), so the gauge clause now reads "miscalibrated (slope ...,
+intercept ...); repair demonstrated at rung2 (level and spread (intercept + slope))" instead of
+S6's bare "level and spread (intercept + slope)" -- strictly more informative, same underlying
+numbers. The ensemble-caution mechanism also changed (now gated on a declared `ensemble_members`
+list, not roster size); GUSTO declares none either way, so its Limitations block is unaffected.
 Reproducibility re-verified: two independent runs at this commit were byte-identical.
 
 To refresh deliberately after an intentional change, see the docstring of
