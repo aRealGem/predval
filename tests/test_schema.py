@@ -34,6 +34,17 @@ def test_clustering_is_optional() -> None:
     assert CohortSpec.model_validate(spec).clustering is None
 
 
+def test_ensemble_members_defaults_empty() -> None:
+    """S6.1 item 2: undeclared means 'none known to be an ensemble', not 'unknown'."""
+    spec = CohortSpec.model_validate(VALID_SPEC)
+    assert spec.ensemble_members == ()
+
+
+def test_ensemble_members_can_be_declared() -> None:
+    spec = CohortSpec.model_validate(spec_with(ensemble_members=["blend_model"]))
+    assert spec.ensemble_members == ("blend_model",)
+
+
 def test_unknown_key_is_rejected() -> None:
     """A typo must not silently disable a prespecified analysis."""
     with pytest.raises(ValidationError, match="subgrops|extra"):

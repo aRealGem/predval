@@ -34,7 +34,13 @@ PER_CLUSTER = 80
 _UNSET = object()
 
 
-def _build(tmp_path: Path, expected_models=None, clustering_name=_UNSET, single_model=False):
+def _build(
+    tmp_path: Path,
+    expected_models=None,
+    clustering_name=_UNSET,
+    single_model=False,
+    ensemble_members=None,
+):
     """A small clustered cohort: 2 models (or 1, if single_model), a 2-level subgroup (4 clusters
     each -> gated)."""
     rng = np.random.default_rng(11)
@@ -71,6 +77,8 @@ def _build(tmp_path: Path, expected_models=None, clustering_name=_UNSET, single_
     }
     if expected_models is not None:
         spec["expected_models"] = expected_models
+    if ensemble_members is not None:
+        spec["ensemble_members"] = ensemble_members
     (tmp_path / "cohort.yaml").write_text(yaml.safe_dump(spec))
     cohort = load_cohort(tmp_path / "cohort.yaml")
     preds = load_predictions(tmp_path / "predictions.parquet")
@@ -240,17 +248,78 @@ def test_verdict_lines_present_with_anchors(html) -> None:
     assert "closes" in html and "% of the gap" in html
 
 
-def test_verdict_line_names_only_binned_gauge_label(evaluation) -> None:
-    """The only qualitative token is the gauge-fault rung label; no free adjectives."""
-    from predval.report import GAUGE_LABELS, build_context
+def test_verdict_line_gauge_is_from_the_composed_vocabulary(evaluation) -> None:
+    """S6.1: the gauge clause is composed from axis A (well-calibrated / miscalibrated + its
+    triggering CI) and axis B (demonstrated / unproven / counterproductive + its rung(s)) -- no
+    free adjectives beyond that fixed vocabulary, even though the composed string is no longer a
+    member of a small flat set (S6's GAUGE_LABELS)."""
+    from predval.report import build_context
+
     ctx = build_context(
         evaluation.metrics, evaluation.fragility, evaluation.coverage, evaluation.manifest,
         evaluation.calibration,
     )
     assert ctx["verdict_lines"]
     for v in ctx["verdict_lines"]:
-        assert v["gauge"] in GAUGE_LABELS.values()
-        assert "AUROC" in v["line"] and "Gauge fault found" in v["line"]
+        g = v["gauge"]
+        assert g.startswith(("well-calibrated", "none -- well-calibrated", "miscalibrated ("))
+        assert g == "none -- well-calibrated as published" or any(
+            phrase in g
+            for phrase in (
+                "repair demonstrated at",
+                "repair benefit unproven at this cohort's power",
+                "recalibration demonstrably counterproductive at",
+            )
+        )
+
+
+def test_verdict_gauge_all_six_combinations() -> None:
+    """S6.1 item 1: the exact template for every (axis A, axis B) combination, locked directly --
+    including the rare A-B+ cell and the two combinations the session brief didn't spell out
+    verbatim (A+/counterproductive follows the same "always name axis B when axis A fired" rule
+    as the two named A+ cells)."""
+    from predval.report import verdict_gauge
+
+    demonstrated = {"best_rung": "rung2", "axis_a_miscalibrated": True, "axis_b": "demonstrated",
+                     "axis_b_counterproductive_rungs": []}
+    unproven = {"best_rung": "rung0", "axis_a_miscalibrated": True, "axis_b": "unproven",
+                "axis_b_counterproductive_rungs": [], "n_clusters": 22}
+    counter = {"best_rung": "rung0", "axis_a_miscalibrated": True, "axis_b": "counterproductive",
+               "axis_b_counterproductive_rungs": ["rung1", "rung2"]}
+
+    assert verdict_gauge(demonstrated, "slope 4.93 [2.72, 7.14]", None) == (
+        "miscalibrated (slope 4.93 [2.72, 7.14]); repair demonstrated at rung2 "
+        "(level and spread (intercept + slope))"
+    )
+    assert verdict_gauge(unproven, "slope 4.93 [2.72, 7.14]", None) == (
+        "miscalibrated (slope 4.93 [2.72, 7.14]); repair benefit unproven at this cohort's "
+        "power (G=22)"
+    )
+    assert verdict_gauge(unproven, "slope 4.93 [2.72, 7.14]", "few clusters note") == (
+        "miscalibrated (slope 4.93 [2.72, 7.14]); repair benefit unproven at this cohort's "
+        "power (G=22) -- few clusters note"
+    )
+    assert verdict_gauge(counter, "slope 4.93 [2.72, 7.14]", None) == (
+        "miscalibrated (slope 4.93 [2.72, 7.14]); recalibration demonstrably counterproductive "
+        "at rung1, rung2"
+    )
+
+    well_calibrated_unproven = {**unproven, "axis_a_miscalibrated": False}
+    well_calibrated_counter = {**counter, "axis_a_miscalibrated": False}
+    well_calibrated_demonstrated = {**demonstrated, "axis_a_miscalibrated": False}
+
+    assert (
+        verdict_gauge(well_calibrated_unproven, "", None) == "none -- well-calibrated as published"
+    )
+    assert verdict_gauge(well_calibrated_counter, "", None) == (
+        "none -- well-calibrated as published; recalibration demonstrably counterproductive "
+        "at rung1, rung2"
+    )
+    # the rare cell: well-calibrated per axis A, but a repair was demonstrated anyway.
+    assert verdict_gauge(well_calibrated_demonstrated, "", None) == (
+        "well-calibrated as published; repair demonstrated at rung2 "
+        "(level and spread (intercept + slope))"
+    )
 
 
 # ---------------------------------------------------------------------------- figures (item 2)
@@ -266,9 +335,11 @@ def test_report_embeds_the_three_figures(html) -> None:
 
 
 def test_limitations_block_is_present(html) -> None:
+    """The always-shown gain-interval sentence (item 6b); the ensemble paragraph is conditional
+    on a declared ensemble member (S6.1 item 2) and is tested separately -- this fixture doesn't
+    declare one, so it is correctly absent here."""
     assert "Limitations" in html
-    assert "recalibration step" in html.lower()
-    assert "ensemble" in html
+    assert "conditions on the fitted correction" in html
 
 
 # ------------------------------------------------------------------------------------- S6 items
@@ -300,14 +371,36 @@ def test_cluster_noun_defaults_to_cluster_when_undeclared(tmp_path: Path) -> Non
 
 
 def test_ensemble_paragraph_omitted_for_a_single_model_roster(tmp_path: Path) -> None:
-    """Item 5: the ensemble-construction-bias caution only makes sense with >1 model in the
-    roster; a single-model cohort (like GUSTO) must not see a dangling reference to it."""
+    """Item 5: a single-model cohort (like GUSTO) has no declared ensemble_members and must not
+    see a dangling reference to ensemble construction."""
     ev = _build(tmp_path, single_model=True)
     html = render_evaluation(ev)
     assert "Limitations" in html
     assert "ensemble" not in html.lower()
     # the always-shown gain-interval sentence must still be present
     assert "does not carry the correction" in html
+
+
+def test_ensemble_paragraph_omitted_without_a_declared_ensemble_member(tmp_path: Path) -> None:
+    """S6.1 item 2: this is the actual behaviour change from S6's `len(models) > 1` rule -- two
+    models with NEITHER declared as an ensemble/blend must still omit the caution. predval cannot
+    infer "this model_id is a blend" from predictions alone; the old rule fired on the mere
+    existence of a second model, which is not evidence of anything."""
+    ev = _build(tmp_path)  # 2 models ("good", "weak"), no ensemble_members declared
+    html = render_evaluation(ev)
+    assert "Limitations" in html
+    assert "ensemble" not in html.lower()
+    assert "conditions on the fitted correction" in html
+
+
+def test_ensemble_paragraph_shown_when_a_member_is_declared(tmp_path: Path) -> None:
+    """S6.1 item 2: the caution appears when the cohort actually declares an ensemble member --
+    a real, checkable fact, not a proxy on roster size."""
+    ev = _build(tmp_path, ensemble_members=["weak"])
+    html = render_evaluation(ev)
+    assert "Limitations" in html
+    assert "ensemble" in html.lower()
+    assert "model or ensemble construction" in html
 
 
 def test_fold4_reference_omitted_without_a_rung3_withholding(html) -> None:

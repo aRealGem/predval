@@ -154,13 +154,28 @@ def _paired_gains_by_model(rows: list[dict]) -> dict[str, dict[str, tuple[float,
     return gains
 
 
-def _best_admissible_rung(model_gains: dict[str, tuple[float, float, float]]) -> str | None:
-    """Lowest rung whose paired cross-fit gain interval excludes zero on the improvement side.
+#: Axis B statuses (S6.1 item 1; spec section 4.8).
+REPAIR_DEMONSTRATED = "demonstrated"
+REPAIR_UNPROVEN = "unproven"
+REPAIR_COUNTERPRODUCTIVE = "counterproductive"
 
-    `None` means no rung is admissible: every gain interval either straddles zero or -- for a
-    rung that reliably made Brier worse -- lies entirely below it. Neither counts as "excludes
-    zero" here; only `ci_low > 0` does, because a "best admissible repair" is required to be a
-    real improvement, not merely distinguishable from no-op. See docs/spec.md section 4.8.
+
+def _classify_repair(
+    model_gains: dict[str, tuple[float, float, float]],
+) -> tuple[str, str | None, tuple[str, ...]]:
+    """Axis B: what happened when recalibration was tried, as three mutually exclusive outcomes.
+
+    Returns (status, admissible_rung, counterproductive_rungs):
+    - "demonstrated": the LOWEST rung whose paired cross-fit gain interval excludes zero on the
+      improvement side (`ci_low > 0`) -- a real, interval-backed repair. `admissible_rung` names it.
+    - "counterproductive": no rung is demonstrated, but at least one rung's interval lies entirely
+      BELOW zero (`ci_high < 0`) -- recalibration was tried and reliably made Brier worse.
+      `counterproductive_rungs` names every such rung (there can be more than one).
+    - "unproven": neither of the above -- every rung's interval straddles zero. This is NOT the
+      same claim as "counterproductive": one says recalibration measurably helped or hurt, the
+      other says the cohort's power was too low to tell either way.
+    A rung whose interval sits entirely below zero is never "admissible" under any reading -- an
+    admissible repair must be a real improvement, not merely distinguishable from no-op.
     """
     for rung in _LADDER_RUNGS_IN_ORDER:
         cell = model_gains.get(rung)
@@ -168,22 +183,69 @@ def _best_admissible_rung(model_gains: dict[str, tuple[float, float, float]]) ->
             continue
         _, ci_low, _ = cell
         if np.isfinite(ci_low) and ci_low > 0:
-            return rung
-    return None
+            return REPAIR_DEMONSTRATED, rung, ()
+
+    counterproductive = tuple(
+        rung
+        for rung in _LADDER_RUNGS_IN_ORDER
+        if (cell := model_gains.get(rung)) is not None
+        and np.isfinite(cell[2])
+        and cell[2] < 0
+    )
+    if counterproductive:
+        return REPAIR_COUNTERPRODUCTIVE, None, counterproductive
+    return REPAIR_UNPROVEN, None, ()
+
+
+def _calibration_by_model(rows: list[dict]) -> dict[str, dict[str, tuple[float, float, float]]]:
+    """Index the already-computed rung0/common/overall calibration_slope/intercept rows
+    (ci_method=cluster_robust_t), keyed by model then metric name -> (value, ci_low, ci_high).
+    Reused the same way `_paired_gains_by_model` reuses gain rows -- axis A draws on numbers
+    already computed in the main per-cell loop, never a second fit.
+    """
+    out: dict[str, dict[str, tuple[float, float, float]]] = {}
+    for r in rows:
+        if (
+            r["metric"] in ("calibration_slope", "calibration_intercept")
+            and r["subset"] == "common"
+            and r["stratum_kind"] == "overall"
+            and r["rung"] == RUNG0
+            and r["ci_method"] == "cluster_robust_t"
+        ):
+            out.setdefault(r["model_id"], {})[r["metric"]] = (r["value"], r["ci_low"], r["ci_high"])
+    return out
+
+
+def _classify_miscalibration(model_calibration: dict[str, tuple[float, float, float]]) -> bool:
+    """Axis A: does rung0's own analytic cluster-robust interval show miscalibration -- slope CI
+    excludes 1, OR intercept CI excludes 0. Either alone is sufficient; a model can be
+    level-shifted without a spread problem or vice versa.
+    """
+    slope = model_calibration.get("calibration_slope")
+    if slope is not None:
+        _, lo, hi = slope
+        if np.isfinite(lo) and np.isfinite(hi) and not (lo <= 1.0 <= hi):
+            return True
+    intercept = model_calibration.get("calibration_intercept")
+    if intercept is not None:
+        _, lo, hi = intercept
+        if np.isfinite(lo) and np.isfinite(hi) and not (lo <= 0.0 <= hi):
+            return True
+    return False
 
 
 def _verdict_layer(cells, rows: list[dict], spec, unc, ci: float) -> dict[str, dict]:
-    """Per member: Brier skill score at the best admissible rung, and which rung that was (item 3).
+    """Per member: a two-axis verdict (S6.1 item 1; spec section 4.8), plus the Brier skill score
+    at whichever rung backs it.
 
-    The best admissible repair is the LOWEST rung whose paired cross-fit gain interval excludes
-    zero on the improvement side -- the ladder's own significance test (S6 item 2; spec section
-    4.8), not a point-estimate minimum. If no rung clears that bar, the verdict is rung0 (as
-    published): BSS is then reported at rung0's own held-out performance, and the gauge-fault
-    label (GAUGE_LABELS["rung0"]) already reads "none -- well-calibrated as published", so no
-    separate sentinel value is needed here. rung1/2/3 name the shape of the miscalibration the
-    ladder repaired when one is admissible.
+    Axis A (miscalibration detected) and axis B (repair outcome: demonstrated / unproven /
+    counterproductive) are independent facts -- a member can be miscalibrated with an unproven
+    repair, well-calibrated with a demonstrated (if small) gain, or any other combination. BSS
+    anchors on the admissible rung when axis B is "demonstrated", else on rung0's own held-out
+    performance (unchanged from S6's fallback).
     """
     gains_by_model = _paired_gains_by_model(rows)
+    calibration_by_model = _calibration_by_model(rows)
     verdict: dict[str, dict] = {}
     for model, y, p, groups in cells:
         if y.size == 0 or np.unique(y).size < 2:
@@ -196,15 +258,24 @@ def _verdict_layer(cells, rows: list[dict], spec, unc, ci: float) -> dict[str, d
         }
         rung0_brier = float(M.brier(y, p))
 
-        best_rung = _best_admissible_rung(gains_by_model.get(model, {}))
-        if best_rung is not None and best_rung in cf_brier and np.isfinite(cf_brier[best_rung]):
-            best_rung_brier = float(cf_brier[best_rung])
+        axis_b, admissible_rung, counterproductive_rungs = _classify_repair(
+            gains_by_model.get(model, {})
+        )
+        if (
+            admissible_rung is not None
+            and admissible_rung in cf_brier
+            and np.isfinite(cf_brier[admissible_rung])
+        ):
+            best_rung = admissible_rung
+            best_rung_brier = float(cf_brier[admissible_rung])
         else:
-            # No admissible rung, or the cross-fit Brier for the admissible rung is unavailable
+            # Not demonstrated, or the cross-fit Brier for the admissible rung is unavailable
             # (should not happen if its gain interval was computed) -- fall back to rung0 either
             # way, never crash on a missing cell.
             best_rung = RUNG0
             best_rung_brier = rung0_brier
+
+        axis_a = _classify_miscalibration(calibration_by_model.get(model, {}))
 
         p_best = p if best_rung == RUNG0 else lrep.crossfit_predictions[best_rung]
         bss, bss_ci = U.brier_skill_interval(
@@ -217,6 +288,9 @@ def _verdict_layer(cells, rows: list[dict], spec, unc, ci: float) -> dict[str, d
             "best_rung": best_rung,
             "best_rung_brier": best_rung_brier,
             "rung0_brier": rung0_brier,
+            "axis_a_miscalibrated": axis_a,
+            "axis_b": axis_b,
+            "axis_b_counterproductive_rungs": list(counterproductive_rungs),
             "prevalence": float(np.mean(y)),
             "n": int(y.size),
             "n_clusters": int(np.unique(groups).size),
@@ -458,6 +532,9 @@ def evaluate(cohort: Cohort, predictions: Predictions) -> Evaluation:
             "absent": sorted(set(spec.expected_models) - set(predictions.model_ids))
             if spec.expected_models
             else [],
+            # Author-declared model_ids known to be an ensemble/blend (S6.1 item 2); governs the
+            # report's ensemble-construction-bias caution. Empty means none are known to be.
+            "ensemble_members": list(spec.ensemble_members),
         },
         "n_subjects": cohort.n_subjects,
         "dropped_subjects": list(cohort.dropped_subjects),

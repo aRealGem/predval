@@ -84,6 +84,9 @@ def test_findings_carry_verdict_and_paired_gains(evaluation) -> None:
     weak = members["weak"]
     assert weak["verdict"]["best_rung"] in {"rung0", "rung1", "rung2", "rung3"}
     assert weak["verdict"]["gauge_label"]
+    # S6.1: the two-axis taxonomy carries independently of best_rung.
+    assert isinstance(weak["verdict"]["axis_a_miscalibrated"], bool)
+    assert weak["verdict"]["axis_b"] in {"demonstrated", "unproven", "counterproductive"}
     rungs = {g["rung"] for g in weak["recalibration_gains"]}
     assert rungs and rungs <= {"rung1", "rung2", "rung3"}
     for g in weak["recalibration_gains"]:

@@ -302,6 +302,14 @@
     "VerdictOut": {
       "additionalProperties": false,
       "properties": {
+        "axis_a_miscalibrated": {
+          "title": "Axis A Miscalibrated",
+          "type": "boolean"
+        },
+        "axis_b": {
+          "title": "Axis B",
+          "type": "string"
+        },
         "best_rung": {
           "title": "Best Rung",
           "type": "string"
@@ -349,6 +357,8 @@
         "bss_ci_low",
         "bss_ci_high",
         "best_rung",
+        "axis_a_miscalibrated",
+        "axis_b",
         "gauge_label"
       ],
       "title": "VerdictOut",

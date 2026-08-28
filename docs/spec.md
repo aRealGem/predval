@@ -387,14 +387,54 @@ is the Brier of the no-skill model that always predicts prevalence, so BSS is an
 Its interval is a cluster bootstrap over slides, recomputing both the loss and the prevalence
 reference inside each resample (`ci_method = cluster_bootstrap`).
 
-**Plain-language line, template-generated (item 3ii).** Exactly one line per member, assembled
-**only** from `(AUROC, BSS, best rung)` with **no free adjectives**. AUROC and BSS are inserted as
-numbers with their intervals; the sole qualitative token is the *gauge-fault* label, drawn from a
-fixed bin on the best rung:
+**Plain-language line, template-generated (item 3ii; two-axis taxonomy, S6.1).** Exactly one line
+per member, assembled from `(AUROC, BSS, the two-axis gauge)` with **no free adjectives** — every
+qualitative word in the gauge clause is drawn from a fixed template, and every number in it (a CI,
+a rung, a cluster count) is quoted from an interval already computed elsewhere in the report, never
+invented for the sentence. The gauge is built from two independent axes, because collapsing
+everything that is not a demonstrated repair into a single "none" bucket (S6) conflated three
+genuinely different situations: a member that is miscalibrated but underpowered to prove a repair
+helps, a member that is well-calibrated and was never in need of one, and a member that is
+well-calibrated but whose recalibration was tried and *reliably made it worse*.
 
-| best rung | gauge-fault label |
+**Axis A — miscalibration detected.** True when rung0's own analytic cluster-robust interval
+(§5.2) shows it: the calibration **slope** CI excludes 1, **or** the calibration **intercept** CI
+excludes 0. Either alone is sufficient — a model can be level-shifted without a spread problem, or
+have the spread problem without the level shift.
+
+**Axis B — repair outcome**, from the paired cross-fit gain intervals (§4.5), three mutually
+exclusive states:
+- **demonstrated** — the lowest rung whose gain interval excludes zero on the improvement side
+  (`ci_low > 0`; unchanged from S6's rule above).
+- **counterproductive** — no rung is demonstrated, but at least one rung's gain interval lies
+  **entirely below** zero (`ci_high < 0`): recalibration was tried and reliably made Brier worse.
+  There can be more than one such rung; all are named.
+- **unproven** — neither of the above: every rung's interval straddles zero. This is a distinct
+  claim from "counterproductive" — one says recalibration measurably helped or hurt, the other says
+  the cohort's power was too low to tell either way.
+
+**The gauge clause, composed from the two axes:**
+
+| axis A | axis B | gauge clause |
+|---|---|---|
+| miscalibrated | demonstrated | `miscalibrated (<slope and/or intercept CI>); repair demonstrated at <rung> (<shape label>)` |
+| miscalibrated | unproven | `miscalibrated (<slope and/or intercept CI>); repair benefit unproven at this cohort's power (G=<n_clusters>)` — the report's own `few_clusters` flag for the overall stratum is appended verbatim when it fired |
+| miscalibrated | counterproductive | `miscalibrated (<slope and/or intercept CI>); recalibration demonstrably counterproductive at <rung(s)>` |
+| well-calibrated | unproven | `none — well-calibrated as published` |
+| well-calibrated | counterproductive | `none — well-calibrated as published; recalibration demonstrably counterproductive at <rung(s)>` |
+| well-calibrated | demonstrated (rare) | `well-calibrated as published; repair demonstrated at <rung> (<shape label>)` — both facts printed plainly, no adjective added to explain the combination |
+
+Axis B is named whenever axis A found miscalibration — a reader who knows something is wrong wants
+to know what happened when a fix was tried, even "unproven" is informative. When axis A found
+nothing, axis B stays silent **unless it is itself a finding**: "demonstrated" (rare — a real
+improvement even without detectable miscalibration) or "counterproductive" (a real result worth
+flagging). "Well-calibrated, and we don't know if a fix would help" is not worth stating when there
+was no reason to try fixing it in the first place.
+
+The `<shape label>` for a demonstrated repair is unchanged from S6's rung-shape bins:
+
+| admissible rung | shape label |
 |---|---|
-| `rung0` | none — well-calibrated as published |
 | `rung1` | level (calibration-in-the-large) |
 | `rung2` | level and spread (intercept + slope) |
 | `rung3` | non-monotone shape |
@@ -403,9 +443,10 @@ The line names its references so it stands on its own:
 
 > Ranking: AUROC `X` `[CI]`. Probability quality after best admissible repair: closes `Y%`
 > `[CI]` of the gap from no-skill (always predict prevalence) to perfect. Gauge fault found:
-> `<label>`.
+> `<gauge clause>`.
 
-where `Y% = 100·BSS`. No adjective enters that is not one of the four labels above.
+where `Y% = 100·BSS`, still anchored on the admissible rung when axis B is "demonstrated", else on
+rung0's own held-out performance (unchanged from S6).
 
 ---
 
@@ -612,8 +653,13 @@ and this harness cannot detect that: predval evaluates the predictions it is han
 of their construction, including whether any given `model_id` is a single trained model or a blend
 (S6 item 1: a `model_id`'s *name* is not evidence either way — always verify composition against its
 source, never assume from a name alone). Only a cohort the ensemble was never tuned on could expose
-that bias. This caution is rendered in the report's Limitations block only when the roster has more
-than one member -- with a single model there is nothing to have weighted an ensemble between.
+that bias. This caution is rendered in the report's Limitations block only when the cohort
+*declares* at least one `model_id` as a known ensemble/blend member (`cohort.yaml`'s
+`ensemble_members`, S6.1 item 2) -- not merely when the roster has more than one model, which an
+earlier version of this rule (S6) used as a proxy. predval's contract is predictions-only and
+`model_id` is opaque, so it cannot infer "this model_id is a blend" from the data; two solo models
+are not evidence of an ensemble any more than one is, so the declaration is author-asserted, the
+same way `clustering.name` is.
 
 **The paired cross-fit gain interval (§4.5) conditions on the fitted correction, not free of it
 (S5.1).** The interval resamples the *slide-level loss difference* between rung0 and the held-out

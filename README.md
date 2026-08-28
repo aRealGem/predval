@@ -32,9 +32,10 @@ Three things follow from that scope, and they are what predval spends its effort
   be judged on (apparent, optimistic by construction) and once cross-fitted with whole clusters
   held out. The report shows both, states in an unconditional framing block that no rung is a
   validated model, and — this is the part most recalibration tooling skips — refuses to
-  manufacture a gain where none exists: on the PCam fixture below, two badly miscalibrated
-  ensemble members get a real, interval-backed repair, and the already-calibrated members get
-  none.
+  manufacture a gain where none exists: on the PCam fixture below, most members are already
+  well-calibrated and get nothing, two are detectably miscalibrated with the repair's benefit
+  left honestly unproven at this cohort's small cluster count, and exactly one member gets a
+  real, interval-backed repair.
 
 ## What predval deliberately does not do
 
@@ -131,10 +132,13 @@ It is worth more than a clean synthetic dataset for exactly the reasons predval 
   one manufactured by deleting rows.
 - 732 predictions sit at exactly 0.0 or 1.0, where `logit` is undefined, making the eps-clip in
   the recalibration ladder load-bearing from the first rung, not a theoretical edge case.
-- One member, `champion`, is a single trained baseline model (its own solo out-of-fold AUROC
-  0.916) — not, despite the name, the campaign's separately-tracked 11-member ensemble recipe,
-  which shares the label internally but was never exported as its own set of predictions and does
-  not appear in this fixture at all (see `examples/pcam/cohort.yaml` for the full disambiguation).
+- One member, `mobilenetv3`, is a single trained baseline model (its own solo out-of-fold AUROC
+  0.916). It was named `champion` through S6, a name the campaign separately, confusingly, also
+  uses for an unrelated 11-member blend recipe — S6.1 renamed it to its true architecture and
+  attempted to export that real blend as its own fixture member too; the export is blocked
+  (one of the blend's 11 ingredients has no surviving predictions anywhere, the same permanent
+  loss recorded above), so no member in this fixture is actually an ensemble (see
+  `examples/pcam/cohort.yaml` for the full account).
 
 ### Reproducing the example
 

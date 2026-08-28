@@ -35,7 +35,8 @@ import pandas as pd
 HERE = Path(__file__).resolve().parent
 DEFAULT_CAMPAIGN = Path.home() / "histopath-cancer-detection"
 
-#: Members whose holdout file sits in autoloop/members/.
+#: Members whose holdout file sits in autoloop/members/. Source-file key, NOT the output model_id
+#: -- see RENAMED_MODELS below for the one entry ("champion") whose output identity differs.
 MEMBERS_DIR_MODELS = (
     "champion",
     "e2cnn",
@@ -57,10 +58,25 @@ MEMBERS_DIR_MODELS = (
 #: inbox/. Verified identical id set and labels, and AUROC 0.985116 matching the ledger.
 INBOX_MODELS = ("p4m_reg_vl",)
 
-#: Published champion member whose holdout predictions are permanently lost -- the `.keras`
-#: weights lived in ephemeral Colab storage, so re-inference is impossible. It gets no rows.
-#: This is the fixture's built-in test of the absence rule (docs/spec.md section 1.1).
+#: A member of the campaign's published, champion-branded 11-model blend recipe (state.json's
+#: top-level state["champion"], NOT any single trained model) whose holdout predictions are
+#: permanently lost -- the `.keras` weights lived in ephemeral Colab storage, so re-inference is
+#: impossible. It gets no rows. This is the fixture's built-in test of the absence rule
+#: (docs/spec.md section 1.1); it is also why that 11-model blend cannot itself be exported as a
+#: fixture member (see examples/pcam/cohort.yaml for the full account).
 PERMANENTLY_LOST = ("p4m_reg",)
+
+#: Source-file key -> output model_id, for the one member whose fixture identity should NOT be
+#: its source filename. "champion" is architecturally a solo MobileNetV3-Small transfer baseline
+#: (state.json members["champion"]: jobid job0b, solo OOF AUROC 0.916338; confirmed against
+#: README.md's "MobileNetV3-Small (ImageNet) transfer baseline" and notebooks/autoloop_colab.py's
+#: _CKPT_ALIASES mapping "champion" -> "mobilenetv3"). Calling it "champion" in the fixture invited
+#: exactly the confusion a prior session (S6) had to spend a paragraph explaining away: the name
+#: is also separately used, campaign-side, for an unrelated 11-member blend recipe (see
+#: cohort.yaml). Renaming here changes ONLY the output model_id -- the source file stays
+#: oof_champion.csv (a campaign fact, not renameable) and every internal reference below (e.g.
+#: `frames["champion"]`) stays keyed off the source name.
+RENAMED_MODELS = {"champion": "mobilenetv3"}
 
 EXPECTED_SUBJECTS = 19_999
 EXPECTED_POSITIVES = 5_796
@@ -140,7 +156,7 @@ def build(campaign: Path) -> tuple[pd.DataFrame, pd.DataFrame]:
             pd.DataFrame(
                 {
                     "subject_id": df["id"].astype(str),
-                    "model_id": model,
+                    "model_id": RENAMED_MODELS.get(model, model),
                     "fold": pd.NA,  # single fixed holdout; null == holdout
                     "horizon": pd.NA,  # binary outcome
                     "predicted": df["pred"].astype(float),

@@ -136,8 +136,10 @@ def test_evaluation_runs_end_to_end(cohort, predictions) -> None:
         & (result.metrics["ci_method"] == "cluster_bootstrap")
     ].set_index("model_id")["value"]
     # Values verified independently against the campaign ledger during Session 0.
+    # "champion" was renamed to "mobilenetv3" in S6.1 -- its true architecture (docs/spec.md
+    # section 9; examples/pcam/cohort.yaml); the underlying predictions are unchanged.
     assert auroc["swin"] == pytest.approx(0.986570, abs=1e-5)
-    assert auroc["champion"] == pytest.approx(0.916338, abs=1e-5)
+    assert auroc["mobilenetv3"] == pytest.approx(0.916338, abs=1e-5)
     assert auroc["macenko"] == pytest.approx(0.764140, abs=1e-5)
 
 

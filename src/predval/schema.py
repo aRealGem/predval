@@ -145,6 +145,13 @@ class CohortSpec(StrictModel):
     #: roster: the first is silence, the second is a claim that no models are expected.
     expected_models: tuple[str, ...] | None = None
     on_missing_model: Literal["warn", "fail"] = "warn"
+    #: Which `model_id`s, if any, are known to be an ensemble/blend of several trained models --
+    #: author-declared, because predval's contract is predictions-only: a `model_id` is opaque,
+    #: and there is no way to infer "this is a blend" from its predictions alone (S6.1 item 2).
+    #: Empty (the default) means none are known to be -- not "unknown"; a cohort that genuinely
+    #: doesn't know should still declare it empty, same as `expected_models: []` is a claim, not
+    #: silence. Governs whether the report's ensemble-construction-bias caution is shown at all.
+    ensemble_members: tuple[str, ...] = ()
 
     @field_validator("version")
     @classmethod

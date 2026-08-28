@@ -55,20 +55,29 @@ uncertainty:
 # report instead of the model quietly not existing. The remaining ids are probed members
 # evaluated but not promoted -- declaring them keeps present-but-undeclared meaningful.
 #
-# CORRECTED S6 (2026-08-26): a prior version of this comment claimed "`champion` is a single
-# model_id that is itself an 11-member ensemble" -- that was WRONG, verified against the campaign
-# repo's autoloop/state.json (read-only). The campaign overloads the name "champion" for two
-# distinct things: (1) `state["members"]["champion"]` -- a single trained model (job0b, its own
-# solo OOF AUROC 0.916338), loaded here from autoloop/members/oof_champion.csv exactly like every
-# other member in MEMBERS_DIR_MODELS (build_fixture.py); this is what the fixture's `champion`
-# model_id actually contains, and it is an honest single model's predictions, not a blend. (2) the
-# top-level `state["champion"]` -- the campaign's CURRENT BEST recipe, an unrelated 11-member
-# weighted blend (private LB 0.9761) that happens to include member (1) as one of its 11
-# ingredients at weight 0.0672. That blend's OWN predictions were never exported as a model_id
-# and do not exist anywhere in this fixture -- there is no roster entry for it. The 11-member
-# count in the old comment described (2), not (1); conflating them was the bug.
+# RENAMED S6.1 (2026-08-28): `champion` is now `mobilenetv3`, its true architecture (verified
+# against the campaign repo's state.json members["champion"]: jobid job0b, solo OOF AUROC
+# 0.916338; README.md's "MobileNetV3-Small (ImageNet) transfer baseline"; and
+# notebooks/autoloop_colab.py's _CKPT_ALIASES mapping "champion" -> "mobilenetv3" -- three
+# independent sources agreeing). S6 (2026-08-26) had already corrected the DOCUMENTATION that
+# wrongly called `champion` an 11-member ensemble; this session removes the misleading name
+# itself. `mobilenetv3` is collision-free (no other roster member is MobileNetV3).
+#
+# The campaign separately, and confusingly, reuses the word "champion" for its CURRENT BEST
+# recipe -- state.json's top-level `state["champion"]`, an unrelated 11-member weighted blend
+# (private LB 0.9761) that happens to include `mobilenetv3` as one of its 11 ingredients at
+# weight 0.0672. This session ATTEMPTED to export that real blend as its own fixture member --
+# the math is read-only-computable (a pure weighted average over each member's own OOF
+# predictions, per autoloop/blend_opt.py's `_blend()`) -- and it is BLOCKED: one of the 11
+# ingredients, `p4m_reg`, has no OOF file anywhere (state.json: `"oof": null`, `"note": "...OOF
+# also lost (no staged oof)"`), the exact same permanent loss recorded above for the roster gap.
+# The blend cannot be computed from what is on disk. Consequence: this fixture's roster contains
+# ZERO members that are actually ensembles/blends -- `ensemble_members` below is correctly empty,
+# and the report's ensemble-construction-bias caution (docs/spec.md section 9) no longer appears
+# for PCam, same as it never has for GUSTO. This is a real, correctly-derived outcome of the
+# investigation, not an oversight.
 expected_models:
-  - champion
+  - mobilenetv3
   - tinyvgg
   - p4m_reg
   - p4m_reg_vl
@@ -85,3 +94,7 @@ expected_models:
   - p4m_svm
   - effnet_scratch
 on_missing_model: warn
+
+# No fixture member is a known ensemble/blend (see above) -- explicitly empty rather than
+# omitted, since the point of this fixture is to document its own provenance, not stay silent.
+ensemble_members: []

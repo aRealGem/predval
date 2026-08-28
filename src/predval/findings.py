@@ -25,10 +25,15 @@ from typing import Any
 from pydantic import BaseModel, ConfigDict
 
 from .evaluate import RUNG0, Evaluation
-from .report import GAUGE_LABELS
+from .report import (
+    calibration_lookup,
+    few_clusters_note_for_overall,
+    miscalibration_reason,
+    verdict_gauge,
+)
 
 #: Bumped when the findings shape changes in a way a consumer must notice.
-SCHEMA_VERSION = "1.0"
+SCHEMA_VERSION = "1.1"
 
 #: Fixed float precision for byte-stability across runs and platforms.
 FLOAT_NDIGITS = 6
@@ -68,6 +73,12 @@ class VerdictOut(_Model):
     bss_ci_low: float | None
     bss_ci_high: float | None
     best_rung: str
+    #: Axis A (S6.1 item 1): does rung0's own analytic calibration CI show miscalibration --
+    #: slope excludes 1, or intercept excludes 0.
+    axis_a_miscalibrated: bool
+    #: Axis B: what happened when recalibration was tried -- "demonstrated", "unproven", or
+    #: "counterproductive". Independent of axis A; see docs/spec.md section 4.8.
+    axis_b: str
     gauge_label: str
 
 
@@ -184,6 +195,8 @@ def build_findings(evaluation: Evaluation, *, git_commit: str | None = None) -> 
         (common_overall["metric"] == "paired_gain_brier")
         & (common_overall["fit_mode"] == "crossfit")
     ]
+    calibration = calibration_lookup(metrics)
+    few_clusters = few_clusters_note_for_overall(manifest)
 
     members = []
     for model in sorted(manifest.get("models_present", [])):
@@ -202,17 +215,19 @@ def build_findings(evaluation: Evaluation, *, git_commit: str | None = None) -> 
             ),
         }
         v = verdict.get(model)
-        verdict_out = (
-            {
+        if v is not None:
+            reason = miscalibration_reason(calibration, model) if v["axis_a_miscalibrated"] else ""
+            verdict_out = {
                 "bss": float(v["bss"]),
                 "bss_ci_low": float(v["bss_ci_low"]),
                 "bss_ci_high": float(v["bss_ci_high"]),
                 "best_rung": str(v["best_rung"]),
-                "gauge_label": GAUGE_LABELS.get(v["best_rung"], str(v["best_rung"])),
+                "axis_a_miscalibrated": bool(v["axis_a_miscalibrated"]),
+                "axis_b": str(v["axis_b"]),
+                "gauge_label": verdict_gauge(v, reason, few_clusters),
             }
-            if v is not None
-            else None
-        )
+        else:
+            verdict_out = None
         gm = gains[gains["model_id"] == model]
         recal_gains = []
         for rung in _LADDER_RUNGS:

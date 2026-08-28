@@ -68,9 +68,11 @@ _LIMITATIONS_GAIN_INTERVAL = (
     "refit-in-replicate interval remains backlog (spec section 4.5)."
 )
 
-#: The ensemble-construction-bias caution (S6 item 5) makes sense only when the roster has more
-#: than one member -- with a single model there is nothing to have weighted an ensemble between,
-#: and naming a hypothetical blend in a single-model report would be a confusing non sequitur.
+#: The ensemble-construction-bias caution is shown only when the cohort actually DECLARES an
+#: ensemble/blend model_id (S6.1 item 2) -- not merely "more than one model", which S6's rule
+#: fired on regardless of whether any member was really a blend. predval cannot infer "this
+#: model_id is a blend" from predictions alone (its contract is predictions-only, model_id is
+#: opaque); this is why the declaration is author-asserted in cohort.yaml, not inferred here.
 _LIMITATIONS_ENSEMBLE = (
     "The optimism correction in section 3 covers the recalibration step ONLY -- it does not cover "
     "model or ensemble construction. If a roster member's own weights were selected on {noun}s "
@@ -82,10 +84,11 @@ _LIMITATIONS_ENSEMBLE = (
 )
 
 
-def _limitations(clustering_name: str, n_models: int) -> str:
-    """Limitations block (item 6b, S6 item 5), verbatim in report and docs/spec.md section 9."""
+def _limitations(clustering_name: str, ensemble_members: list[str]) -> str:
+    """Limitations block (item 6b, S6 item 5, S6.1 item 2), verbatim in report and docs/spec.md
+    section 9."""
     gain_sentence = _LIMITATIONS_GAIN_INTERVAL.format(noun=clustering_name)
-    if n_models <= 1:
+    if not ensemble_members:
         return gain_sentence
     return _LIMITATIONS_ENSEMBLE.format(noun=clustering_name) + gain_sentence
 
@@ -103,13 +106,20 @@ APPENDIX_SECTIONS = (
      "Placeholder -- a static SVG explainer of the no-skill and perfect anchors will go here."),
 )
 
-#: The "gauge fault" bin: which rung was the best admissible repair -> a fixed label, no adjectives
-#: (item 3ii). rung0 means none was needed. Documented in docs/spec.md section 4.8.
-GAUGE_LABELS = {
-    "rung0": "none -- well-calibrated as published",
+#: Shape-of-miscalibration labels for a DEMONSTRATED repair, keyed by the admissible rung -- what
+#: the ladder found and fixed. Unchanged in substance from the S6 GAUGE_LABELS table; kept as a
+#: small dict since this half of the message genuinely is a fixed bin (S6.1 item 1).
+_REPAIR_SHAPE_LABELS = {
     "rung1": "level (calibration-in-the-large)",
     "rung2": "level and spread (intercept + slope)",
     "rung3": "non-monotone shape",
+}
+
+#: Kept for any external reader of the old flat rung->label mapping; "rung0" no longer has one
+#: fixed meaning under the two-axis taxonomy (S6.1 item 1) -- see `verdict_gauge()`.
+GAUGE_LABELS = {
+    "rung0": "none -- well-calibrated as published",
+    **_REPAIR_SHAPE_LABELS,
 }
 
 
@@ -428,13 +438,97 @@ def _brier_by_rung_data(metrics: pd.DataFrame, models: list[str]) -> list[dict]:
     return out
 
 
-def _verdict_lines(metrics: pd.DataFrame, manifest: dict, models: list[str]) -> list[dict]:
-    """One template-generated plain-language line per member (item 3ii).
+def calibration_lookup(metrics: pd.DataFrame) -> pd.DataFrame:
+    """rung0/common/overall calibration_slope + calibration_intercept rows, cluster_robust_t --
+    axis A's source data (S6.1 item 1)."""
+    return metrics[
+        (metrics["metric"].isin(["calibration_slope", "calibration_intercept"]))
+        & (metrics["rung"] == "rung0")
+        & (metrics["subset"] == "common")
+        & (metrics["stratum_kind"] == "overall")
+        & (metrics["ci_method"] == "cluster_robust_t")
+    ]
 
-    Assembled only from (AUROC, BSS, best rung): AUROC and BSS are inserted as numbers with their
-    intervals, and the single qualitative token is the gauge-fault rung label (GAUGE_LABELS). No
-    free adjectives. The line names its references -- the no-skill and perfect anchors of BSS -- so
-    it stands on its own. See docs/spec.md section 4.8 for the template and bins.
+
+def miscalibration_reason(calibration: pd.DataFrame, model: str) -> str:
+    """Which analytic CI(s) triggered axis A, named with their own numbers -- never a free
+    adjective, just the values that triggered it (S6.1 item 1)."""
+    sub = calibration[calibration["model_id"] == model]
+    parts = []
+    slope = _one(sub, metric="calibration_slope")
+    if slope is not None and np.isfinite(slope["ci_low"]) and np.isfinite(slope["ci_high"]):
+        if not (slope["ci_low"] <= 1.0 <= slope["ci_high"]):
+            ci = _val_ci(float(slope["value"]), float(slope["ci_low"]), float(slope["ci_high"]))
+            parts.append(f"slope {ci}")
+    intercept = _one(sub, metric="calibration_intercept")
+    if (
+        intercept is not None
+        and np.isfinite(intercept["ci_low"])
+        and np.isfinite(intercept["ci_high"])
+    ):
+        if not (intercept["ci_low"] <= 0.0 <= intercept["ci_high"]):
+            ci = _val_ci(
+                float(intercept["value"]), float(intercept["ci_low"]), float(intercept["ci_high"])
+            )
+            parts.append(f"intercept {ci}")
+    return ", ".join(parts) if parts else "calibration"
+
+
+def few_clusters_note_for_overall(manifest: dict) -> str | None:
+    """The already-computed few_clusters flag text for the overall stratum, quoted verbatim
+    (never re-derived) for the A+B-unproven cell's power caveat (S6.1 item 1)."""
+    for f in manifest.get("flags", []):
+        if f.get("code") == "few_clusters" and "for overall" in f.get("message", ""):
+            return f["message"]
+    return None
+
+
+def verdict_gauge(v: dict, reason: str, few_clusters: str | None) -> str:
+    """The gauge-fault clause, from the two-axis verdict (S6.1 item 1; spec section 4.8).
+
+    Axis B is named whenever axis A found miscalibration -- a reader who knows something is
+    wrong wants to know what happened when a fix was tried, even "unproven". When axis A found
+    nothing, axis B stays silent UNLESS it is itself a finding -- "demonstrated" (rare) or
+    "counterproductive" (a real result worth flagging): "well-calibrated, and we don't know if a
+    fix would help" is not worth stating when there was no reason to try fixing it.
+    """
+    axis_a = v["axis_a_miscalibrated"]
+    axis_b = v["axis_b"]
+
+    def demonstrated_clause() -> str:
+        rung = v["best_rung"]
+        shape = _REPAIR_SHAPE_LABELS.get(rung, rung)
+        return f"repair demonstrated at {rung} ({shape})"
+
+    def counterproductive_clause() -> str:
+        rungs = ", ".join(v["axis_b_counterproductive_rungs"])
+        return f"recalibration demonstrably counterproductive at {rungs}"
+
+    def unproven_clause() -> str:
+        clause = f"repair benefit unproven at this cohort's power (G={v['n_clusters']})"
+        return f"{clause} -- {few_clusters}" if few_clusters else clause
+
+    if not axis_a:
+        if axis_b == "demonstrated":
+            return f"well-calibrated as published; {demonstrated_clause()}"
+        if axis_b == "counterproductive":
+            return f"none -- well-calibrated as published; {counterproductive_clause()}"
+        return "none -- well-calibrated as published"
+
+    if axis_b == "demonstrated":
+        return f"miscalibrated ({reason}); {demonstrated_clause()}"
+    if axis_b == "counterproductive":
+        return f"miscalibrated ({reason}); {counterproductive_clause()}"
+    return f"miscalibrated ({reason}); {unproven_clause()}"
+
+
+def _verdict_lines(metrics: pd.DataFrame, manifest: dict, models: list[str]) -> list[dict]:
+    """One template-generated plain-language line per member (S6.1 item 1; item 3ii before it).
+
+    Assembled from (AUROC, BSS, the two-axis gauge): AUROC and BSS are inserted as numbers with
+    their intervals; the gauge names axis A's exact triggering CI and axis B's exact rung(s) --
+    no free adjectives. The line names its references -- the no-skill and perfect anchors of BSS --
+    so it stands on its own. See docs/spec.md section 4.8 for the full taxonomy and templates.
     """
     verdict = manifest.get("verdict", {})
     auroc = metrics[
@@ -444,6 +538,8 @@ def _verdict_lines(metrics: pd.DataFrame, manifest: dict, models: list[str]) -> 
         & (metrics["stratum_kind"] == "overall")
         & (metrics["ci_method"] == "cluster_bootstrap")
     ]
+    calibration = calibration_lookup(metrics)
+    few_clusters = few_clusters_note_for_overall(manifest)
     out = []
     for model in models:
         v = verdict.get(model)
@@ -453,7 +549,8 @@ def _verdict_lines(metrics: pd.DataFrame, manifest: dict, models: list[str]) -> 
         auroc_str = _val_ci(float(a["value"]), float(a["ci_low"]), float(a["ci_high"]))
         bss_pct = 100.0 * float(v["bss"])
         bss_ci = _ci(100.0 * float(v["bss_ci_low"]), 100.0 * float(v["bss_ci_high"]), nd=1)
-        gauge = GAUGE_LABELS.get(v["best_rung"], v["best_rung"])
+        reason = miscalibration_reason(calibration, model) if v["axis_a_miscalibrated"] else ""
+        gauge = verdict_gauge(v, reason, few_clusters)
         line = (
             f"Ranking: AUROC {auroc_str}. "
             f"Probability quality after best admissible repair: closes {bss_pct:.1f}% "
@@ -604,7 +701,9 @@ def build_context(
         "brier_rung_svg": figures.brier_by_rung(_brier_by_rung_data(metrics, models)),
         "subgroup_rows": _subgroup_rows(metrics),
         "fragility_rows": _fragility_rows(fragility, models),
-        "limitations": _limitations(cluster_noun, len(models)),
+        "limitations": _limitations(
+            cluster_noun, manifest.get("roster", {}).get("ensemble_members", [])
+        ),
         # The fold4 diagnosis doc (docs/diagnosis-rung3-scanner_domain0.md) writes up one specific
         # PCam finding; cross-reference it only when THIS run actually has a rung3-could-not-
         # cross-fit withholding for it to be relevant to (S6 item 5) -- unconditionally citing it

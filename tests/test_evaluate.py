@@ -287,6 +287,10 @@ def test_verdict_layer_in_manifest(result) -> None:
     for v in verdict.values():
         assert v["best_rung"] in {"rung0", "rung1", "rung2", "rung3"}
         assert v["bss_ci_low"] <= v["bss"] <= v["bss_ci_high"]
+        # S6.1 item 1: the two-axis taxonomy is independent of best_rung.
+        assert isinstance(v["axis_a_miscalibrated"], bool)
+        assert v["axis_b"] in {"demonstrated", "unproven", "counterproductive"}
+        assert isinstance(v["axis_b_counterproductive_rungs"], list)
 
 
 def test_best_rung_requires_a_significant_gain(result) -> None:
@@ -321,6 +325,129 @@ def test_best_rung_requires_a_significant_gain(result) -> None:
             break
         if rung in gains.index:
             assert not (gains.loc[rung, "ci_low"] > 0)
+
+
+# ---------------------------------------------------- S6.1 item 1: two-axis verdict taxonomy
+
+
+def test_classify_repair_all_three_outcomes() -> None:
+    """Pure unit test on the axis-B classifier: demonstrated (lowest admissible rung, not
+    skipped past), counterproductive (some rung's interval lies entirely below zero), unproven
+    (every rung straddles zero)."""
+    from predval.evaluate import _classify_repair
+
+    # rung1 crosses zero, rung2 excludes zero on the positive side -> demonstrated at rung2.
+    demonstrated = {
+        "rung1": (-0.001, -0.004, 0.002),
+        "rung2": (0.002, 0.0002, 0.004),
+        "rung3": (0.002, -0.001, 0.005),
+    }
+    assert _classify_repair(demonstrated) == ("demonstrated", "rung2", ())
+
+    # every rung's interval lies entirely below zero -> counterproductive at all three.
+    counterproductive = {
+        "rung1": (-0.003, -0.005, -0.002),
+        "rung2": (-0.004, -0.006, -0.002),
+        "rung3": (-0.003, -0.005, -0.001),
+    }
+    assert _classify_repair(counterproductive) == (
+        "counterproductive",
+        None,
+        ("rung1", "rung2", "rung3"),
+    )
+
+    # every rung crosses zero -> unproven.
+    unproven = {
+        "rung1": (-0.001, -0.040, 0.045),
+        "rung2": (0.031, -0.004, 0.068),
+        "rung3": (0.030, -0.007, 0.067),
+    }
+    assert _classify_repair(unproven) == ("unproven", None, ())
+
+    # empty input (no gain rows at all) -> unproven, never crashes.
+    assert _classify_repair({}) == ("unproven", None, ())
+
+
+def test_classify_miscalibration_either_axis_triggers() -> None:
+    """Pure unit test on the axis-A classifier: slope excluding 1 OR intercept excluding 0 is
+    sufficient on its own; both crossing their null means well-calibrated."""
+    from predval.evaluate import _classify_miscalibration
+
+    slope_only = {
+        "calibration_slope": (1.44, 1.24, 1.65),
+        "calibration_intercept": (-0.04, -0.59, 0.52),
+    }
+    assert _classify_miscalibration(slope_only) is True
+
+    intercept_only = {
+        "calibration_slope": (1.0, 0.9, 1.1),
+        "calibration_intercept": (0.5, 0.1, 0.9),
+    }
+    assert _classify_miscalibration(intercept_only) is True
+
+    neither = {"calibration_slope": (1.0, 0.9, 1.1), "calibration_intercept": (0.0, -0.1, 0.1)}
+    assert _classify_miscalibration(neither) is False
+
+    assert _classify_miscalibration({}) is False
+
+
+PCAM_GOLDEN_METRICS = (
+    Path(__file__).resolve().parent / "golden" / "pcam" / "metrics.parquet"
+)
+
+
+@pytest.mark.skipif(
+    not PCAM_GOLDEN_METRICS.exists(), reason="tests/golden/pcam/metrics.parquet not committed"
+)
+def test_pcam_four_named_members_hit_all_four_taxonomy_cells() -> None:
+    """S6.1 item 1's explicit ask: the four PCam members named in the session brief must land in
+    the four distinct cells, verified against the real, frozen golden data (not a re-run of the
+    B=2000 pipeline -- the classification functions are pure and take the golden's own numbers).
+    """
+    from predval.evaluate import _classify_miscalibration, _classify_repair
+
+    metrics = pd.read_parquet(PCAM_GOLDEN_METRICS)
+
+    def gains_for(model: str) -> dict:
+        sub = metrics[
+            (metrics["metric"] == "paired_gain_brier")
+            & (metrics["model_id"] == model)
+            & (metrics["subset"] == "common")
+            & (metrics["stratum_kind"] == "overall")
+            & (metrics["fit_mode"] == "crossfit")
+        ]
+        return {r["rung"]: (r["value"], r["ci_low"], r["ci_high"]) for _, r in sub.iterrows()}
+
+    def calibration_for(model: str) -> dict:
+        sub = metrics[
+            (metrics["metric"].isin(["calibration_slope", "calibration_intercept"]))
+            & (metrics["model_id"] == model)
+            & (metrics["subset"] == "common")
+            & (metrics["stratum_kind"] == "overall")
+            & (metrics["rung"] == "rung0")
+            & (metrics["ci_method"] == "cluster_robust_t")
+        ]
+        return {r["metric"]: (r["value"], r["ci_low"], r["ci_high"]) for _, r in sub.iterrows()}
+
+    # A+B+: miscalibrated, repair demonstrated at rung2.
+    assert _classify_miscalibration(calibration_for("p4m_seed7")) is True
+    assert _classify_repair(gains_for("p4m_seed7"))[:2] == ("demonstrated", "rung2")
+
+    # A+B-unproven: miscalibrated, no rung's gain interval excludes zero.
+    assert _classify_miscalibration(calibration_for("tinyvgg_vl")) is True
+    assert _classify_repair(gains_for("tinyvgg_vl")) == ("unproven", None, ())
+
+    # A-B-counterproductive: well-calibrated, rung3 alone reliably worse.
+    assert _classify_miscalibration(calibration_for("swin")) is False
+    assert _classify_repair(gains_for("swin")) == ("counterproductive", None, ("rung3",))
+
+    # A-B-counterproductive: well-calibrated, all three rungs reliably worse.
+    assert _classify_miscalibration(calibration_for("e2cnn_s21")) is False
+    assert _classify_repair(gains_for("e2cnn_s21")) == (
+        "counterproductive",
+        None,
+        ("rung1", "rung2", "rung3"),
+    )
 
 
 def test_calibration_artefact_shape(result) -> None:
