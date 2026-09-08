@@ -75,7 +75,7 @@ _LIMITATIONS_GAIN_INTERVAL = (
 #: opaque); this is why the declaration is author-asserted in cohort.yaml, not inferred here.
 _LIMITATIONS_ENSEMBLE = (
     "The optimism correction in section 3 covers the recalibration step ONLY -- it does not cover "
-    "model or ensemble construction. If a roster member's own weights were selected on {noun}s "
+    "model or ensemble construction. If a roster member's own weights were selected on {plural} "
     "inside this cohort, rung0 is itself optimistically biased, and this harness cannot detect "
     "it: predval evaluates the predictions it is handed and has no view of how they were "
     "produced, including whether any given model_id is a single trained model or a blend of "
@@ -90,7 +90,8 @@ def _limitations(clustering_name: str, ensemble_members: list[str]) -> str:
     gain_sentence = _LIMITATIONS_GAIN_INTERVAL.format(noun=clustering_name)
     if not ensemble_members:
         return gain_sentence
-    return _LIMITATIONS_ENSEMBLE.format(noun=clustering_name) + gain_sentence
+    ensemble_sentence = _LIMITATIONS_ENSEMBLE.format(plural=_plural(clustering_name))
+    return ensemble_sentence + gain_sentence
 
 #: Appendix concept-explainer (item 5): OFF by default; structure + placeholders this session, the
 #: static SVG assets arrive later. Rendered only when --appendix is passed, so default bytes are
@@ -115,15 +116,28 @@ _REPAIR_SHAPE_LABELS = {
     "rung3": "non-monotone shape",
 }
 
-#: Kept for any external reader of the old flat rung->label mapping; "rung0" no longer has one
-#: fixed meaning under the two-axis taxonomy (S6.1 item 1) -- see `verdict_gauge()`.
-GAUGE_LABELS = {
-    "rung0": "none -- well-calibrated as published",
-    **_REPAIR_SHAPE_LABELS,
-}
+#: Kept for any external reader of the old flat rung->label mapping. "rung0" no longer has an
+#: entry at all: under the two-axis taxonomy (S6.1 item 1) it meant "axis A found nothing", and
+#: S6.2 D3 established that this must be reported as SILENCE, not as the affirmative
+#: "well-calibrated as published". Absence of detectable miscalibration at G=22 is not evidence of
+#: calibration, and a verdict line that says so reads as a clean bill of health the data cannot
+#: support. See `verdict_gauge()`.
+GAUGE_LABELS = dict(_REPAIR_SHAPE_LABELS)
 
 
 # --------------------------------------------------------------------------- formatting helpers
+
+
+def _plural(noun: str) -> str:
+    """English plural of a cohort noun. Enough rule for the job: the nouns here are ordinary
+    concrete singulars declared in a cohort spec ("patch", "slide", "region", "row"), and "patchs"
+    is a visible defect in a clinical report (S6.2 D1).
+    """
+    if noun.endswith(("s", "x", "z", "ch", "sh")):
+        return noun + "es"
+    if len(noun) > 1 and noun.endswith("y") and noun[-2] not in "aeiou":
+        return noun[:-1] + "ies"
+    return noun + "s"
 
 
 def _f(x: float | None, nd: int = 4) -> str:
@@ -273,30 +287,36 @@ def _exhibit_rows(metrics: pd.DataFrame, models: list[str], cluster_noun: str) -
     return out
 
 
-def _exhibit_note(rows: list[dict], cluster_noun: str) -> str:
-    """The exhibit's framing paragraph (S6 item 6): conditional on whether ANY shown model's
-    naive-vs-cluster ratio exceeds 1, never asserting "narrower" when the two intervals actually
-    agree.
+def _exhibit_note(rows: list[dict], cluster_noun: str, unit_noun: str = "row") -> str:
+    """The exhibit's framing paragraph (S6 item 6; S6.2 D1/D6): direction-aware, and explicit about
+    which way round the ratio is defined.
 
-    The exhibit's whole point is to demonstrate what ignoring clustering costs; if the widest ratio
-    among the shown models exceeds 1, at least one model genuinely shows that cost, and the
-    "understates" framing is truthful of the exhibit even if some individual rows sit closer to
-    1x. If every model's ratio is at or below 1, clustering was never costing this cohort much --
-    the {noun}s here are large or homogeneous enough that the naive and cluster-aware intervals
-    nearly agree, and stating that plainly is the honest reading, not silence or a mismatched claim.
+    The ratio is stated in the prose as cluster-aware width / naive width, because "ratio" alone is
+    reversible and the sentence built on it is not: a reader who assumes the other orientation
+    reads every claim backwards. On GUSTO the ratio is 0.9x -- the naive interval is *wider* -- so
+    the pre-S6 wording ("how much narrower the wrong interval looks") was flatly false there.
+
+    Both branches are kept. A clinical cohort where clustering turns out to be benign is itself
+    evidence the harness is not manufacturing findings, so the exhibit is never dropped for being
+    undramatic; it just says what it actually found.
     """
     ratios = [r["_ratio"] for r in rows if np.isfinite(r["_ratio"])]
+    definition = (
+        f"The ratio is the cluster-aware interval width divided by the naive per-{unit_noun} width."
+    )
     if not ratios or max(ratios) > 1.0:
         return (
-            f"The naive per-row AUROC interval is <em>incorrect</em> when rows share a "
-            f"{cluster_noun}. It is shown only to make the cost of ignoring clustering concrete: "
-            f"the naive interval understates uncertainty by the shown ratio."
+            f"The naive per-{unit_noun} AUROC interval is <em>incorrect</em> when "
+            f"{_plural(unit_noun)} share a {cluster_noun}. It is shown only to make the cost of "
+            f"ignoring clustering concrete. {definition} Above 1 it is the factor by which the "
+            f"naive interval is <em>too narrow</em>."
         )
     return (
-        f"The naive per-row AUROC interval is shown alongside the cluster-aware one for "
-        f"comparison. Here the two <em>nearly agree</em> -- the {cluster_noun}s in this cohort are "
-        f"large or homogeneous enough that ignoring clustering cost little in this exhibit; the "
-        f"check, not a dramatic gap, is the point."
+        f"The naive per-{unit_noun} AUROC interval is shown alongside the cluster-aware one for "
+        f"comparison. {definition} Here it is at or below 1: naive and cluster-aware widths agree "
+        f"within rounding on this cohort, so clustering <em>does not inflate</em> uncertainty "
+        f"here -- the {_plural(cluster_noun)} are large or homogeneous enough that the check, not "
+        f"a dramatic gap, is the point."
     )
 
 
@@ -474,6 +494,61 @@ def miscalibration_reason(calibration: pd.DataFrame, model: str) -> str:
     return ", ".join(parts) if parts else "calibration"
 
 
+def harm_lookup(metrics: pd.DataFrame) -> dict[str, tuple[list[tuple[str, float, float]], int]]:
+    """Per member: every ladder rung whose paired cross-fit gain interval lies entirely below zero,
+    with that interval, plus how many rungs had a finite interval at all (S6.2 D5).
+
+    Read from the same paired_gain_brier/common/overall rows the manifest's verdict was classified
+    from, so the report and the manifest cannot disagree. The report needs the intervals themselves
+    (the manifest carries only rung names), which is why this is a second read of the same rows
+    rather than a manifest field.
+
+    Independent of axis B by construction: a member with a demonstrated repair at rung2 can still
+    carry a reliably harmful rung1, and that harm is reported.
+    """
+    gains = metrics[
+        (metrics["metric"] == "paired_gain_brier")
+        & (metrics["subset"] == "common")
+        & (metrics["stratum_kind"] == "overall")
+        & (metrics["ci_method"] == "paired_cluster_bootstrap")
+    ]
+    out: dict[str, tuple[list[tuple[str, float, float]], int]] = {}
+    for model, grp in gains.groupby("model_id"):
+        harmful: list[tuple[str, float, float]] = []
+        n_finite = 0
+        for rung in _LADDER_RUNGS:
+            row = _one(grp, rung=rung)
+            if row is None:
+                continue
+            lo, hi = float(row["ci_low"]), float(row["ci_high"])
+            if not (np.isfinite(lo) and np.isfinite(hi)):
+                continue
+            n_finite += 1
+            if hi < 0:
+                harmful.append((rung, lo, hi))
+        out[str(model)] = (harmful, n_finite)
+    return out
+
+
+def _rung3_diagnosis_doc(manifest: dict) -> str | None:
+    """Path of the rung3 withholding write-up for THIS cohort, or None when nothing was withheld.
+
+    Derived from the stratum named in the flags rather than hardcoded (S6.2 D1). Deterministic by
+    construction -- the filesystem is never consulted, since a render whose prose depended on the
+    working directory would not be byte-reproducible.
+    """
+    strata = sorted({
+        f["message"].split("(", 1)[1].split(")", 1)[0]
+        for f in manifest.get("flags", [])
+        if f.get("code") == "recalibration_unavailable"
+        and f.get("message", "").startswith("rung3 ")
+        and "(" in f.get("message", "")
+    })
+    if not strata:
+        return None
+    return f"docs/diagnosis-rung3-{strata[0].replace('=', '')}.md"
+
+
 def few_clusters_note_for_overall(manifest: dict) -> str | None:
     """The already-computed few_clusters flag text for the overall stratum, quoted verbatim
     (never re-derived) for the A+B-unproven cell's power caveat (S6.1 item 1)."""
@@ -483,43 +558,56 @@ def few_clusters_note_for_overall(manifest: dict) -> str | None:
     return None
 
 
-def verdict_gauge(v: dict, reason: str, few_clusters: str | None) -> str:
-    """The gauge-fault clause, from the two-axis verdict (S6.1 item 1; spec section 4.8).
+def verdict_gauge(
+    v: dict,
+    reason: str,
+    few_clusters: str | None,
+    harm: list[tuple[str, float, float]] | tuple = (),
+    n_rungs: int = 0,
+) -> str:
+    """The gauge-fault clause, from the two-axis verdict (S6.1 item 1; S6.2 D3/D5; spec §4.8).
 
-    Axis B is named whenever axis A found miscalibration -- a reader who knows something is
-    wrong wants to know what happened when a fix was tried, even "unproven". When axis A found
-    nothing, axis B stays silent UNLESS it is itself a finding -- "demonstrated" (rare) or
-    "counterproductive" (a real result worth flagging): "well-calibrated, and we don't know if a
-    fix would help" is not worth stating when there was no reason to try fixing it.
+    Built as a list of independent clauses rather than a lookup over the (axis A x axis B) grid,
+    because the clauses are genuinely independent facts and one of them -- recalibration harm --
+    cuts across both axes.
+
+    Axis A speaks only when it fired. When it did not, it says NOTHING: "no miscalibration was
+    detected at this cohort's power" is not the same claim as "well-calibrated", and printing the
+    latter turned a null result into a clean bill of health (S6.2 D3). Silence is the honest
+    report, so a member with nothing to say returns "" and the caller drops the sentence entirely.
+
+    Axis B's "unproven" is likewise only worth stating when axis A gave a reason to attempt a
+    repair; on a member with no detected fault, "we don't know if a fix would help" is noise.
+    "demonstrated" and any harmful rung are always stated -- both are findings in their own right.
     """
-    axis_a = v["axis_a_miscalibrated"]
-    axis_b = v["axis_b"]
+    clauses: list[str] = []
 
-    def demonstrated_clause() -> str:
+    if v["axis_a_miscalibrated"]:
+        clauses.append(f"miscalibrated ({reason})")
+
+    if v["axis_b"] == "demonstrated":
         rung = v["best_rung"]
-        shape = _REPAIR_SHAPE_LABELS.get(rung, rung)
-        return f"repair demonstrated at {rung} ({shape})"
-
-    def counterproductive_clause() -> str:
-        rungs = ", ".join(v["axis_b_counterproductive_rungs"])
-        return f"recalibration demonstrably counterproductive at {rungs}"
-
-    def unproven_clause() -> str:
+        clauses.append(f"repair demonstrated at {rung} ({_REPAIR_SHAPE_LABELS.get(rung, rung)})")
+    elif v["axis_b"] == "unproven" and v["axis_a_miscalibrated"]:
         clause = f"repair benefit unproven at this cohort's power (G={v['n_clusters']})"
-        return f"{clause} -- {few_clusters}" if few_clusters else clause
+        clauses.append(f"{clause} -- {few_clusters}" if few_clusters else clause)
 
-    if not axis_a:
-        if axis_b == "demonstrated":
-            return f"well-calibrated as published; {demonstrated_clause()}"
-        if axis_b == "counterproductive":
-            return f"none -- well-calibrated as published; {counterproductive_clause()}"
-        return "none -- well-calibrated as published"
+    if harm:
+        # Scaled to 1e-3, exactly as section 3 shows the same gains (S6 item 4). At four raw
+        # decimals the harmful bound nearest zero prints as "-0.0000", which reads as *not*
+        # excluding zero -- the opposite of what the clause is asserting.
+        rungs = ", ".join(
+            f"{rung} [{lo * _MILLI:.2f}, {hi * _MILLI:.2f}]" for rung, lo, hi in harm
+        )
+        unit = "paired cross-fit Brier gain, x10\u207b\u00b3"
+        if n_rungs and len(harm) >= n_rungs:
+            clauses.append(
+                f"recalibration harm at every rung, no admissible repair ({unit}): {rungs}"
+            )
+        else:
+            clauses.append(f"recalibration harm ({unit}): {rungs}")
 
-    if axis_b == "demonstrated":
-        return f"miscalibrated ({reason}); {demonstrated_clause()}"
-    if axis_b == "counterproductive":
-        return f"miscalibrated ({reason}); {counterproductive_clause()}"
-    return f"miscalibrated ({reason}); {unproven_clause()}"
+    return "; ".join(clauses)
 
 
 def _verdict_lines(metrics: pd.DataFrame, manifest: dict, models: list[str]) -> list[dict]:
@@ -540,6 +628,7 @@ def _verdict_lines(metrics: pd.DataFrame, manifest: dict, models: list[str]) -> 
     ]
     calibration = calibration_lookup(metrics)
     few_clusters = few_clusters_note_for_overall(manifest)
+    harm = harm_lookup(metrics)
     out = []
     for model in models:
         v = verdict.get(model)
@@ -550,13 +639,16 @@ def _verdict_lines(metrics: pd.DataFrame, manifest: dict, models: list[str]) -> 
         bss_pct = 100.0 * float(v["bss"])
         bss_ci = _ci(100.0 * float(v["bss_ci_low"]), 100.0 * float(v["bss_ci_high"]), nd=1)
         reason = miscalibration_reason(calibration, model) if v["axis_a_miscalibrated"] else ""
-        gauge = verdict_gauge(v, reason, few_clusters)
+        harmful, n_rungs = harm.get(model, ([], 0))
+        gauge = verdict_gauge(v, reason, few_clusters, harmful, n_rungs)
         line = (
             f"Ranking: AUROC {auroc_str}. "
             f"Probability quality after best admissible repair: closes {bss_pct:.1f}% "
             f"[{100.0 * float(v['bss_ci_low']):.1f}%, {100.0 * float(v['bss_ci_high']):.1f}%] "
-            f"of the gap from no-skill (always predict prevalence) to perfect. "
-            f"Gauge fault found: {gauge}."
+            f"of the gap from no-skill (always predict prevalence) to perfect."
+            # Dropped entirely when the gauge is silent (S6.2 D3): an empty "Gauge fault found:"
+            # would reintroduce the reassurance the silence exists to withhold.
+            + (f" Gauge fault found: {gauge}." if gauge else "")
         )
         out.append({
             "model": model,
@@ -660,6 +752,9 @@ def build_context(
     """Assemble everything the template needs. All logic lives here; the template only arranges."""
     models = _models_by_auroc(metrics)
     cluster_noun = manifest.get("uncertainty", {}).get("clustering_name", "cluster")
+    # Unit of observation vs unit of independence (S6.2 D1). Defaulted here as well as in the spec
+    # so a manifest written by an older predval still renders.
+    unit_noun = manifest.get("uncertainty", {}).get("unit_noun", "row")
 
     cov = coverage_delta(metrics)
     finite = cov["cov_delta"].dropna()
@@ -683,6 +778,9 @@ def build_context(
         "framing": FRAMING,
         "cohort_id": manifest.get("cohort_id", ""),
         "cluster_noun": cluster_noun,
+        "cluster_nouns": _plural(cluster_noun),
+        "unit_noun": unit_noun,
+        "unit_nouns": _plural(unit_noun),
         "roster": manifest.get("roster", {}),
         "identical_coverage": identical_coverage,
         "coverage_rows": coverage_rows,
@@ -695,7 +793,7 @@ def build_context(
             _curves_by_model(calibration), models
         ),
         "exhibit_rows": exhibit_rows,
-        "exhibit_note": _exhibit_note(exhibit_rows, cluster_noun),
+        "exhibit_note": _exhibit_note(exhibit_rows, cluster_noun, unit_noun),
         "dumbbell_svg": figures.interval_dumbbell(_dumbbell_data(metrics, models)),
         "calibration_rows": _calibration_rows(metrics, models),
         "brier_rung_svg": figures.brier_by_rung(_brier_by_rung_data(metrics, models)),
@@ -704,15 +802,12 @@ def build_context(
         "limitations": _limitations(
             cluster_noun, manifest.get("roster", {}).get("ensemble_members", [])
         ),
-        # The fold4 diagnosis doc (docs/diagnosis-rung3-scanner_domain0.md) writes up one specific
-        # PCam finding; cross-reference it only when THIS run actually has a rung3-could-not-
-        # cross-fit withholding for it to be relevant to (S6 item 5) -- unconditionally citing it
-        # on a cohort with no such withholding (e.g. GUSTO's single, fully-converged model) would
-        # be a dangling, misleading reference.
-        "has_rung3_withholding": any(
-            f["code"] == "recalibration_unavailable" and f["message"].startswith("rung3 ")
-            for f in manifest.get("flags", [])
-        ),
+        # Cross-reference the rung3 diagnosis doc only when THIS run actually has a
+        # rung3-could-not-cross-fit withholding for it to be relevant to (S6 item 5), and name the
+        # doc after the stratum THIS cohort withheld on rather than PCam's (S6.2 D1) -- the path
+        # was hardcoded to scanner_domain0, so any other cohort that hit a withholding would have
+        # been pointed at a PCam subgroup that does not exist in it.
+        "rung3_diagnosis_doc": _rung3_diagnosis_doc(manifest),
         "provenance": {
             # Sorted, so the report is byte-identical whether it renders from the in-memory
             # manifest (insertion order) or from manifest.json (written with sort_keys).

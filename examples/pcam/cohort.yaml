@@ -20,6 +20,13 @@ outcome:
 # A patch is not a patient. These 19,999 patches come from 22 slides, and patches from one
 # slide are heavily correlated, so uncertainty must be computed over slides rather than over
 # patches. See docs/spec.md section 2.1.
+#
+# unit_noun is the unit of OBSERVATION (one row = one patch); clustering.name is the unit of
+# INDEPENDENCE (one slide). Both are declared so the report's prose reads in this cohort's own
+# vocabulary instead of a generic "row" -- the distinction between the two is the whole point of
+# section 2.1, so naming them separately is the honest spelling (S6.2 D1).
+unit_noun: patch
+
 clustering:
   field: wsi
   name: slide

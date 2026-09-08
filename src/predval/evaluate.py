@@ -170,21 +170,19 @@ def _classify_repair(
       improvement side (`ci_low > 0`) -- a real, interval-backed repair. `admissible_rung` names it.
     - "counterproductive": no rung is demonstrated, but at least one rung's interval lies entirely
       BELOW zero (`ci_high < 0`) -- recalibration was tried and reliably made Brier worse.
-      `counterproductive_rungs` names every such rung (there can be more than one).
+
+    `counterproductive_rungs` names every rung whose interval lies entirely below zero and is
+    computed INDEPENDENTLY of the status (S6.2 D5). A demonstrated repair at rung2 does not make a
+    reliably-harmful rung1 stop being harmful: before S6.2 the demonstrated branch returned an
+    empty tuple and that harm went unreported, which understated the count of members carrying a
+    harmful rung (4 rather than 5 on the PCam fixture). Which rung is *admissible* is still decided
+    by the demonstrated test alone -- this changes what is reported, never what is selected.
     - "unproven": neither of the above -- every rung's interval straddles zero. This is NOT the
       same claim as "counterproductive": one says recalibration measurably helped or hurt, the
       other says the cohort's power was too low to tell either way.
     A rung whose interval sits entirely below zero is never "admissible" under any reading -- an
     admissible repair must be a real improvement, not merely distinguishable from no-op.
     """
-    for rung in _LADDER_RUNGS_IN_ORDER:
-        cell = model_gains.get(rung)
-        if cell is None:
-            continue
-        _, ci_low, _ = cell
-        if np.isfinite(ci_low) and ci_low > 0:
-            return REPAIR_DEMONSTRATED, rung, ()
-
     counterproductive = tuple(
         rung
         for rung in _LADDER_RUNGS_IN_ORDER
@@ -192,6 +190,15 @@ def _classify_repair(
         and np.isfinite(cell[2])
         and cell[2] < 0
     )
+
+    for rung in _LADDER_RUNGS_IN_ORDER:
+        cell = model_gains.get(rung)
+        if cell is None:
+            continue
+        _, ci_low, _ = cell
+        if np.isfinite(ci_low) and ci_low > 0:
+            return REPAIR_DEMONSTRATED, rung, counterproductive
+
     if counterproductive:
         return REPAIR_COUNTERPRODUCTIVE, None, counterproductive
     return REPAIR_UNPROVEN, None, ()
@@ -516,6 +523,9 @@ def evaluate(cohort: Cohort, predictions: Predictions) -> Evaluation:
             # the report's prose (S6 item 5); "cluster" when no clustering is declared at all, so
             # report.py never needs a null-check of its own.
             "clustering_name": spec.clustering.name if spec.clustering else "cluster",
+            # Unit of observation ("patch", "row", ...), the companion to clustering_name's unit
+            # of independence (S6.2 D1). Carried here so report.py reads both nouns from one place.
+            "unit_noun": spec.unit_noun,
         },
         "coverage": {
             "min_fraction": spec.coverage.min_fraction,

@@ -40,13 +40,16 @@
     "clustering_name": "region",
     "n_boot": 2000,
     "seed": 1337,
-    "show_naive_ci": true
+    "show_naive_ci": true,
+    "unit_noun": "row"
   },
   "verdict": {
     "gusto_west_refit_logistic": {
       "axis_a_miscalibrated": true,
       "axis_b": "demonstrated",
-      "axis_b_counterproductive_rungs": [],
+      "axis_b_counterproductive_rungs": [
+        "rung1"
+      ],
       "best_rung": "rung2",
       "best_rung_brier": 0.05847567959994254,
       "bss": 0.10513846832098839,

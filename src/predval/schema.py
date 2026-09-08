@@ -133,6 +133,13 @@ class CohortSpec(StrictModel):
     version: int
     subject_key: str = Field(min_length=1)
     data: str = Field(min_length=1)
+    #: Human-readable noun for one row of the cohort -- the unit of OBSERVATION, as distinct from
+    #: `clustering.name`, the unit of INDEPENDENCE (S6.2 D1). PCam declares "patch" against a
+    #: "slide" cluster; GUSTO's rows are patients but it declares neither, so both fall back to
+    #: their generic defaults. Threaded into the report's prose so a cohort never inherits another
+    #: cohort's vocabulary. The unit of observation is a property of the cohort, so it lives in the
+    #: spec (and therefore in the cohort_spec digest), not in a display config.
+    unit_noun: str = Field(default="row", min_length=1)
     outcome: OutcomeSpec
     coverage: CoverageSpec
     completeness: CompletenessSpec

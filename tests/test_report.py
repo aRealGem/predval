@@ -249,10 +249,9 @@ def test_verdict_lines_present_with_anchors(html) -> None:
 
 
 def test_verdict_line_gauge_is_from_the_composed_vocabulary(evaluation) -> None:
-    """S6.1: the gauge clause is composed from axis A (well-calibrated / miscalibrated + its
-    triggering CI) and axis B (demonstrated / unproven / counterproductive + its rung(s)) -- no
-    free adjectives beyond that fixed vocabulary, even though the composed string is no longer a
-    member of a small flat set (S6's GAUGE_LABELS)."""
+    """S6.1 + S6.2 D3: the gauge clause is composed from a fixed vocabulary -- axis A's triggering
+    CI, axis B's outcome and rung, and any harmful rung -- with no free adjectives. Under S6.2 the
+    empty string joined that vocabulary: a member with nothing to report says nothing."""
     from predval.report import build_context
 
     ctx = build_context(
@@ -262,30 +261,33 @@ def test_verdict_line_gauge_is_from_the_composed_vocabulary(evaluation) -> None:
     assert ctx["verdict_lines"]
     for v in ctx["verdict_lines"]:
         g = v["gauge"]
-        assert g.startswith(("well-calibrated", "none -- well-calibrated", "miscalibrated ("))
-        assert g == "none -- well-calibrated as published" or any(
-            phrase in g
-            for phrase in (
-                "repair demonstrated at",
-                "repair benefit unproven at this cohort's power",
-                "recalibration demonstrably counterproductive at",
-            )
-        )
+        if g == "":
+            # Axis A silent and axis B unproven with no harmful rung: correctly no claim at all,
+            # and the caller drops the "Gauge fault found" sentence entirely.
+            assert "Gauge fault found" not in v["line"]
+            continue
+        assert g.startswith(
+            ("miscalibrated (", "repair demonstrated at", "recalibration harm")
+        ), g
+        # The retired S6.1 reassurance phrasing must not come back (S6.2 D3).
+        for phrase in ("well-calibrated", "calibrated as published", "none --"):
+            assert phrase not in g, g
 
 
-def test_verdict_gauge_all_six_combinations() -> None:
-    """S6.1 item 1: the exact template for every (axis A, axis B) combination, locked directly --
-    including the rare A-B+ cell and the two combinations the session brief didn't spell out
-    verbatim (A+/counterproductive follows the same "always name axis B when axis A fired" rule
-    as the two named A+ cells)."""
+def test_verdict_gauge_every_combination() -> None:
+    """S6.2 D3/D5: the exact clause set for every (axis A, axis B, harm) combination.
+
+    Locked directly rather than through a render, because these strings are the report's actual
+    claims. The grid is (2 x 3) with harm cutting across it independently -- harm is a property of
+    the ladder, not a cell of the taxonomy, which is why it composes onto every row.
+    """
     from predval.report import verdict_gauge
 
-    demonstrated = {"best_rung": "rung2", "axis_a_miscalibrated": True, "axis_b": "demonstrated",
-                     "axis_b_counterproductive_rungs": []}
+    demonstrated = {"best_rung": "rung2", "axis_a_miscalibrated": True, "axis_b": "demonstrated"}
     unproven = {"best_rung": "rung0", "axis_a_miscalibrated": True, "axis_b": "unproven",
-                "axis_b_counterproductive_rungs": [], "n_clusters": 22}
-    counter = {"best_rung": "rung0", "axis_a_miscalibrated": True, "axis_b": "counterproductive",
-               "axis_b_counterproductive_rungs": ["rung1", "rung2"]}
+                "n_clusters": 22}
+    counter = {"best_rung": "rung0", "axis_a_miscalibrated": True, "axis_b": "counterproductive"}
+    harm2 = [("rung1", -0.005, -0.002), ("rung2", -0.006, -0.001)]
 
     assert verdict_gauge(demonstrated, "slope 4.93 [2.72, 7.14]", None) == (
         "miscalibrated (slope 4.93 [2.72, 7.14]); repair demonstrated at rung2 "
@@ -299,26 +301,33 @@ def test_verdict_gauge_all_six_combinations() -> None:
         "miscalibrated (slope 4.93 [2.72, 7.14]); repair benefit unproven at this cohort's "
         "power (G=22) -- few clusters note"
     )
-    assert verdict_gauge(counter, "slope 4.93 [2.72, 7.14]", None) == (
-        "miscalibrated (slope 4.93 [2.72, 7.14]); recalibration demonstrably counterproductive "
-        "at rung1, rung2"
+    assert verdict_gauge(counter, "slope 4.93 [2.72, 7.14]", None, harm2, 3) == (
+        "miscalibrated (slope 4.93 [2.72, 7.14]); recalibration harm "
+        "(paired cross-fit Brier gain, x10\u207b\u00b3): rung1 [-5.00, -2.00], rung2 [-6.00, -1.00]"
+    )
+    # Every rung harmful -> the stronger phrasing, because there is no rung left to fall back to.
+    assert verdict_gauge(counter, "slope 4.93 [2.72, 7.14]", None, harm2, 2) == (
+        "miscalibrated (slope 4.93 [2.72, 7.14]); recalibration harm at every rung, no "
+        "admissible repair (paired cross-fit Brier gain, x10\u207b\u00b3): "
+        "rung1 [-5.00, -2.00], rung2 [-6.00, -1.00]"
     )
 
-    well_calibrated_unproven = {**unproven, "axis_a_miscalibrated": False}
-    well_calibrated_counter = {**counter, "axis_a_miscalibrated": False}
-    well_calibrated_demonstrated = {**demonstrated, "axis_a_miscalibrated": False}
+    quiet_unproven = {**unproven, "axis_a_miscalibrated": False}
+    quiet_counter = {**counter, "axis_a_miscalibrated": False}
+    quiet_demonstrated = {**demonstrated, "axis_a_miscalibrated": False}
 
-    assert (
-        verdict_gauge(well_calibrated_unproven, "", None) == "none -- well-calibrated as published"
+    # S6.2 D3, the asymmetry rule: nothing detected and nothing proven -> SILENCE. This cell used
+    # to read "none -- well-calibrated as published", which reported a non-rejection at G=22 as a
+    # clean bill of health.
+    assert verdict_gauge(quiet_unproven, "", None) == ""
+    # Harm is always stated, with or without axis A.
+    assert verdict_gauge(quiet_counter, "", None, [("rung3", -0.004, -0.001)], 3) == (
+        "recalibration harm (paired cross-fit Brier gain, x10\u207b\u00b3): rung3 [-4.00, -1.00]"
     )
-    assert verdict_gauge(well_calibrated_counter, "", None) == (
-        "none -- well-calibrated as published; recalibration demonstrably counterproductive "
-        "at rung1, rung2"
-    )
-    # the rare cell: well-calibrated per axis A, but a repair was demonstrated anyway.
-    assert verdict_gauge(well_calibrated_demonstrated, "", None) == (
-        "well-calibrated as published; repair demonstrated at rung2 "
-        "(level and spread (intercept + slope))"
+    # The rare cell: axis A silent, but a repair was demonstrated anyway -- stated plainly, and
+    # still with no calibration claim attached to it.
+    assert verdict_gauge(quiet_demonstrated, "", None) == (
+        "repair demonstrated at rung2 (level and spread (intercept + slope))"
     )
 
 
@@ -411,18 +420,40 @@ def test_fold4_reference_omitted_without_a_rung3_withholding(html) -> None:
 
 
 def test_exhibit_note_is_conditional_on_the_ratio() -> None:
-    """Item 6: never claim the naive interval is narrower when the two intervals actually agree."""
+    """Item 6 + S6.2 D6: the caption is direction-aware, and says which way round the ratio runs.
+
+    "Ratio" alone is reversible; the sentence built on it is not. Both branches therefore define
+    it as cluster width over naive width before drawing any conclusion from it.
+    """
     from predval.report import _exhibit_note
 
-    understates = _exhibit_note([{"_ratio": 3.5}, {"_ratio": 1.2}], "slide")
-    assert "understates" in understates
-    assert "narrower" not in understates
+    too_narrow = _exhibit_note([{"_ratio": 3.5}, {"_ratio": 1.2}], "slide", "patch")
+    assert "too narrow" in too_narrow
+    assert "cluster-aware interval width divided by the naive per-patch width" in too_narrow
+    assert "does not inflate" not in too_narrow
+    # S6.2 D1: the cohort's own nouns, both of them, correctly pluralised.
+    assert "patches share a slide" in too_narrow
 
     agrees = _exhibit_note([{"_ratio": 0.9}, {"_ratio": 0.6}], "region")
-    assert "nearly agree" in agrees
-    assert "understates" not in agrees
-    assert "narrower" not in agrees
+    assert "does not inflate" in agrees
+    assert "cluster-aware interval width divided by the naive per-row width" in agrees
+    assert "too narrow" not in agrees
     assert "region" in agrees
+    # Never asserts the inverted claim the pre-S6.2 caption made on this branch.
+    assert "narrower" not in agrees
+
+
+def test_cohort_nouns_pluralise(html) -> None:
+    """S6.2 D1: a declared unit noun reaches the prose in both numbers. "patchs" would be a
+    visible defect in a report handed to a clinician."""
+    from predval.report import _plural
+
+    assert _plural("patch") == "patches"
+    assert _plural("slide") == "slides"
+    assert _plural("row") == "rows"
+    assert _plural("study") == "studies"
+    # The toy cohort declares neither noun, so the render falls back to both generic defaults.
+    assert "clusters" in html and "per-row" in html
 
 
 def test_few_clusters_flags_name_their_stratum(html) -> None:

@@ -42,6 +42,24 @@ numbers. The ensemble-caution mechanism also changed (now gated on a declared `e
 list, not roster size); GUSTO declares none either way, so its Limitations block is unaffected.
 Reproducibility re-verified: two independent runs at this commit were byte-identical.
 
+**S6.2 refresh (2026-09-08):** `manifest.json`, `findings.json`, `report.html` changed; all four
+parquets and all three input digests are byte-identical (this cohort's `cohort.yaml` was
+deliberately not touched -- it takes the new `unit_noun` default of "row"). All 22 rendered table
+rows are identical. Two string-layer corrections:
+
+- **Recalibration harm is now reported (brief D5).** This cohort's single model has a demonstrated
+  repair at rung2 *and* a reliably harmful rung1 (gain interval `[-0.18, -0.01]` x10⁻³, entirely
+  below zero). The pre-S6.2 classifier collected harmful rungs only when no repair was
+  demonstrated, so this harm was invisible in every GUSTO report until now. The session brief did
+  not anticipate this case -- it was found by deriving the rule from the data rather than from the
+  PCam fixture.
+- **The unit-of-analysis caption is direction-aware (brief D6).** GUSTO's ratio is 0.9x: the naive
+  interval is *wider* than the cluster-aware one, so the old "how much narrower the wrong interval
+  looks" framing was false here. The caption now defines the ratio explicitly as cluster width
+  over naive width and, at or below 1, says clustering "does not inflate" uncertainty on this
+  cohort. The exhibit is deliberately kept rather than dropped: a clinical cohort where clustering
+  turns out to be benign is itself evidence the harness is not manufacturing findings.
+
 To refresh deliberately after an intentional change, see the docstring of
 `tests/test_golden_gusto.py`.
 

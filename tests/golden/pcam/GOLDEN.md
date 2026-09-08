@@ -58,6 +58,38 @@ cohort.yaml), not on roster size as S6's rule used as a proxy.
 Determinism re-verified across three independent full B=2000 runs at this commit (2 direct runs +
 the golden test's own regeneration), byte-identical on every artefact.
 
+**S6.2 refresh (2026-09-08):** `manifest.json`, `findings.json`, `report.html` changed; the four
+parquets did NOT (git reports them unmodified -- no statistic moved, only the report's string layer
+and one provenance digest). Verified before refreshing: all 123 rendered table rows are identical
+between the old and new render except a single cell, the `cohort_spec` digest.
+
+Three string-layer corrections (session brief D1/D3/D5, spec section 4.8):
+
+- **D3, the asymmetry rule.** `none -- well-calibrated as published` is gone. Axis A can only fail
+  to *reject* calibration; it cannot establish it, so a member with no detected fault and no proven
+  repair now gets no calibration claim at all and its "Gauge fault found" sentence is dropped
+  entirely. Three members (`e2cnn`, `mobilenetv3`, `tinyvgg`) consequently carry no gauge sentence.
+- **D5, recalibration harm is reported for every member.** Harmful rungs (`ci_high < 0`) are now
+  collected independently of the axis-B status. Previously the `demonstrated` branch returned an
+  empty list, so a member with a demonstrated repair at one rung had a reliably harmful rung at
+  another silently dropped -- true of `p4m_seed7` (harmful rung1, demonstrated rung2). The fixture
+  therefore reports **5** members carrying a harmful rung (`e2cnn_s21`, `e2cnn_s99`, `p4m_s13`,
+  `p4m_seed7`, `swin`), not the 4 an earlier write-up claimed. Each harmful rung is now printed
+  with its interval at the same x10⁻³ scale section 3 uses. Which rung is *admissible* is
+  unchanged for every member -- `p4m_seed7`/rung2 is still the fixture's only demonstrated repair.
+- **D1, the cohort's own vocabulary.** `cohort.yaml` gained `unit_noun: patch`, so the
+  unit-of-analysis exhibit reads "when patches share a slide" rather than "when rows share a
+  slide". **This is why `cohort_spec` changed**, from
+  `b859642cc5f350b372da2fc1a41f6256b80ab1da5bd34da4ed2159a2dc1c4ced` to
+  `0caf6ab6a9839a937717e576a904de3c479c7b832840629dead9376a0b155d4c`. The unit of observation is a
+  property of the cohort, so it belongs in the spec (and therefore inside its digest) rather than
+  in a display config chosen to keep the hash stable. `cohort_data` and `predictions` are
+  byte-identical, as are all four metric parquets.
+
+The rung3 diagnosis-doc cross-reference is now derived from the stratum this run actually withheld
+on instead of being hardcoded to `scanner_domain0`; for this fixture it resolves to the same path,
+so the rendered bytes there are unchanged.
+
 To refresh deliberately after an intentional change, see the docstring of
 `tests/test_golden_pcam.py`.
 

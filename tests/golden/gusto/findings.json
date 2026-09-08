@@ -73,7 +73,7 @@
         "bss": 0.105138,
         "bss_ci_high": 0.115543,
         "bss_ci_low": 0.094747,
-        "gauge_label": "miscalibrated (slope 0.8354 [0.801, 0.870], intercept 0.0922 [0.011, 0.173]); repair demonstrated at rung2 (level and spread (intercept + slope))"
+        "gauge_label": "miscalibrated (slope 0.8354 [0.801, 0.870], intercept 0.0922 [0.011, 0.173]); repair demonstrated at rung2 (level and spread (intercept + slope)); recalibration harm (paired cross-fit Brier gain, x10\u207b\u00b3): rung1 [-0.18, -0.01]"
       }
     }
   ],
@@ -88,7 +88,7 @@
         "gusto_west_refit_logistic"
       ]
     },
-    "git_commit": "bfb50b21a3b76bcbea6f765d565ed18775c72d92-dirty",
+    "git_commit": "c88239f7dbd28c75f2706df2fc1ae9777652ffc9-dirty",
     "input_hashes": {
       "cohort_data": "f12cf9399b3b5add42faa72c9d44b342cef9192f68509f23ce9d1f9236657388",
       "cohort_spec": "029e1a08c3c4a03a616d567227bcb5a53c66e02ac59ab91bf59b82f2c050ea23",

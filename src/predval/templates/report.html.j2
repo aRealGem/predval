@@ -123,14 +123,14 @@ best per-member gain. Each cell is the <strong>paired cross-fit Brier gain</stro
 minus that rung's held-out Brier, positive when recalibration helped -- with its paired
 cluster-bootstrap interval (a gain whose interval excludes 0 is a real out-of-fold improvement).
 The apparent, in-sample gains run larger; only the cross-fitted gains, which hold whole
-{{ cluster_noun }}s out, are shown. rung1's apparent intercept is ~0 and rung2's apparent slope is
+{{ cluster_nouns }} out, are shown. rung1's apparent intercept is ~0 and rung2's apparent slope is
 ~1 <span class="byconstruction">by construction</span> (that is what each fit targets), so those are
 not reported as findings. Recalibration cannot improve discrimination; the cross-fitted Brier is the
 expected loss after local recalibration, not a validated result.</p>
 <p class="subordinate">At small G the flexible rung is high-variance under cross-fitting: absence of
 a rung3 gain is evidence of linear miscalibration only insofar as rung3 had power to detect shape
-distortion.{% if has_rung3_withholding %} See the fold4 diagnosis
-(docs/diagnosis-rung3-scanner_domain0.md) for the members whose rung3 could not be cross-fit on this
+distortion.{% if rung3_diagnosis_doc %} See the fold4 diagnosis
+({{ rung3_diagnosis_doc }}) for the members whose rung3 could not be cross-fit on this
 cohort.{% endif %}</p>
 <table>
 <tr><th>model</th><th>Brier rung0</th><th>rung1 gain [CI] (x10⁻³)</th><th>rung2 gain [CI] (x10⁻³)</th>

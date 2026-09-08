@@ -71,7 +71,7 @@ best admissible rung -- no free adjectives. BSS is anchored at <strong>0 = no-sk
 predict prevalence) and <strong>1 = perfect</strong>; "closes Y% of the gap" is BSS as a percentage.
 The gauge fault names which rung, if any, the miscalibration needed.</p>
 <ul>
-<li><strong>gusto_west_refit_logistic</strong> -- Ranking: AUROC 0.7908 [0.783, 0.798]. Probability quality after best admissible repair: closes 10.5% [9.5%, 11.6%] of the gap from no-skill (always predict prevalence) to perfect. Gauge fault found: miscalibrated (slope 0.8354 [0.801, 0.870], intercept 0.0922 [0.011, 0.173]); repair demonstrated at rung2 (level and spread (intercept + slope)).</li>
+<li><strong>gusto_west_refit_logistic</strong> -- Ranking: AUROC 0.7908 [0.783, 0.798]. Probability quality after best admissible repair: closes 10.5% [9.5%, 11.6%] of the gap from no-skill (always predict prevalence) to perfect. Gauge fault found: miscalibrated (slope 0.8354 [0.801, 0.870], intercept 0.0922 [0.011, 0.173]); repair demonstrated at rung2 (level and spread (intercept + slope)); recalibration harm (paired cross-fit Brier gain, x10⁻³): rung1 [-0.18, -0.01].</li>
 </ul>
 
 <h3>Calibration (rung0, as published)</h3>
@@ -1019,7 +1019,7 @@ z
 </div>
 
 <h3>Unit-of-analysis exhibit</h3>
-<p class="muted">The naive per-row AUROC interval is shown alongside the cluster-aware one for comparison. Here the two <em>nearly agree</em> -- the regions in this cohort are large or homogeneous enough that ignoring clustering cost little in this exhibit; the check, not a dramatic gap, is the point.</p>
+<p class="muted">The naive per-row AUROC interval is shown alongside the cluster-aware one for comparison. The ratio is the cluster-aware interval width divided by the naive per-row width. Here it is at or below 1: naive and cluster-aware widths agree within rounding on this cohort, so clustering <em>does not inflate</em> uncertainty here -- the regions are large or homogeneous enough that the check, not a dramatic gap, is the point.</p>
 <table>
 <tr><th>model</th><th>cluster width</th><th>naive width (wrong)</th><th>ratio</th></tr>
 <tr><td>gusto_west_refit_logistic</td><td>0.0151</td><td>0.0172</td>

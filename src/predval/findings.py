@@ -28,6 +28,7 @@ from .evaluate import RUNG0, Evaluation
 from .report import (
     calibration_lookup,
     few_clusters_note_for_overall,
+    harm_lookup,
     miscalibration_reason,
     verdict_gauge,
 )
@@ -197,6 +198,7 @@ def build_findings(evaluation: Evaluation, *, git_commit: str | None = None) -> 
     ]
     calibration = calibration_lookup(metrics)
     few_clusters = few_clusters_note_for_overall(manifest)
+    harm = harm_lookup(metrics)
 
     members = []
     for model in sorted(manifest.get("models_present", [])):
@@ -224,7 +226,7 @@ def build_findings(evaluation: Evaluation, *, git_commit: str | None = None) -> 
                 "best_rung": str(v["best_rung"]),
                 "axis_a_miscalibrated": bool(v["axis_a_miscalibrated"]),
                 "axis_b": str(v["axis_b"]),
-                "gauge_label": verdict_gauge(v, reason, few_clusters),
+                "gauge_label": verdict_gauge(v, reason, few_clusters, *harm.get(model, ([], 0))),
             }
         else:
             verdict_out = None

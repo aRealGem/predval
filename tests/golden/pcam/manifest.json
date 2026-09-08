@@ -85,7 +85,7 @@
   ],
   "inputs": {
     "cohort_data": "766930b2c511c5bd7056743cec118396b314cee3e4ff729e97bdd6c3b253d48f",
-    "cohort_spec": "b859642cc5f350b372da2fc1a41f6256b80ab1da5bd34da4ed2159a2dc1c4ced",
+    "cohort_spec": "0caf6ab6a9839a937717e576a904de3c479c7b832840629dead9376a0b155d4c",
     "predictions": "109dcdedb3211718fd437efe18d63e14f3c2e1f08d5300572494648b13167f7b"
   },
   "models_present": [
@@ -121,7 +121,8 @@
     "clustering_name": "slide",
     "n_boot": 2000,
     "seed": 1337,
-    "show_naive_ci": true
+    "show_naive_ci": true,
+    "unit_noun": "patch"
   },
   "verdict": {
     "e2cnn": {
@@ -263,7 +264,9 @@
     "p4m_seed7": {
       "axis_a_miscalibrated": true,
       "axis_b": "demonstrated",
-      "axis_b_counterproductive_rungs": [],
+      "axis_b_counterproductive_rungs": [
+        "rung1"
+      ],
       "best_rung": "rung2",
       "best_rung_brier": 0.0335743621856683,
       "bss": 0.8368767490660507,

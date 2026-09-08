@@ -113,6 +113,16 @@ cluster-bootstrap intervals over the grouping unit.
 
 If `clustering` is omitted, S2 treats subjects as independent and says so in the report.
 
+**`unit_noun`** — optional, top-level, default `"row"`. The human-readable singular for one row of
+the cohort: the unit of *observation*, the companion to `clustering.name`'s unit of *independence*.
+PCam declares `unit_noun: patch` against `clustering.name: slide`, so its report reads "when
+patches share a slide"; GUSTO declares neither, so its report reads "when rows share a region".
+Both nouns are threaded into the report's prose and pluralised there, so a cohort never inherits
+another cohort's vocabulary (S6.2 D1) — before this, the imaging fixture's nouns were the only ones
+the templates knew. The unit of observation is a property of the cohort, so it lives in the spec
+and therefore inside the `cohort_spec` digest, rather than in a display config chosen to keep that
+digest stable.
+
 **Clustering is not a subgroup, even when the column is the same.** `clustering.field` names the
 unit of *independence*: it changes how uncertainty is computed and never appears as a reporting
 stratum. `subgroups[].field` names a unit of *reporting*: it splits results into strata and never
@@ -132,6 +142,8 @@ intervals that look stratified but are not.
 | `outcome.field` | yes | outcome column in the cohort table |
 | `outcome.positive_label` | yes | the value counted as a positive event |
 | `clustering.field` | no | correlation grouping column |
+| `clustering.name` | no | singular noun for the clustering unit, used in report prose (default `cluster`) |
+| `unit_noun` | no | singular noun for one cohort row, used in report prose (default `row`) |
 | `coverage.min_fraction` | yes | float in `[0, 1]` |
 | `coverage.compare_on` | yes | `full`, `common`, or `both` |
 | `coverage.common_warn_frac` | no | caution threshold for intersection loss (default `0.20`) |
@@ -380,11 +392,11 @@ regard for whether that rung's apparent improvement was distinguishable from noi
 rule could and did report a "best admissible repair" for members whose gain interval crossed zero
 by a wide margin. If no rung's interval excludes zero on the positive side — including a rung
 whose interval sits **entirely below** zero, evidence the correction reliably made Brier *worse*,
-which is not "admissible" under any reading — the verdict falls back to `rung0` (as published):
-"none — well-calibrated as published" is the honest report, not an absence of one. `pbar·(1−pbar)`
+which is not "admissible" under any reading — the verdict falls back to `rung0` (as published),
+and the line reports that by saying nothing about calibration (S6.2 D3, below). `pbar·(1−pbar)`
 is the Brier of the no-skill model that always predicts prevalence, so BSS is anchored at
 **0 = no-skill** and **1 = perfect**: the fraction of the gap between them that the score closes.
-Its interval is a cluster bootstrap over slides, recomputing both the loss and the prevalence
+Its interval is a cluster bootstrap over clusters, recomputing both the loss and the prevalence
 reference inside each resample (`ci_method = cluster_bootstrap`).
 
 **Plain-language line, template-generated (item 3ii; two-axis taxonomy, S6.1).** Exactly one line
@@ -408,28 +420,43 @@ exclusive states:
   (`ci_low > 0`; unchanged from S6's rule above).
 - **counterproductive** — no rung is demonstrated, but at least one rung's gain interval lies
   **entirely below** zero (`ci_high < 0`): recalibration was tried and reliably made Brier worse.
-  There can be more than one such rung; all are named.
 - **unproven** — neither of the above: every rung's interval straddles zero. This is a distinct
   claim from "counterproductive" — one says recalibration measurably helped or hurt, the other says
   the cohort's power was too low to tell either way.
 
+**Recalibration harm is not a cell of this taxonomy (S6.2 D5).** Which rungs are harmful
+(`ci_high < 0`) is computed for **every** member, independently of both axes, and every such rung
+is named on the line with its interval. Until S6.2 the harmful rungs were collected only in the
+`counterproductive` branch, so a member with a demonstrated repair at one rung had its harmful
+rung at another silently dropped — true of `p4m_seed7` (harmful rung1, demonstrated rung2) on PCam
+and of GUSTO's single member (harmful rung1, demonstrated rung2), which is why the PCam fixture
+reports **5** members carrying a harmful rung, not 4. Which rung is *admissible* is unaffected: it
+is still decided by the `ci_low > 0` test alone.
+
 **The gauge clause, composed from the two axes:**
 
-| axis A | axis B | gauge clause |
-|---|---|---|
-| miscalibrated | demonstrated | `miscalibrated (<slope and/or intercept CI>); repair demonstrated at <rung> (<shape label>)` |
-| miscalibrated | unproven | `miscalibrated (<slope and/or intercept CI>); repair benefit unproven at this cohort's power (G=<n_clusters>)` — the report's own `few_clusters` flag for the overall stratum is appended verbatim when it fired |
-| miscalibrated | counterproductive | `miscalibrated (<slope and/or intercept CI>); recalibration demonstrably counterproductive at <rung(s)>` |
-| well-calibrated | unproven | `none — well-calibrated as published` |
-| well-calibrated | counterproductive | `none — well-calibrated as published; recalibration demonstrably counterproductive at <rung(s)>` |
-| well-calibrated | demonstrated (rare) | `well-calibrated as published; repair demonstrated at <rung> (<shape label>)` — both facts printed plainly, no adjective added to explain the combination |
+The clause is assembled from up to three independent parts, joined by `; ` in this order, and any
+part with nothing to say is omitted:
 
-Axis B is named whenever axis A found miscalibration — a reader who knows something is wrong wants
-to know what happened when a fix was tried, even "unproven" is informative. When axis A found
-nothing, axis B stays silent **unless it is itself a finding**: "demonstrated" (rare — a real
-improvement even without detectable miscalibration) or "counterproductive" (a real result worth
-flagging). "Well-calibrated, and we don't know if a fix would help" is not worth stating when there
-was no reason to try fixing it in the first place.
+| part | emitted when | text |
+|---|---|---|
+| calibration | axis A fired | `miscalibrated (<slope and/or intercept CI>)` |
+| repair | axis B = demonstrated | `repair demonstrated at <rung> (<shape label>)` |
+| repair | axis B = unproven **and** axis A fired | `repair benefit unproven at this cohort's power (G=<n_clusters>)` — the report's own `few_clusters` flag for the overall stratum is appended verbatim when it fired |
+| harm | any harmful rung, regardless of either axis | `recalibration harm (paired cross-fit Brier gain, ×10⁻³): <rung> [<ci>], …`, or `recalibration harm at every rung, no admissible repair (…): …` when every rung with a finite interval is harmful |
+
+When **all three** parts are empty the gauge is the empty string and the report drops the
+"Gauge fault found" sentence entirely.
+
+**The asymmetry rule (S6.2 D3).** Axis A can only ever *fail to reject* calibration; it cannot
+establish it. So when axis A does not fire, the line makes **no calibration claim at all**. Through
+S6.1 this cell instead read `none — well-calibrated as published`, which turned a non-rejection at
+G=22 into a clean bill of health — the strongest-sounding sentence in the report was the one with
+the least evidence behind it. That phrasing is gone from the codebase. Silence is the report.
+
+Axis B follows the same asymmetry: "unproven" is stated only when axis A gave a reason to attempt a
+repair, since "we don't know if a fix would help" is noise on a member with no detected fault.
+"demonstrated" and any harmful rung are always stated — each is a finding in its own right.
 
 The `<shape label>` for a demonstrated repair is unchanged from S6's rung-shape bins:
 
