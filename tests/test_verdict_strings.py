@@ -10,13 +10,18 @@ committed HTML instead would only re-assert whatever the last golden refresh hap
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
 import pytest
 
-from predval.report import _REPAIR_SHAPE_LABELS, build_context
+from predval.report import (
+    _REPAIR_SHAPE_LABELS,
+    build_context,
+    few_clusters_note_for_overall,
+)
 
 GOLDEN = Path(__file__).resolve().parent / "golden"
 COHORTS = ("pcam", "gusto")
@@ -184,3 +189,49 @@ def test_all_rungs_harmful_says_no_admissible_repair() -> None:
     # swin is harmful at rung3 only -- the stronger phrasing must NOT appear.
     assert _harmful_rungs(metrics, "swin") == ["rung3"]
     assert "no admissible repair" not in lines["swin"], lines["swin"]
+
+
+# ------------------------------------------------------------------- S6.3 item 0
+
+
+#: The flag's own explanatory prose. It belongs in the Flags section, not inside a verdict line.
+FLAG_PROSE = ("tail quantiles approximate", "percentile bootstrap intervals below")
+
+#: Verdict lines that carry the citation, per cohort. PCam's seven are the A-fired/B-unproven
+#: members; GUSTO's single model has a demonstrated repair, so it never reaches that clause.
+EXPECTED_CITATIONS = {"pcam": 7, "gusto": 0}
+
+
+def test_verdict_cites_flags_by_name(golden) -> None:
+    """A verdict line cites the few_clusters flag; it does not reprint it (S6.3 item 0).
+
+    Derived from the manifest's own flag record rather than from a literal, so the expected
+    citation is built out of the same stratum and G the flag itself names -- if the flag moves
+    stratum or G, the expected string moves with it and the test still means what it says.
+    """
+    cohort, _metrics, _ctx, lines = golden
+    manifest = json.loads((GOLDEN / cohort / "manifest.json").read_text())
+    flag = few_clusters_note_for_overall(manifest)
+    verdict = manifest["verdict"]
+
+    # 1. The explanatory text appears in no verdict line, in either cohort.
+    for model, line in lines.items():
+        for prose in FLAG_PROSE:
+            assert prose not in line, f"flag prose inlined -- {cohort}/{model}: {line}"
+
+    assert flag is not None, f"{cohort}: expected an overall few_clusters flag at this G"
+    m = re.search(r"few clusters \(G=(\d+)\) for ([^;]+);", flag)
+    assert m, f"{cohort}: flag text no longer parses -- {flag!r}"
+    citation = f"flag: few_clusters ({m.group(2).strip()}, G={m.group(1)})"
+
+    # 2. Exactly the members whose power caveat fires carry the citation, and no others.
+    seen = 0
+    for model, line in lines.items():
+        v = verdict[model]
+        where = f"{cohort}/{model}: {line}"
+        if v["axis_b"] == "unproven" and v["axis_a_miscalibrated"]:
+            assert citation in line, f"power caveat without its citation -- {where}"
+            seen += 1
+        else:
+            assert "few_clusters" not in line, f"citation on a member that earned none -- {where}"
+    assert seen == EXPECTED_CITATIONS[cohort], f"{cohort}: {seen} citations, expected differently"

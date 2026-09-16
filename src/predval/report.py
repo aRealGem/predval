@@ -18,6 +18,7 @@ byte-identical HTML.
 from __future__ import annotations
 
 import json
+import re
 from functools import lru_cache
 from pathlib import Path
 
@@ -558,6 +559,28 @@ def few_clusters_note_for_overall(manifest: dict) -> str | None:
     return None
 
 
+#: The shape `uncertainty.few_clusters_note` writes: G, then the stratum it belongs to.
+_FEW_CLUSTERS_RE = re.compile(r"few clusters \(G=(\d+)\) for ([^;]+);")
+
+
+def few_clusters_citation(message: str) -> str:
+    """Cite the flag by name instead of reprinting its explanatory paragraph (S6.3 item 0).
+
+    The paragraph is already carried in full by the Flags section; inlining it again put two
+    lines of methodology caveat inside seven of PCam's verdict lines, which is where a reader
+    is least able to skip it. The citation names the same flag, its stratum and its G, so the
+    verdict line stays a claim and the explanation stays one lookup away.
+
+    Falls back to the full message if the flag text ever stops matching -- a dangling citation
+    would be worse than a verbose one. `test_verdict_cites_flags_by_name` fails loudly on that
+    fallback, so it degrades safely without going unnoticed.
+    """
+    m = _FEW_CLUSTERS_RE.search(message)
+    if not m:
+        return message
+    return f"flag: few_clusters ({m.group(2).strip()}, G={m.group(1)})"
+
+
 def verdict_gauge(
     v: dict,
     reason: str,
@@ -590,7 +613,9 @@ def verdict_gauge(
         clauses.append(f"repair demonstrated at {rung} ({_REPAIR_SHAPE_LABELS.get(rung, rung)})")
     elif v["axis_b"] == "unproven" and v["axis_a_miscalibrated"]:
         clause = f"repair benefit unproven at this cohort's power (G={v['n_clusters']})"
-        clauses.append(f"{clause} -- {few_clusters}" if few_clusters else clause)
+        clauses.append(
+            f"{clause} -- {few_clusters_citation(few_clusters)}" if few_clusters else clause
+        )
 
     if harm:
         # Scaled to 1e-3, exactly as section 3 shows the same gains (S6 item 4). At four raw
