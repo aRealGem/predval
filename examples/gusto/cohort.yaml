@@ -22,9 +22,16 @@ outcome:
   field: label
   positive_label: 1
 
-# regl is GUSTO-I's enrollment-region code (16 levels among the non-West patients here). Patients
-# enrolled through the same regional network are not independent -- the same reason PCam clusters
-# by slide, here it is by region rather than an imaging artifact.
+# unit_noun is the unit of OBSERVATION (one row = one patient: 38,642 rows, 38,642 distinct
+# subject_ids); clustering.name is the unit of INDEPENDENCE (one enrollment region). Declaring
+# both keeps this cohort's prose in its own vocabulary rather than inheriting the imaging
+# fixture's "patch"/"slide" or falling back to a generic "row" (S6.2 D1, S6.3 A2).
+unit_noun: patient
+
+# regl is GUSTO-I's enrollment-region code: 16 levels across the full trial, of which exactly 15
+# appear in this scored cohort (codes 2-16; the West development region regl == 1 is held out).
+# Patients enrolled through the same regional network are not independent -- the same reason PCam
+# clusters by slide, here it is by region rather than an imaging artifact.
 clustering:
   field: regl
   name: region
