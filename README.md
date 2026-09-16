@@ -32,10 +32,12 @@ Three things follow from that scope, and they are what predval spends its effort
   be judged on (apparent, optimistic by construction) and once cross-fitted with whole clusters
   held out. The report shows both, states in an unconditional framing block that no rung is a
   validated model, and — this is the part most recalibration tooling skips — refuses to
-  manufacture a gain where none exists: on the PCam fixture below, most members are already
-  well-calibrated and get nothing, two are detectably miscalibrated with the repair's benefit
-  left honestly unproven at this cohort's small cluster count, and exactly one member gets a
-  real, interval-backed repair.
+  manufacture a gain where none exists: on the PCam fixture below, nine of the fifteen members
+  carry a detected calibration fault, ten have the repair's benefit left honestly unproven at
+  this cohort's small cluster count, four are *reliably harmed* by at least one rung, and exactly
+  one member gets a real, interval-backed repair. The remaining six show no detected fault, which
+  the report states as a null result and never as a clean bill of health: this harness's
+  calibration test can fail to reject "calibrated", but it can never establish it.
 
 ## What predval deliberately does not do
 
@@ -114,7 +116,9 @@ scoped evaluation package for individual survival distributions.
 ## Example: a real fixture, not a synthetic one
 
 `examples/pcam/` runs predval end to end against a real 15-member PatchCamelyon histopathology
-ensemble: 19,999 image patches drawn from only 22 whole slides across two scanner/stain domains.
+model roster: 19,999 image patches drawn from only 22 whole slides across two scanner/stain
+domains. Every member is a single trained model — the roster contains no ensembles or blends
+(see the last bullet below).
 It is worth more than a clean synthetic dataset for exactly the reasons predval exists:
 
 - Patches within a slide are heavily correlated, so the unit of analysis and the unit of
@@ -127,9 +131,10 @@ It is worth more than a clean synthetic dataset for exactly the reasons predval 
   zero -- a transcription error, not a code bug; corrected in `docs/spec.md` section 4.8 and the
   card log). That refusal to overclaim from a large point estimate at small G is itself the
   finding predval exists to make legible.
-- One published ensemble member's predictions were permanently lost — weights lived in ephemeral
-  storage, re-inference is impossible — so the fixture carries a genuine coverage gap rather than
-  one manufactured by deleting rows.
+- One declared member's predictions were permanently lost — `p4m_reg`, an ingredient of the
+  campaign's 11-model blend recipe, whose weights lived in ephemeral storage, so re-inference is
+  impossible. It is declared in `expected_models` and ships no rows, so the fixture carries a
+  genuine coverage gap rather than one manufactured by deleting rows.
 - 732 predictions sit at exactly 0.0 or 1.0, where `logit` is undefined, making the eps-clip in
   the recalibration ladder load-bearing from the first rung, not a theoretical edge case.
 - One member, `mobilenetv3`, is a single trained baseline model (its own solo out-of-fold AUROC
@@ -173,7 +178,7 @@ its own inputs (see `docs/spec.md` §8).
 
 `examples/gusto/` runs predval against GUSTO-I, a public acute-MI thrombolytic trial (40,830
 patients). It is structurally the opposite of PCam in almost every way that matters: tabular, not
-imaging; a single prespecified logistic, not a 15-model ensemble; geographic external validation
+imaging; a single prespecified logistic, not a 15-model roster; geographic external validation
 across trial regions, not a scanner/stain subgroup — the same shape as validating a model against
 a cohort it was never fit on.
 
@@ -248,12 +253,14 @@ coverage and completeness policies that decide whether a run is allowed to proce
 
 ## Status
 
-S0–S4.2 done: schema, IO, and hashing; discrimination/calibration/threshold metrics with
+S0–S6 done: schema, IO, and hashing; discrimination/calibration/threshold metrics with
 cluster-aware uncertainty; the recalibration ladder (rungs 0–3, apparent and cross-fitted, with
-paired-gain intervals and a verdict layer); the standalone HTML report and machine-readable
-`findings.json`. 171 tests pass, `ruff` clean. See [`docs/spec.md`](docs/spec.md) for what is
-implemented versus still backlog (wild cluster bootstrap, decision curves, per-rung refit-in-
-replicate intervals).
+paired-gain intervals and a two-axis verdict layer); the standalone HTML report and
+machine-readable `findings.json`; an adversarial ingestion suite; and frozen golden baselines for
+both worked examples. 246 tests pass and `ruff` is clean; a further 2 tests — the full B=2000
+golden regressions for PCam and GUSTO — are opt-in via `PREDVAL_RUN_GOLDEN=1` and skip by
+default, for 248 in total. See [`docs/spec.md`](docs/spec.md) for what is implemented versus
+still backlog (wild cluster bootstrap, decision curves, per-rung refit-in-replicate intervals).
 
 ## License
 
