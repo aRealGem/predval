@@ -38,6 +38,7 @@ _TEMPLATE_PATH = Path(__file__).parent / "templates" / "report.html.j2"
 def _template_source() -> str:
     return _TEMPLATE_PATH.read_text()
 
+
 #: The framing rule, verbatim in substance from docs/spec.md section 4.4, plus the discrimination
 #: sentence S4 requires. Rendered unconditionally at the top of every report.
 FRAMING = (
@@ -94,18 +95,27 @@ def _limitations(clustering_name: str, ensemble_members: list[str]) -> str:
     ensemble_sentence = _LIMITATIONS_ENSEMBLE.format(plural=_plural(clustering_name))
     return ensemble_sentence + gain_sentence
 
+
 #: Appendix concept-explainer (item 5): OFF by default; structure + placeholders this session, the
 #: static SVG assets arrive later. Rendered only when --appendix is passed, so default bytes are
 #: unaffected.
 APPENDIX_SECTIONS = (
-    ("Why the unit of analysis is not the unit of independence",
-     "Placeholder -- a static SVG explainer of clustered sampling will be inserted here."),
-    ("The recalibration ladder, rung by rung",
-     "Placeholder -- a static SVG explainer of rungs 0-3 will be inserted here."),
-    ("Apparent versus cross-fitted, and what optimism measures",
-     "Placeholder -- a static SVG explainer of the cross-fit gap will be inserted here."),
-    ("Reading the Brier skill score",
-     "Placeholder -- a static SVG explainer of the no-skill and perfect anchors will go here."),
+    (
+        "Why the unit of analysis is not the unit of independence",
+        "Placeholder -- a static SVG explainer of clustered sampling will be inserted here.",
+    ),
+    (
+        "The recalibration ladder, rung by rung",
+        "Placeholder -- a static SVG explainer of rungs 0-3 will be inserted here.",
+    ),
+    (
+        "Apparent versus cross-fitted, and what optimism measures",
+        "Placeholder -- a static SVG explainer of the cross-fit gap will be inserted here.",
+    ),
+    (
+        "Reading the Brier skill score",
+        "Placeholder -- a static SVG explainer of the no-skill and perfect anchors will go here.",
+    ),
 )
 
 #: Shape-of-miscalibration labels for a DEMONSTRATED repair, keyed by the admissible rung -- what
@@ -201,9 +211,9 @@ def _primary_rows(metrics: pd.DataFrame, models: list[str], show_cov_delta: bool
         & (metrics["stratum_kind"] == "overall")
     ]
     cov = coverage_delta(metrics)
-    cov_auroc = cov[
-        (cov["stratum_kind"] == "overall") & (cov["metric"] == "auroc")
-    ].set_index("model_id")["cov_delta"]
+    cov_auroc = cov[(cov["stratum_kind"] == "overall") & (cov["metric"] == "auroc")].set_index(
+        "model_id"
+    )["cov_delta"]
 
     out = []
     for model in models:
@@ -250,11 +260,13 @@ def _brier_analytic_footnote(metrics: pd.DataFrame, models: list[str]) -> list[d
             continue
         lo, truncated = _truncate_loss_lo(float(r["ci_low"]))
         if truncated:
-            out.append({
-                "model": model,
-                "interval": _ci(lo, float(r["ci_high"])),
-                "raw_low": _f(float(r["ci_low"]), 4),
-            })
+            out.append(
+                {
+                    "model": model,
+                    "interval": _ci(lo, float(r["ci_high"])),
+                    "raw_low": _f(float(r["ci_low"]), 4),
+                }
+            )
     return out
 
 
@@ -278,13 +290,15 @@ def _exhibit_rows(metrics: pd.DataFrame, models: list[str], cluster_noun: str) -
         if not (np.isfinite(cw) and np.isfinite(nw)) or nw <= 0:
             continue
         ratio = cw / nw
-        out.append({
-            "model": model,
-            "cluster_width": _f(cw, 4),
-            "naive_width": _f(nw, 4),
-            "ratio": f"{ratio:.1f}x",
-            "_ratio": ratio,
-        })
+        out.append(
+            {
+                "model": model,
+                "cluster_width": _f(cw, 4),
+                "naive_width": _f(nw, 4),
+                "ratio": f"{ratio:.1f}x",
+                "_ratio": ratio,
+            }
+        )
     return out
 
 
@@ -376,14 +390,16 @@ def _dumbbell_data(metrics: pd.DataFrame, models: list[str]) -> list[dict]:
         vals = [cluster["ci_low"], cluster["ci_high"], naive["ci_low"], naive["ci_high"]]
         if not all(np.isfinite(x) for x in vals):
             continue
-        out.append({
-            "model": model,
-            "value": float(cluster["value"]),
-            "cluster_low": float(cluster["ci_low"]),
-            "cluster_high": float(cluster["ci_high"]),
-            "naive_low": float(naive["ci_low"]),
-            "naive_high": float(naive["ci_high"]),
-        })
+        out.append(
+            {
+                "model": model,
+                "value": float(cluster["value"]),
+                "cluster_low": float(cluster["ci_low"]),
+                "cluster_high": float(cluster["ci_high"]),
+                "naive_low": float(naive["ci_low"]),
+                "naive_high": float(naive["ci_high"]),
+            }
+        )
     return out
 
 
@@ -419,12 +435,14 @@ def _calibration_rows(metrics: pd.DataFrame, models: list[str]) -> list[dict]:
             cells[f"{rung}_gain"] = _signed_ci_milli(v, lo, hi)
             if np.isfinite(v):
                 best = max(best, v)
-        out.append({
-            "model": model,
-            "rung0": _f(r0),
-            **cells,
-            "_gain_sort": best,
-        })
+        out.append(
+            {
+                "model": model,
+                "rung0": _f(r0),
+                **cells,
+                "_gain_sort": best,
+            }
+        )
     out.sort(key=lambda r: r["_gain_sort"], reverse=True)
     for r in out:
         del r["_gain_sort"]
@@ -538,13 +556,15 @@ def _rung3_diagnosis_doc(manifest: dict) -> str | None:
     construction -- the filesystem is never consulted, since a render whose prose depended on the
     working directory would not be byte-reproducible.
     """
-    strata = sorted({
-        f["message"].split("(", 1)[1].split(")", 1)[0]
-        for f in manifest.get("flags", [])
-        if f.get("code") == "recalibration_unavailable"
-        and f.get("message", "").startswith("rung3 ")
-        and "(" in f.get("message", "")
-    })
+    strata = sorted(
+        {
+            f["message"].split("(", 1)[1].split(")", 1)[0]
+            for f in manifest.get("flags", [])
+            if f.get("code") == "recalibration_unavailable"
+            and f.get("message", "").startswith("rung3 ")
+            and "(" in f.get("message", "")
+        }
+    )
     if not strata:
         return None
     return f"docs/diagnosis-rung3-{strata[0].replace('=', '')}.md"
@@ -621,9 +641,7 @@ def verdict_gauge(
         # Scaled to 1e-3, exactly as section 3 shows the same gains (S6 item 4). At four raw
         # decimals the harmful bound nearest zero prints as "-0.0000", which reads as *not*
         # excluding zero -- the opposite of what the clause is asserting.
-        rungs = ", ".join(
-            f"{rung} [{lo * _MILLI:.2f}, {hi * _MILLI:.2f}]" for rung, lo, hi in harm
-        )
+        rungs = ", ".join(f"{rung} [{lo * _MILLI:.2f}, {hi * _MILLI:.2f}]" for rung, lo, hi in harm)
         unit = "paired cross-fit Brier gain, x10\u207b\u00b3"
         if n_rungs and len(harm) >= n_rungs:
             clauses.append(
@@ -675,14 +693,16 @@ def _verdict_lines(metrics: pd.DataFrame, manifest: dict, models: list[str]) -> 
             # would reintroduce the reassurance the silence exists to withhold.
             + (f" Gauge fault found: {gauge}." if gauge else "")
         )
-        out.append({
-            "model": model,
-            "auroc": auroc_str,
-            "bss_pct": f"{bss_pct:.1f}",
-            "bss_ci": bss_ci,
-            "gauge": gauge,
-            "line": line,
-        })
+        out.append(
+            {
+                "model": model,
+                "auroc": auroc_str,
+                "bss_pct": f"{bss_pct:.1f}",
+                "bss_ci": bss_ci,
+                "gauge": gauge,
+                "line": line,
+            }
+        )
     return out
 
 
@@ -706,12 +726,14 @@ def _subgroup_rows(metrics: pd.DataFrame) -> list[dict]:
         def fmt(r: pd.Series | None) -> str:
             return _val_ci(r["value"], r["ci_low"], r["ci_high"]) if r is not None else "n/a"
 
-        out.append({
-            "subgroup": f"{key['subgroup_name']}={key['subgroup_level']}",
-            "model": key["model_id"],
-            "auroc": fmt(auroc),
-            "brier": fmt(brier),
-        })
+        out.append(
+            {
+                "subgroup": f"{key['subgroup_name']}={key['subgroup_level']}",
+                "model": key["model_id"],
+                "auroc": fmt(auroc),
+                "brier": fmt(brier),
+            }
+        )
     return out
 
 
@@ -728,11 +750,13 @@ def _fragility_rows(fragility: pd.DataFrame, models: list[str]) -> list[dict]:
         r = _one(frag, model_id=model)
         if r is None or not np.isfinite(r["max_abs_delta"]):
             continue
-        out.append({
-            "model": model,
-            "max_abs_delta": _f(r["max_abs_delta"], 4),
-            "culprit": str(r["culprit_cluster"]),
-        })
+        out.append(
+            {
+                "model": model,
+                "max_abs_delta": _f(r["max_abs_delta"], 4),
+                "culprit": str(r["culprit_cluster"]),
+            }
+        )
     out.sort(key=lambda d: d["max_abs_delta"], reverse=True)
     return out
 
@@ -896,8 +920,6 @@ def write_report(evaluation: Evaluation, path: str | Path, *, appendix: bool = F
     p = Path(path)
     p.write_text(render_evaluation(evaluation, appendix=appendix))
     return p
-
-
 
 
 def _main(argv: list[str] | None = None) -> int:

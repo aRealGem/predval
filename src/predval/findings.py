@@ -236,28 +236,30 @@ def build_findings(evaluation: Evaluation, *, git_commit: str | None = None) -> 
             g = _one(gm, rung=rung)
             if g is None:
                 continue
-            recal_gains.append({
-                "rung": rung,
-                "gain": float(g["value"]),
-                "ci_low": float(g["ci_low"]),
-                "ci_high": float(g["ci_high"]),
-                "ci_method": None if g["ci_method"] is None else str(g["ci_method"]),
-            })
-        analytic = _one(
-            r0m, metric="brier", ci_method="cluster_robust_t"
-        )
+            recal_gains.append(
+                {
+                    "rung": rung,
+                    "gain": float(g["value"]),
+                    "ci_low": float(g["ci_low"]),
+                    "ci_high": float(g["ci_high"]),
+                    "ci_method": None if g["ci_method"] is None else str(g["ci_method"]),
+                }
+            )
+        analytic = _one(r0m, metric="brier", ci_method="cluster_robust_t")
         truncated = bool(
             analytic is not None
             and math.isfinite(float(analytic["ci_low"]))
             and float(analytic["ci_low"]) < 0.0
         )
-        members.append({
-            "model_id": model,
-            "metrics": member_metrics,
-            "verdict": verdict_out,
-            "recalibration_gains": recal_gains,
-            "analytic_ci_truncated": truncated,
-        })
+        members.append(
+            {
+                "model_id": model,
+                "metrics": member_metrics,
+                "verdict": verdict_out,
+                "recalibration_gains": recal_gains,
+                "analytic_ci_truncated": truncated,
+            }
+        )
 
     unc = manifest.get("uncertainty", {})
     cov = manifest.get("coverage", {})

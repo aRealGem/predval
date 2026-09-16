@@ -124,9 +124,7 @@ def test_evaluation_runs_end_to_end(cohort, predictions) -> None:
 
     # The scanner-domain subgroups have 11 clusters each -- above the gate -- so the ladder runs
     # there too, not only overall.
-    sub_rungs = set(
-        result.metrics[result.metrics["stratum_kind"] == "subgroup"]["rung"].unique()
-    )
+    sub_rungs = set(result.metrics[result.metrics["stratum_kind"] == "subgroup"]["rung"].unique())
     assert {"rung1", "rung2", "rung3"} <= sub_rungs
 
     auroc = result.metrics[

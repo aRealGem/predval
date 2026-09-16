@@ -29,22 +29,36 @@ def _build(tmp_path: Path):
             z = rng.normal(shift, 1.0)
             p = 1.0 / (1.0 + np.exp(-z))
             sid = f"c{c:02d}_{i:03d}"
-            rows.append({"subject_id": sid, "label": int(rng.binomial(1, p)),
-                         "wsi": f"c{c:02d}", "arm": "x" if c % 2 == 0 else "y"})
+            rows.append(
+                {
+                    "subject_id": sid,
+                    "label": int(rng.binomial(1, p)),
+                    "wsi": f"c{c:02d}",
+                    "arm": "x" if c % 2 == 0 else "y",
+                }
+            )
             preds.append({"subject_id": sid, "model_id": "good", "predicted": float(p)})
-            preds.append({"subject_id": sid, "model_id": "weak",
-                          "predicted": float(1.0 / (1.0 + np.exp(-2.0 * z)))})
+            preds.append(
+                {
+                    "subject_id": sid,
+                    "model_id": "weak",
+                    "predicted": float(1.0 / (1.0 + np.exp(-2.0 * z))),
+                }
+            )
     pd.DataFrame(rows).to_parquet(tmp_path / "cohort.parquet", index=False)
     pd.DataFrame(preds).to_parquet(tmp_path / "predictions.parquet", index=False)
     spec = {
-        "cohort_id": "toy-findings", "version": 0, "subject_key": "subject_id",
+        "cohort_id": "toy-findings",
+        "version": 0,
+        "subject_key": "subject_id",
         "data": "cohort.parquet",
         "outcome": {"type": "binary", "field": "label", "positive_label": 1},
         "clustering": {"field": "wsi"},
         "coverage": {"min_fraction": 0.5, "compare_on": "both"},
         "completeness": {"require_outcome": True, "on_violation": "drop_and_report"},
         "subgroups": [{"name": "arm_group", "field": "arm"}],
-        "thresholds": [0.5], "uncertainty": {"n_boot": 40, "seed": 1337},
+        "thresholds": [0.5],
+        "uncertainty": {"n_boot": 40, "seed": 1337},
         "expected_models": ["good", "weak", "ghost"],
     }
     (tmp_path / "cohort.yaml").write_text(yaml.safe_dump(spec))

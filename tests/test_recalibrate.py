@@ -202,14 +202,14 @@ def test_max_local_decrease_measures_the_biggest_downward_step() -> None:
 def test_materiality_gate() -> None:
     """D1: the gate is |delta_auroc| past tol ALONE; max_local_decrease never drives it."""
     tol = 1e-3
-    assert _material_nonmonotone(0.0, -2e-3, tol) is True          # AUROC dropped past tol
-    assert _material_nonmonotone(0.0, 2e-3, tol) is True           # AUROC rose past tol
-    assert _material_nonmonotone(0.0, 5e-4, tol) is False          # AUROC move under tol
+    assert _material_nonmonotone(0.0, -2e-3, tol) is True  # AUROC dropped past tol
+    assert _material_nonmonotone(0.0, 2e-3, tol) is True  # AUROC rose past tol
+    assert _material_nonmonotone(0.0, 5e-4, tol) is False  # AUROC move under tol
     assert _material_nonmonotone(0.0, float("nan"), tol) is False  # non-finite dAUROC ignored
     # max_local_decrease is inert as a driver now, in BOTH directions of the old behaviour:
-    assert _material_nonmonotone(2e-3, 0.0, tol) is False          # big dip, no AUROC move -> quiet
-    assert _material_nonmonotone(0.06, 4e-3, tol) is True          # effnet_scratch: dAUROC drives
-    assert _material_nonmonotone(0.0024, -2e-5, tol) is False      # phikon: dip present, quiets
+    assert _material_nonmonotone(2e-3, 0.0, tol) is False  # big dip, no AUROC move -> quiet
+    assert _material_nonmonotone(0.06, 4e-3, tol) is True  # effnet_scratch: dAUROC drives
+    assert _material_nonmonotone(0.0024, -2e-5, tol) is False  # phikon: dip present, quiets
 
 
 def test_rung3_rank_deficient_reason_on_narrow_support() -> None:

@@ -141,56 +141,146 @@ class CaseFiles:
 
 CASE_SPECS: list[CaseSpec] = [
     # a. renamed columns
-    CaseSpec("renamed_pred_col", "a", "predictions", "hard_fail", "raises",
-             "PredictionsError", r"missing required columns"),
-    CaseSpec("renamed_outcome_col", "a", "cohort", "hard_fail", "raises",
-             "CohortSpecError", r"missing columns declared"),
+    CaseSpec(
+        "renamed_pred_col",
+        "a",
+        "predictions",
+        "hard_fail",
+        "raises",
+        "PredictionsError",
+        r"missing required columns",
+    ),
+    CaseSpec(
+        "renamed_outcome_col",
+        "a",
+        "cohort",
+        "hard_fail",
+        "raises",
+        "CohortSpecError",
+        r"missing columns declared",
+    ),
     # b. NA in prediction / outcome / cluster
-    CaseSpec("na_prediction", "b", "predictions", "hard_fail", "raises",
-             "PredictionsError", r"nulls or NaN"),
+    CaseSpec(
+        "na_prediction",
+        "b",
+        "predictions",
+        "hard_fail",
+        "raises",
+        "PredictionsError",
+        r"nulls or NaN",
+    ),
     CaseSpec("na_outcome", "b", "cohort", "warn_or_drop", "drops"),
-    CaseSpec("na_cluster", "b", "cohort", "hard_fail", "raises",
-             "CohortSpecError", r"clustering.+null|null.+clustering|regl"),
+    CaseSpec(
+        "na_cluster",
+        "b",
+        "cohort",
+        "hard_fail",
+        "raises",
+        "CohortSpecError",
+        r"clustering.+null|null.+clustering|regl",
+    ),
     # c. duplicate subject ids
-    CaseSpec("dup_exact", "c", "predictions", "hard_fail", "raises",
-             "PredictionsError", r"duplicate"),
-    CaseSpec("dup_conflicting", "c", "predictions", "hard_fail", "raises",
-             "PredictionsError", r"duplicate"),
+    CaseSpec(
+        "dup_exact", "c", "predictions", "hard_fail", "raises", "PredictionsError", r"duplicate"
+    ),
+    CaseSpec(
+        "dup_conflicting",
+        "c",
+        "predictions",
+        "hard_fail",
+        "raises",
+        "PredictionsError",
+        r"duplicate",
+    ),
     # d. out-of-range predictions
-    CaseSpec("pred_negative", "d", "predictions", "hard_fail", "raises",
-             "PredictionsError", r"probability in \[0, 1\]"),
-    CaseSpec("pred_gt1", "d", "predictions", "hard_fail", "raises",
-             "PredictionsError", r"probability in \[0, 1\]"),
+    CaseSpec(
+        "pred_negative",
+        "d",
+        "predictions",
+        "hard_fail",
+        "raises",
+        "PredictionsError",
+        r"probability in \[0, 1\]",
+    ),
+    CaseSpec(
+        "pred_gt1",
+        "d",
+        "predictions",
+        "hard_fail",
+        "raises",
+        "PredictionsError",
+        r"probability in \[0, 1\]",
+    ),
     CaseSpec("pred_bulk_zero_one", "d", "predictions", "loads_ok", "boundary"),
     # e. logit-scale
-    CaseSpec("pred_logit_scale", "e", "predictions", "hard_fail", "raises",
-             "PredictionsError", r"logit"),
+    CaseSpec(
+        "pred_logit_scale", "e", "predictions", "hard_fail", "raises", "PredictionsError", r"logit"
+    ),
     # f. string floats
-    CaseSpec("str_comma_decimal", "f", "predictions", "hard_fail", "raises",
-             "PredictionsError", r"not numeric"),
+    CaseSpec(
+        "str_comma_decimal",
+        "f",
+        "predictions",
+        "hard_fail",
+        "raises",
+        "PredictionsError",
+        r"not numeric",
+    ),
     CaseSpec("str_padded", "f", "predictions", "loads_ok", "loads_pred"),
-    CaseSpec("str_NULL", "f", "predictions", "hard_fail", "raises",
-             "PredictionsError", r"nulls or NaN"),
-    CaseSpec("str_NaN", "f", "predictions", "hard_fail", "raises",
-             "PredictionsError", r"nulls or NaN"),
-    CaseSpec("str_empty_value", "f", "predictions", "hard_fail", "raises",
-             "PredictionsError", r"nulls or NaN"),
+    CaseSpec(
+        "str_NULL", "f", "predictions", "hard_fail", "raises", "PredictionsError", r"nulls or NaN"
+    ),
+    CaseSpec(
+        "str_NaN", "f", "predictions", "hard_fail", "raises", "PredictionsError", r"nulls or NaN"
+    ),
+    CaseSpec(
+        "str_empty_value",
+        "f",
+        "predictions",
+        "hard_fail",
+        "raises",
+        "PredictionsError",
+        r"nulls or NaN",
+    ),
     # g. encoding damage
     CaseSpec("enc_utf8_bom", "g", "predictions", "loads_ok", "loads_pred"),
     CaseSpec("enc_crlf", "g", "predictions", "loads_ok", "loads_pred"),
-    CaseSpec("enc_utf16", "g", "predictions", "hard_fail", "raises",
-             "PredictionsError", r"could not be read"),
+    CaseSpec(
+        "enc_utf16",
+        "g",
+        "predictions",
+        "hard_fail",
+        "raises",
+        "PredictionsError",
+        r"could not be read",
+    ),
     # h. outcome pathologies
-    CaseSpec("outcome_yes_no", "h", "cohort", "hard_fail", "raises",
-             "CohortSpecError", r"never occurs"),
+    CaseSpec(
+        "outcome_yes_no", "h", "cohort", "hard_fail", "raises", "CohortSpecError", r"never occurs"
+    ),
     CaseSpec("outcome_true_false", "h", "cohort", "loads_ok", "loads_cohort"),
     CaseSpec("outcome_float_1_0", "h", "cohort", "loads_ok", "loads_cohort"),
-    CaseSpec("outcome_third_value", "h", "cohort", "hard_fail", "raises",
-             "CohortSpecError", r"exactly two|distinct"),
-    CaseSpec("outcome_all_zero", "h", "cohort", "hard_fail", "raises",
-             "CohortSpecError", r"never occurs"),
-    CaseSpec("outcome_all_one", "h", "cohort", "hard_fail", "raises",
-             "CohortSpecError", r"one distinct|both.+class|non-event"),
+    CaseSpec(
+        "outcome_third_value",
+        "h",
+        "cohort",
+        "hard_fail",
+        "raises",
+        "CohortSpecError",
+        r"exactly two|distinct",
+    ),
+    CaseSpec(
+        "outcome_all_zero", "h", "cohort", "hard_fail", "raises", "CohortSpecError", r"never occurs"
+    ),
+    CaseSpec(
+        "outcome_all_one",
+        "h",
+        "cohort",
+        "hard_fail",
+        "raises",
+        "CohortSpecError",
+        r"one distinct|both.+class|non-event",
+    ),
     CaseSpec("outcome_one_event", "h", "cohort", "loads_ok", "loads_cohort"),
     # i. cluster pathologies (valid input; adequacy is a downstream few_clusters concern)
     CaseSpec("cluster_g_one", "i", "cohort", "loads_ok", "loads_cohort"),
@@ -205,17 +295,46 @@ CASE_SPECS: list[CaseSpec] = [
     # k. Excel damage
     CaseSpec("excel_scientific", "k", "predictions", "loads_ok", "loads_pred"),
     CaseSpec("excel_mangled_id", "k", "predictions", "loads_ok", "loads_pred"),
-    CaseSpec("excel_thousands_sep", "k", "predictions", "hard_fail", "raises",
-             "PredictionsError", r"not numeric"),
+    CaseSpec(
+        "excel_thousands_sep",
+        "k",
+        "predictions",
+        "hard_fail",
+        "raises",
+        "PredictionsError",
+        r"not numeric",
+    ),
     # l. structural
-    CaseSpec("empty_file", "l", "predictions", "hard_fail", "raises",
-             "PredictionsError", r"could not be read|no rows"),
-    CaseSpec("header_only", "l", "predictions", "hard_fail", "raises",
-             "PredictionsError", r"no rows"),
-    CaseSpec("truncated_row", "l", "predictions", "hard_fail", "raises",
-             "PredictionsError", r"nulls or NaN|not numeric"),
-    CaseSpec("extra_trailing_cols", "l", "predictions", "hard_fail", "raises",
-             "PredictionsError", r"outside the v0 contract"),
+    CaseSpec(
+        "empty_file",
+        "l",
+        "predictions",
+        "hard_fail",
+        "raises",
+        "PredictionsError",
+        r"could not be read|no rows",
+    ),
+    CaseSpec(
+        "header_only", "l", "predictions", "hard_fail", "raises", "PredictionsError", r"no rows"
+    ),
+    CaseSpec(
+        "truncated_row",
+        "l",
+        "predictions",
+        "hard_fail",
+        "raises",
+        "PredictionsError",
+        r"nulls or NaN|not numeric",
+    ),
+    CaseSpec(
+        "extra_trailing_cols",
+        "l",
+        "predictions",
+        "hard_fail",
+        "raises",
+        "PredictionsError",
+        r"outside the v0 contract",
+    ),
 ]
 
 

@@ -31,14 +31,16 @@ from scipy.interpolate import PchipInterpolator  # noqa: E402
 
 # Applied before the first figure is created. font.family is matplotlib's bundled default; we never
 # reach for a system font. svg.fonttype='path' embeds the glyph outlines so the SVG stands alone.
-matplotlib.rcParams.update({
-    "svg.hashsalt": "predval",
-    "svg.fonttype": "path",
-    "font.family": "DejaVu Sans",
-    "font.size": 8.0,
-    "axes.linewidth": 0.6,
-    "figure.dpi": 100,
-})
+matplotlib.rcParams.update(
+    {
+        "svg.hashsalt": "predval",
+        "svg.fonttype": "path",
+        "font.family": "DejaVu Sans",
+        "font.size": 8.0,
+        "axes.linewidth": 0.6,
+        "figure.dpi": 100,
+    }
+)
 
 #: Report palette (item 2). Deep blue leads; teal/ochre/rose are the accents.
 BLUE = "#123B5E"
@@ -105,7 +107,11 @@ def calibration_small_multiples(curves: dict[str, list[dict]], models: list[str]
         ax.tick_params(length=2)
     # One "perfect" label, on the first visible axis, so the reference line is named once.
     axes[0][0].annotate(
-        "perfect", xy=(0.62, 0.62), xytext=(0.66, 0.42), fontsize=6, color="#777777",
+        "perfect",
+        xy=(0.62, 0.62),
+        xytext=(0.66, 0.42),
+        fontsize=6,
+        color="#777777",
         arrowprops={"arrowstyle": "-", "lw": 0.5, "color": "#999999"},
     )
     fig.supxlabel("predicted probability", fontsize=8)
@@ -125,10 +131,22 @@ def interval_dumbbell(rows: list[dict]) -> str:
     fig, ax = plt.subplots(figsize=(6.2, 0.42 * len(rows) + 1.0))
     ys = list(range(len(rows)))
     for y, r in zip(ys, rows, strict=True):
-        ax.plot([r["naive_low"], r["naive_high"]], [y + 0.16, y + 0.16], color=OCHRE, lw=3.2,
-                solid_capstyle="round", zorder=2)
-        ax.plot([r["cluster_low"], r["cluster_high"]], [y - 0.16, y - 0.16], color=BLUE, lw=3.2,
-                solid_capstyle="round", zorder=2)
+        ax.plot(
+            [r["naive_low"], r["naive_high"]],
+            [y + 0.16, y + 0.16],
+            color=OCHRE,
+            lw=3.2,
+            solid_capstyle="round",
+            zorder=2,
+        )
+        ax.plot(
+            [r["cluster_low"], r["cluster_high"]],
+            [y - 0.16, y - 0.16],
+            color=BLUE,
+            lw=3.2,
+            solid_capstyle="round",
+            zorder=2,
+        )
         ax.scatter([r["value"]], [y], s=14, color="#333333", zorder=3)
     ax.set_yticks(ys)
     ax.set_yticklabels([r["model"] for r in rows])
@@ -180,8 +198,19 @@ def brier_by_rung(rows: list[dict]) -> str:
         ys = [ys[j] for j in order]
         elo = [elo[j] for j in order]
         ehi = [ehi[j] for j in order]
-        ax.errorbar(xs, ys, yerr=[elo, ehi], fmt="o-", ms=4, lw=1.0, color=BLUE,
-                    ecolor=TEAL, elinewidth=1.4, capsize=2, zorder=3)
+        ax.errorbar(
+            xs,
+            ys,
+            yerr=[elo, ehi],
+            fmt="o-",
+            ms=4,
+            lw=1.0,
+            color=BLUE,
+            ecolor=TEAL,
+            elinewidth=1.4,
+            capsize=2,
+            zorder=3,
+        )
         ax.set_xticks([0, 1, 2, 3])
         ax.set_xticklabels(["0", "1", "2", "3"], fontsize=7)
         ax.set_title(r["model"], fontsize=8)

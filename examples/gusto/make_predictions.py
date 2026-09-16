@@ -105,18 +105,22 @@ def build_path_a(raw: pd.DataFrame, region_col: str = "regl") -> tuple[pd.DataFr
     predicted = model.predict(x_non_west)
 
     subject_id = pd.Series([f"gusto_{i:06d}" for i in non_west.index], name="subject_id")
-    cohort = pd.DataFrame({
-        "subject_id": subject_id,
-        "label": non_west["day30"].astype(int).to_numpy(),
-        region_col: non_west[region_col].astype(int).to_numpy(),
-    })
-    predictions = pd.DataFrame({
-        "subject_id": subject_id,
-        "model_id": "gusto_west_refit_logistic",
-        "fold": pd.NA,
-        "horizon": 30.0,
-        "predicted": predicted.clip(0.0, 1.0).to_numpy(),
-    })
+    cohort = pd.DataFrame(
+        {
+            "subject_id": subject_id,
+            "label": non_west["day30"].astype(int).to_numpy(),
+            region_col: non_west[region_col].astype(int).to_numpy(),
+        }
+    )
+    predictions = pd.DataFrame(
+        {
+            "subject_id": subject_id,
+            "model_id": "gusto_west_refit_logistic",
+            "fold": pd.NA,
+            "horizon": 30.0,
+            "predicted": predicted.clip(0.0, 1.0).to_numpy(),
+        }
+    )
     return cohort, predictions
 
 

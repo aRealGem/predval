@@ -194,9 +194,10 @@ def test_paired_gain_is_tighter_than_an_unpaired_difference() -> None:
     rng1 = np.random.default_rng(24601)  # a DIFFERENT stream for the second term -> unpaired
     unp = np.empty(2000)
     for b in range(2000):
-        unp[b] = d0[U.bootstrap_cluster_indices(clusters, rng0)].mean() - dr[
-            U.bootstrap_cluster_indices(clusters, rng1)
-        ].mean()
+        unp[b] = (
+            d0[U.bootstrap_cluster_indices(clusters, rng0)].mean()
+            - dr[U.bootstrap_cluster_indices(clusters, rng1)].mean()
+        )
     unpaired = U.percentile_interval(unp, 0.95, "x")
     assert (paired.high - paired.low) < 0.5 * (unpaired.high - unpaired.low)
 

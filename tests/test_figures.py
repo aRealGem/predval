@@ -24,14 +24,30 @@ CURVES = {
     ],
 }
 DUMBBELL = [
-    {"model": "m1", "value": 0.80, "cluster_low": 0.72, "cluster_high": 0.88,
-     "naive_low": 0.785, "naive_high": 0.815},
-    {"model": "m2", "value": 0.76, "cluster_low": 0.70, "cluster_high": 0.82,
-     "naive_low": 0.748, "naive_high": 0.772},
+    {
+        "model": "m1",
+        "value": 0.80,
+        "cluster_low": 0.72,
+        "cluster_high": 0.88,
+        "naive_low": 0.785,
+        "naive_high": 0.815,
+    },
+    {
+        "model": "m2",
+        "value": 0.76,
+        "cluster_low": 0.70,
+        "cluster_high": 0.82,
+        "naive_low": 0.748,
+        "naive_high": 0.772,
+    },
 ]
 BRIER = [
-    {"model": "m1", "rung0": 0.20, "levels": {"rung1": 0.19, "rung2": 0.17, "rung3": 0.175},
-     "gains": {"rung1": (0.005, 0.015), "rung2": (0.02, 0.04), "rung3": (0.01, 0.04)}},
+    {
+        "model": "m1",
+        "rung0": 0.20,
+        "levels": {"rung1": 0.19, "rung2": 0.17, "rung3": 0.175},
+        "gains": {"rung1": (0.005, 0.015), "rung2": (0.02, 0.04), "rung3": (0.01, 0.04)},
+    },
 ]
 
 

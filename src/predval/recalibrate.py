@@ -86,9 +86,7 @@ def _rcs_basis(z: np.ndarray, knots: np.ndarray) -> np.ndarray:
     for j in range(k - 2):
         tj = knots[j]
         term = (
-            cube(z - tj)
-            - cube(z - tkm1) * (tk - tj) / denom
-            + cube(z - tk) * (tkm1 - tj) / denom
+            cube(z - tj) - cube(z - tkm1) * (tk - tj) / denom + cube(z - tk) * (tkm1 - tj) / denom
         ) / scale
         cols.append(term)
     return np.column_stack(cols)

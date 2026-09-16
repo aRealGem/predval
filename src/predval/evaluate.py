@@ -186,9 +186,7 @@ def _classify_repair(
     counterproductive = tuple(
         rung
         for rung in _LADDER_RUNGS_IN_ORDER
-        if (cell := model_gains.get(rung)) is not None
-        and np.isfinite(cell[2])
-        and cell[2] < 0
+        if (cell := model_gains.get(rung)) is not None and np.isfinite(cell[2]) and cell[2] < 0
     )
 
     for rung in _LADDER_RUNGS_IN_ORDER:
@@ -346,16 +344,18 @@ def _calibration_curves(cells, unc, ci: float) -> pd.DataFrame:
                 if finite.size >= 2
                 else (float("nan"), float("nan"))
             )
-            rows.append({
-                "model_id": model,
-                "bin": bidx,
-                "mean_pred": float(p[sel].mean()),
-                "obs_rate": float(y[sel].mean()),
-                "ci_low": lo,
-                "ci_high": hi,
-                "n": n,
-                "n_events": int(y[sel].sum()),
-            })
+            rows.append(
+                {
+                    "model_id": model,
+                    "bin": bidx,
+                    "mean_pred": float(p[sel].mean()),
+                    "obs_rate": float(y[sel].mean()),
+                    "ci_low": lo,
+                    "ci_high": hi,
+                    "n": n,
+                    "n_events": int(y[sel].sum()),
+                }
+            )
     return pd.DataFrame(rows, columns=cols)
 
 
@@ -682,25 +682,27 @@ def _evaluate_one(
     if ctx["stratum_kind"] == "subgroup" and (
         n_clusters < rec.min_clusters or min(n_events, n - n_events) < rec.min_events_per_class
     ):
-        notes.add((
-            "recalibration_suppressed",
-            f"ladder suppressed for {label}: {n_clusters} clusters, "
-            f"{min(n_events, n - n_events)} events in the smaller class "
-            f"(gate: {rec.min_clusters} clusters, {rec.min_events_per_class} events/class)",
-        ))
+        notes.add(
+            (
+                "recalibration_suppressed",
+                f"ladder suppressed for {label}: {n_clusters} clusters, "
+                f"{min(n_events, n - n_events)} events in the smaller class "
+                f"(gate: {rec.min_clusters} clusters, {rec.min_events_per_class} events/class)",
+            )
+        )
     else:
         # Overall is never suppressed; but a below-gate cluster count still weakens the cross-fit,
         # so it runs with a caution rather than silently (S4.1 item 5).
         if ctx["stratum_kind"] == "overall" and n_clusters < rec.min_clusters:
-            notes.add((
-                "recalibration_overall_low_power",
-                f"overall ladder run with only {n_clusters} clusters "
-                f"(below gate {rec.min_clusters}); its cross-fit is low-power for {label}",
-            ))
+            notes.add(
+                (
+                    "recalibration_overall_low_power",
+                    f"overall ladder run with only {n_clusters} clusters "
+                    f"(below gate {rec.min_clusters}); its cross-fit is low-power for {label}",
+                )
+            )
 
-        ladder_rows, lrep = R.ladder(
-            y, p, groups, thresholds=tuple(spec.thresholds), max_folds=5
-        )
+        ladder_rows, lrep = R.ladder(y, p, groups, thresholds=tuple(spec.thresholds), max_folds=5)
         for lr in ladder_rows:
             rows.append(
                 row(lr.metric, lr.value, rung=lr.rung, fit_mode=lr.fit_mode, threshold=lr.threshold)
@@ -729,23 +731,29 @@ def _evaluate_one(
             mld = lrep.rung3_max_local_decrease
             dauroc = lrep.delta_auroc_rung3
             if _material_nonmonotone(mld, dauroc, rec.monotone_tol):
-                notes.add((
-                    "recalibration_non_monotone",
-                    f"rung3 materially non-monotone for {label}: delta_auroc={dauroc:+.4f} "
-                    f"exceeds tol {rec.monotone_tol} (secondary note: largest local decrease on "
-                    f"the probability-scale transform = {mld:.4f}, not a flag driver)",
-                ))
+                notes.add(
+                    (
+                        "recalibration_non_monotone",
+                        f"rung3 materially non-monotone for {label}: delta_auroc={dauroc:+.4f} "
+                        f"exceeds tol {rec.monotone_tol} (secondary note: largest local decrease "
+                        f"on the probability-scale transform = {mld:.4f}, not a flag driver)",
+                    )
+                )
 
         if lrep.rung2_slope is not None and lrep.rung2_slope < 0:
-            notes.add((
-                "recalibration_rank_inverting",
-                f"rung2 slope {lrep.rung2_slope:.3f} < 0 (rank-inverting) for {label}",
-            ))
+            notes.add(
+                (
+                    "recalibration_rank_inverting",
+                    f"rung2 slope {lrep.rung2_slope:.3f} < 0 (rank-inverting) for {label}",
+                )
+            )
         for supp_rung, reason in lrep.suppressed:
-            notes.add((
-                "recalibration_unavailable",
-                f"{supp_rung} withheld for {label}: {reason}",
-            ))
+            notes.add(
+                (
+                    "recalibration_unavailable",
+                    f"{supp_rung} withheld for {label}: {reason}",
+                )
+            )
 
     # ---- leave-one-cluster-out fragility ----------------------------------------------------
     if n_clusters >= 2:

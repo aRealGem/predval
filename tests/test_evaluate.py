@@ -391,9 +391,7 @@ def test_classify_miscalibration_either_axis_triggers() -> None:
     assert _classify_miscalibration({}) is False
 
 
-PCAM_GOLDEN_METRICS = (
-    Path(__file__).resolve().parent / "golden" / "pcam" / "metrics.parquet"
-)
+PCAM_GOLDEN_METRICS = Path(__file__).resolve().parent / "golden" / "pcam" / "metrics.parquet"
 
 
 @pytest.mark.skipif(
@@ -454,7 +452,14 @@ def test_calibration_artefact_shape(result) -> None:
     """Item 2a: per-member decile points with a cluster band."""
     cal = result.calibration
     assert set(cal.columns) == {
-        "model_id", "bin", "mean_pred", "obs_rate", "ci_low", "ci_high", "n", "n_events"
+        "model_id",
+        "bin",
+        "mean_pred",
+        "obs_rate",
+        "ci_low",
+        "ci_high",
+        "n",
+        "n_events",
     }
     assert set(cal["model_id"]) == set(MODELS)
     assert (cal["ci_low"] <= cal["obs_rate"] + 1e-9).all() or cal["ci_low"].isna().any()

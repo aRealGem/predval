@@ -51,13 +51,24 @@ def _build(
             z = rng.normal(shift, 1.0)
             p = 1.0 / (1.0 + np.exp(-z))
             sid = f"c{c:02d}_{i:03d}"
-            rows.append({"subject_id": sid, "label": int(rng.binomial(1, p)),
-                         "wsi": f"c{c:02d}", "arm": "x" if c % 2 == 0 else "y"})
+            rows.append(
+                {
+                    "subject_id": sid,
+                    "label": int(rng.binomial(1, p)),
+                    "wsi": f"c{c:02d}",
+                    "arm": "x" if c % 2 == 0 else "y",
+                }
+            )
             preds.append({"subject_id": sid, "model_id": "good", "predicted": float(p)})
             if not single_model:
                 # weak: over-confident (stretched logits) so the ladder has something to diagnose
-                preds.append({"subject_id": sid, "model_id": "weak",
-                              "predicted": float(1.0 / (1.0 + np.exp(-2.0 * z)))})
+                preds.append(
+                    {
+                        "subject_id": sid,
+                        "model_id": "weak",
+                        "predicted": float(1.0 / (1.0 + np.exp(-2.0 * z))),
+                    }
+                )
 
     pd.DataFrame(rows).to_parquet(tmp_path / "cohort.parquet", index=False)
     pd.DataFrame(preds).to_parquet(tmp_path / "predictions.parquet", index=False)
@@ -65,7 +76,9 @@ def _build(
     if clustering_name is not _UNSET and clustering_name is not None:
         clustering["name"] = clustering_name
     spec = {
-        "cohort_id": "toy-report", "version": 0, "subject_key": "subject_id",
+        "cohort_id": "toy-report",
+        "version": 0,
+        "subject_key": "subject_id",
         "data": "cohort.parquet",
         "outcome": {"type": "binary", "field": "label", "positive_label": 1},
         "clustering": clustering,
@@ -115,7 +128,10 @@ def test_section3_gains_carry_intervals_not_pending(evaluation, html) -> None:
     The naked-delta ban is satisfied by showing the interval, not by deferring it.
     """
     ctx = build_context(
-        evaluation.metrics, evaluation.fragility, evaluation.coverage, evaluation.manifest,
+        evaluation.metrics,
+        evaluation.fragility,
+        evaluation.coverage,
+        evaluation.manifest,
         evaluation.calibration,
     )
     assert ctx["calibration_rows"], "expected ladder rows to test"
@@ -140,6 +156,7 @@ def test_displayed_loss_metric_ci_lower_bound_is_nonnegative(evaluation, html) -
     ctx = build_context(
         evaluation.metrics, evaluation.fragility, evaluation.coverage, evaluation.manifest
     )
+
     def lower(cell: str) -> float | None:
         m = re.search(r"\[(-?\d+\.\d+),", cell)
         return float(m.group(1)) if m else None
@@ -255,7 +272,10 @@ def test_verdict_line_gauge_is_from_the_composed_vocabulary(evaluation) -> None:
     from predval.report import build_context
 
     ctx = build_context(
-        evaluation.metrics, evaluation.fragility, evaluation.coverage, evaluation.manifest,
+        evaluation.metrics,
+        evaluation.fragility,
+        evaluation.coverage,
+        evaluation.manifest,
         evaluation.calibration,
     )
     assert ctx["verdict_lines"]
@@ -266,9 +286,7 @@ def test_verdict_line_gauge_is_from_the_composed_vocabulary(evaluation) -> None:
             # and the caller drops the "Gauge fault found" sentence entirely.
             assert "Gauge fault found" not in v["line"]
             continue
-        assert g.startswith(
-            ("miscalibrated (", "repair demonstrated at", "recalibration harm")
-        ), g
+        assert g.startswith(("miscalibrated (", "repair demonstrated at", "recalibration harm")), g
         # The retired S6.1 reassurance phrasing must not come back (S6.2 D3).
         for phrase in ("well-calibrated", "calibrated as published", "none --"):
             assert phrase not in g, g
@@ -284,8 +302,12 @@ def test_verdict_gauge_every_combination() -> None:
     from predval.report import verdict_gauge
 
     demonstrated = {"best_rung": "rung2", "axis_a_miscalibrated": True, "axis_b": "demonstrated"}
-    unproven = {"best_rung": "rung0", "axis_a_miscalibrated": True, "axis_b": "unproven",
-                "n_clusters": 22}
+    unproven = {
+        "best_rung": "rung0",
+        "axis_a_miscalibrated": True,
+        "axis_b": "unproven",
+        "n_clusters": 22,
+    }
     counter = {"best_rung": "rung0", "axis_a_miscalibrated": True, "axis_b": "counterproductive"}
     harm2 = [("rung1", -0.005, -0.002), ("rung2", -0.006, -0.001)]
 
