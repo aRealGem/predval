@@ -327,7 +327,7 @@
         "bss": 0.727165,
         "bss_ci_high": 0.774094,
         "bss_ci_low": 0.582476,
-        "gauge_label": "miscalibrated (slope 1.3436 [1.141, 1.546]); repair benefit unproven at this cohort's power (G=22) -- tail quantiles approximate with few clusters (G=22) for overall; percentile bootstrap intervals below 40 clusters are coarse"
+        "gauge_label": "miscalibrated (slope 1.3436 [1.141, 1.546]); repair benefit unproven at this cohort's power (G=22) -- flag: few_clusters (overall, G=22)"
       }
     },
     {
@@ -395,7 +395,7 @@
         "bss": 0.053411,
         "bss_ci_high": 0.135418,
         "bss_ci_low": -0.578832,
-        "gauge_label": "miscalibrated (slope 3.1832 [1.754, 4.613]); repair benefit unproven at this cohort's power (G=22) -- tail quantiles approximate with few clusters (G=22) for overall; percentile bootstrap intervals below 40 clusters are coarse"
+        "gauge_label": "miscalibrated (slope 3.1832 [1.754, 4.613]); repair benefit unproven at this cohort's power (G=22) -- flag: few_clusters (overall, G=22)"
       }
     },
     {
@@ -531,7 +531,7 @@
         "bss": 0.796421,
         "bss_ci_high": 0.833715,
         "bss_ci_low": 0.660927,
-        "gauge_label": "miscalibrated (intercept -0.8938 [-1.705, -0.083]); repair benefit unproven at this cohort's power (G=22) -- tail quantiles approximate with few clusters (G=22) for overall; percentile bootstrap intervals below 40 clusters are coarse"
+        "gauge_label": "miscalibrated (intercept -0.8938 [-1.705, -0.083]); repair benefit unproven at this cohort's power (G=22) -- flag: few_clusters (overall, G=22)"
       }
     },
     {
@@ -599,7 +599,7 @@
         "bss": 0.817084,
         "bss_ci_high": 0.840148,
         "bss_ci_low": 0.725567,
-        "gauge_label": "miscalibrated (slope 1.1600 [1.023, 1.297]); repair benefit unproven at this cohort's power (G=22) -- tail quantiles approximate with few clusters (G=22) for overall; percentile bootstrap intervals below 40 clusters are coarse"
+        "gauge_label": "miscalibrated (slope 1.1600 [1.023, 1.297]); repair benefit unproven at this cohort's power (G=22) -- flag: few_clusters (overall, G=22)"
       }
     },
     {
@@ -803,7 +803,7 @@
         "bss": 0.795641,
         "bss_ci_high": 0.825215,
         "bss_ci_low": 0.642565,
-        "gauge_label": "miscalibrated (intercept -0.9415 [-1.882, -0.001]); repair benefit unproven at this cohort's power (G=22) -- tail quantiles approximate with few clusters (G=22) for overall; percentile bootstrap intervals below 40 clusters are coarse"
+        "gauge_label": "miscalibrated (intercept -0.9415 [-1.882, -0.001]); repair benefit unproven at this cohort's power (G=22) -- flag: few_clusters (overall, G=22)"
       }
     },
     {
@@ -871,7 +871,7 @@
         "bss": 0.835299,
         "bss_ci_high": 0.859765,
         "bss_ci_low": 0.767515,
-        "gauge_label": "miscalibrated (slope 1.4041 [1.086, 1.723]); repair benefit unproven at this cohort's power (G=22) -- tail quantiles approximate with few clusters (G=22) for overall; percentile bootstrap intervals below 40 clusters are coarse"
+        "gauge_label": "miscalibrated (slope 1.4041 [1.086, 1.723]); repair benefit unproven at this cohort's power (G=22) -- flag: few_clusters (overall, G=22)"
       }
     },
     {
@@ -1075,7 +1075,7 @@
         "bss": 0.041859,
         "bss_ci_high": 0.128059,
         "bss_ci_low": -0.623295,
-        "gauge_label": "miscalibrated (slope 4.9295 [2.718, 7.141]); repair benefit unproven at this cohort's power (G=22) -- tail quantiles approximate with few clusters (G=22) for overall; percentile bootstrap intervals below 40 clusters are coarse"
+        "gauge_label": "miscalibrated (slope 4.9295 [2.718, 7.141]); repair benefit unproven at this cohort's power (G=22) -- flag: few_clusters (overall, G=22)"
       }
     }
   ],
@@ -1105,7 +1105,7 @@
         "effnet_scratch"
       ]
     },
-    "git_commit": "c88239f7dbd28c75f2706df2fc1ae9777652ffc9-dirty",
+    "git_commit": "e596431e394d9f17e95621969136415608fc4cfa-dirty",
     "input_hashes": {
       "cohort_data": "766930b2c511c5bd7056743cec118396b314cee3e4ff729e97bdd6c3b253d48f",
       "cohort_spec": "0caf6ab6a9839a937717e576a904de3c479c7b832840629dead9376a0b155d4c",

@@ -60,6 +60,24 @@ rows are identical. Two string-layer corrections:
   cohort. The exhibit is deliberately kept rather than dropped: a clinical cohort where clustering
   turns out to be benign is itself evidence the harness is not manufacturing findings.
 
+**S6.3 refresh (2026-09-16):** `manifest.json`, `findings.json` and `report.html` changed; all
+four metric parquets are byte-identical, as are the `cohort_data` and `predictions` digests. No
+verdict line changed -- this cohort's model has a demonstrated repair, so it never reaches the
+power-caveat clause that PCam's item 0 rewrote.
+
+- **The cohort declares its own nouns (A2).** `cohort.yaml` gained `unit_noun: patient`;
+  `clustering.name` was already `region`. **This is why `cohort_spec` changed**, from
+  `029e1a08c3c4a03a616d567227bcb5a53c66e02ac59ab91bf59b82f2c050ea23` to
+  `142cb887b19fdfcb96527f7fcec6dbc2e2e802e2882cef753561a9d3950755a2` -- `spec_hash` is a
+  raw-bytes hash of `cohort.yaml`, so the comment correction in the same edit is inside it too.
+- Both nouns were verified against the data before being declared, not inferred from the column
+  name: `cohort.parquet` holds 38,642 rows with 38,642 distinct `subject_id` (one row = one
+  patient), and `regl` takes exactly 15 distinct values in the scored cohort (codes 2-16; the
+  West development region `regl == 1` is absent), which is the `G = 15` the report already used.
+- Rendered effect, in full: the unit-of-analysis caption reads "naive **per-patient** width"
+  rather than "naive per-row width" (twice), and the `cohort_spec` digest cell shows the new
+  value. Nothing else in the report differs.
+
 To refresh deliberately after an intentional change, see the docstring of
 `tests/test_golden_gusto.py`.
 

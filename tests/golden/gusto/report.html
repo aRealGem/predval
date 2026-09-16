@@ -1019,7 +1019,7 @@ z
 </div>
 
 <h3>Unit-of-analysis exhibit</h3>
-<p class="muted">The naive per-row AUROC interval is shown alongside the cluster-aware one for comparison. The ratio is the cluster-aware interval width divided by the naive per-row width. Here it is at or below 1: naive and cluster-aware widths agree within rounding on this cohort, so clustering <em>does not inflate</em> uncertainty here -- the regions are large or homogeneous enough that the check, not a dramatic gap, is the point.</p>
+<p class="muted">The naive per-patient AUROC interval is shown alongside the cluster-aware one for comparison. The ratio is the cluster-aware interval width divided by the naive per-patient width. Here it is at or below 1: naive and cluster-aware widths agree within rounding on this cohort, so clustering <em>does not inflate</em> uncertainty here -- the regions are large or homogeneous enough that the check, not a dramatic gap, is the point.</p>
 <table>
 <tr><th>model</th><th>cluster width</th><th>naive width (wrong)</th><th>ratio</th></tr>
 <tr><td>gusto_west_refit_logistic</td><td>0.0151</td><td>0.0172</td>
@@ -3293,7 +3293,7 @@ region, which a tight bootstrap interval will not reveal.</p>
 reproduce every number.</p>
 <table>
 <tr><th>cohort_data</th><td><code>f12cf9399b3b5add42faa72c9d44b342cef9192f68509f23ce9d1f9236657388</code></td></tr>
-<tr><th>cohort_spec</th><td><code>029e1a08c3c4a03a616d567227bcb5a53c66e02ac59ab91bf59b82f2c050ea23</code></td></tr>
+<tr><th>cohort_spec</th><td><code>142cb887b19fdfcb96527f7fcec6dbc2e2e802e2882cef753561a9d3950755a2</code></td></tr>
 <tr><th>predictions</th><td><code>49d003b038fdcaee7d38924fe92334c2f338f447c5ce6ae3ea4b79d86fbb1d0e</code></td></tr>
 <tr><th>contract version</th><td>0</td></tr>
 <tr><th>bootstrap</th><td>B=2000, seed=1337,

@@ -20,7 +20,7 @@
   ],
   "inputs": {
     "cohort_data": "f12cf9399b3b5add42faa72c9d44b342cef9192f68509f23ce9d1f9236657388",
-    "cohort_spec": "029e1a08c3c4a03a616d567227bcb5a53c66e02ac59ab91bf59b82f2c050ea23",
+    "cohort_spec": "142cb887b19fdfcb96527f7fcec6dbc2e2e802e2882cef753561a9d3950755a2",
     "predictions": "49d003b038fdcaee7d38924fe92334c2f338f447c5ce6ae3ea4b79d86fbb1d0e"
   },
   "models_present": [
@@ -41,7 +41,7 @@
     "n_boot": 2000,
     "seed": 1337,
     "show_naive_ci": true,
-    "unit_noun": "row"
+    "unit_noun": "patient"
   },
   "verdict": {
     "gusto_west_refit_logistic": {

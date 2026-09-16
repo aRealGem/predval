@@ -90,6 +90,21 @@ The rung3 diagnosis-doc cross-reference is now derived from the stratum this run
 on instead of being hardcoded to `scanner_domain0`; for this fixture it resolves to the same path,
 so the rendered bytes there are unchanged.
 
+**S6.3 refresh (2026-09-16):** `findings.json` and `report.html` changed; `manifest.json`, all
+four metric parquets and all three input digests are byte-identical, and `cohort.yaml` was not
+touched (`cohort_spec` stays `0caf6ab6...`). A single string substitution, applied 7 times:
+
+- **Item 0, the few_clusters flag is cited, not inlined.** Seven verdict lines -- the members
+  where axis A fired and axis B is unproven -- carried the flag's full explanatory paragraph
+  ("tail quantiles approximate with few clusters (G=22) for overall; percentile bootstrap
+  intervals below 40 clusters are coarse") in the middle of the claim. They now read
+  `flag: few_clusters (overall, G=22)`. The paragraph itself is unchanged and still printed in
+  full by the Flags section, so the citation resolves within the same page rather than dangling.
+- Verification: replacing the citation with the old paragraph reproduces the pre-refresh bytes of
+  both files exactly, so nothing else in either artefact moved. The flag text's occurrence count
+  in `report.html` drops from 10 to 3 -- the 7 verdict lines, leaving the 3 Flags-section entries
+  (`scanner_domain=0`, `scanner_domain=1`, `overall`).
+
 To refresh deliberately after an intentional change, see the docstring of
 `tests/test_golden_pcam.py`.
 
