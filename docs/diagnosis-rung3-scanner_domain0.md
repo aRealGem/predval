@@ -13,7 +13,7 @@ withheld rather than shown half-populated. rung0/rung1/rung2 are unaffected.
 
 ## What it is NOT
 
-the review's suspected cause was "narrow logit support versus the df=4 knots" collapsing the knots. That
+The review's suspected cause was "narrow logit support versus the df=4 knots" collapsing the knots. That
 is **not** what happens. Checked per fold: `_rcs_knots` returns five distinct knots in every fold
 for every one of the four. The knots never collapse.
 

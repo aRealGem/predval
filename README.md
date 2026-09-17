@@ -261,9 +261,9 @@ S0–S6 done: schema, IO, and hashing; discrimination/calibration/threshold metr
 cluster-aware uncertainty; the recalibration ladder (rungs 0–3, apparent and cross-fitted, with
 paired-gain intervals and a two-axis verdict layer); the standalone HTML report and
 machine-readable `findings.json`; an adversarial ingestion suite; and frozen golden baselines for
-both worked examples. 246 tests pass and `ruff` is clean; a further 2 tests — the full B=2000
+both worked examples. 250 tests pass and `ruff` is clean; a further 2 tests — the full B=2000
 golden regressions for PCam and GUSTO — are opt-in via `PREDVAL_RUN_GOLDEN=1` and skip by
-default, for 248 in total. See [`docs/spec.md`](docs/spec.md) for what is implemented versus
+default, for 252 in total. See [`docs/spec.md`](docs/spec.md) for what is implemented versus
 still backlog (wild cluster bootstrap, decision curves, per-rung refit-in-replicate intervals).
 
 ## License

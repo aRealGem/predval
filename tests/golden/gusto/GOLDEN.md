@@ -16,7 +16,7 @@ uv run --group examples python examples/gusto/run_evaluation.py
 | GUSTO source | `https://hbiostat.org/data/repo/gusto.rda` (public GUSTO-I teaching release) |
 
 Reproducibility was verified at freeze time: a fresh run reproduced the six byte-identical
-artefacts exactly against the prior (the session record) run; `findings.json` differed only in
+artefacts exactly against the prior (2026-08-25) run; `findings.json` differed only in
 `provenance.git_commit`, which is why that one field is normalized out of the comparison in
 `tests/test_golden_gusto.py`.
 

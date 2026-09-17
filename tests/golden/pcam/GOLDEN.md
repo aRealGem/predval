@@ -26,7 +26,8 @@ the rung with the lowest point-estimate Brier. Consequence for this fixture: `ti
 `macenko` -- previously verdicted at rung2 as "real repairs" -- now correctly verdict at rung0,
 "none -- well-calibrated as published", because both members' rung1-3 gain intervals cross zero at
 the common/overall cell (a prior write-up of this fixture's S4.2 session claimed both excluded
-zero; that was a transcription error in the card log, not a code bug -- corrected on the session record). `p4m_seed7` is the only member whose gain interval excludes zero (rung2), unchanged from
+zero; that was a transcription error in the write-up, not a code bug -- corrected in the
+2026-08-22 session record). `p4m_seed7` is the only member whose gain interval excludes zero (rung2), unchanged from
 before. Report prose also picked up the x10⁻³ section-3 display precision and cluster-noun
 templating (S6 items 4-5; this cohort declares `clustering.name: slide`). Determinism re-verified
 across three independent full B=2000 runs at this commit, byte-identical on every artefact.
