@@ -1105,7 +1105,7 @@
         "effnet_scratch"
       ]
     },
-    "git_commit": "e596431e394d9f17e95621969136415608fc4cfa-dirty",
+    "git_commit": "e1f415a9147c1f069ffdedfe3141a006bd35a848-dirty",
     "input_hashes": {
       "cohort_data": "766930b2c511c5bd7056743cec118396b314cee3e4ff729e97bdd6c3b253d48f",
       "cohort_spec": "0caf6ab6a9839a937717e576a904de3c479c7b832840629dead9376a0b155d4c",
@@ -1116,7 +1116,7 @@
     "versions": {
       "numpy": "2.4.6",
       "pandas": "3.0.5",
-      "predval": "0.0.0",
+      "predval": "0.1.0",
       "python": "3.13.5",
       "scikit-learn": "1.9.0",
       "scipy": "1.17.1",

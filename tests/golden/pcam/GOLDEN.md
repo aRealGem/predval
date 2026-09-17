@@ -105,6 +105,26 @@ touched (`cohort_spec` stays `0caf6ab6...`). A single string substitution, appli
   in `report.html` drops from 10 to 3 -- the 7 verdict lines, leaving the 3 Flags-section entries
   (`scanner_domain=0`, `scanner_domain=1`, `overall`).
 
+**S6.4 refresh (2026-09-17):** `manifest.json`, `findings.json` and `report.html` changed; all
+four metric parquets are byte-identical and **all three input digests are unchanged**
+(`cohort_spec` stays `0caf6ab6...`). No verdict line moved -- all 15 are byte-identical to the
+S6.3 render, and the three members with no gauge sentence (`e2cnn`, `tinyvgg`, `mobilenetv3`) are
+still silent. Four changes, none numeric:
+
+- **The predictions-in boundary is stated again (A9).** S6.1 item 2 gated the ensemble-specific
+  caution on a declared `ensemble_members` list; since no cohort declares one, that also removed
+  the general statement from every report. It is now unconditional and opens the Limitations
+  block, with the refit-in-replicate note kept after it.
+- **Verdict preamble (A10)** replaces "names which rung, if any, the miscalibration needed" with
+  an explicit statement of the three things the gauge sentence reports, plus the asymmetry rule.
+- **Section 3 row order (A14).** Demonstrated repairs first (ascending rung, then descending
+  ci_low), then the rest by descending best point estimate. `p4m_seed7` now leads; ordering by
+  point estimate alone had put `tinyvgg_vl` on top -- the fixture's largest apparent gain, whose
+  interval crosses zero, i.e. the one number the section's own prose says not to trust. Cell
+  values are untouched; only row order and the sentence describing it changed.
+- **Provenance reads `predval 0.1.0`** (A13), not `0.0.0`. The version is recorded in
+  `tool_versions` and enters no digest.
+
 To refresh deliberately after an intentional change, see the docstring of
 `tests/test_golden_pcam.py`.
 

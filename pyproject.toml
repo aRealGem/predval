@@ -1,6 +1,6 @@
 [project]
 name = "predval"
-version = "0.0.0"
+version = "0.1.0"
 description = "Predictions-in validation harness for clinical prediction models"
 readme = "README.md"
 requires-python = ">=3.11"

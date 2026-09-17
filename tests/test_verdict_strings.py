@@ -235,3 +235,76 @@ def test_verdict_cites_flags_by_name(golden) -> None:
         else:
             assert "few_clusters" not in line, f"citation on a member that earned none -- {where}"
     assert seen == EXPECTED_CITATIONS[cohort], f"{cohort}: {seen} citations, expected differently"
+
+
+# ------------------------------------------------------------------- S6.4 A9 / A14
+
+
+def test_limitations_states_predictions_in_boundary(golden) -> None:
+    """The predictions-in boundary is stated for EVERY cohort, not just ensemble ones (A9).
+
+    S6.1 item 2 gated the ensemble-construction caution on a declared `ensemble_members` list,
+    which was right for the ensemble-specific wording but also deleted the general boundary from
+    every cohort declaring none -- i.e. from both fixtures, so in practice the report stopped
+    saying it at all. The boundary is a property of predval's contract, so it is unconditional.
+    """
+    cohort, _metrics, ctx, _lines = golden
+    lim = ctx["limitations"]
+    manifest = json.loads((GOLDEN / cohort / "manifest.json").read_text())
+    noun = manifest["uncertainty"]["clustering_name"]
+    where = f"{cohort}: {lim}"
+
+    assert "The optimism correction covers the recalibration step only." in lim, where
+    assert "no view of how they were produced" in lim, where
+    assert f"tuning used {noun}s inside this cohort" in lim, where
+    assert "rung0 is itself optimistically biased" in lim, where
+    assert "never tuned on could expose that" in lim, where
+
+    # The refit-in-replicate note is kept, and kept AFTER the boundary.
+    assert "conditions on the fitted correction" in lim, where
+    assert lim.index("optimism correction covers") < lim.index("conditions on the fitted"), where
+
+    # Neither fixture declares an ensemble member, so ensembles must not be mentioned.
+    assert not manifest.get("roster", {}).get("ensemble_members"), f"{cohort}: fixture changed"
+    for banned in ("ensemble", "blend"):
+        assert banned not in lim.lower(), f"{banned!r} in limitations, undeclared -- {where}"
+
+
+def test_section3_row_order(golden) -> None:
+    """Demonstrated repairs sort to the top, ascending rung then descending ci_low (A14).
+
+    The expected order is re-derived here from metrics.parquet rather than read off the rendered
+    table, so this test fails if the ordering rule and the admissible-rung rule ever disagree.
+    Ordering by best point estimate alone put tinyvgg_vl first in PCam -- the fixture's largest
+    apparent gain, whose interval crosses zero.
+    """
+    cohort, metrics, ctx, _lines = golden
+    rungs = ("rung1", "rung2", "rung3")
+    sub = metrics[
+        (metrics["metric"] == "paired_gain_brier")
+        & (metrics["subset"] == "common")
+        & (metrics["stratum_kind"] == "overall")
+        & (metrics["fit_mode"] == "crossfit")
+    ]
+
+    def key(model: str):
+        best, demo = float("-inf"), None
+        for i, rung in enumerate(rungs):
+            r = sub[(sub["model_id"] == model) & (sub["rung"] == rung)]
+            if r.empty:
+                continue
+            v, lo = float(r.iloc[0]["value"]), float(r.iloc[0]["ci_low"])
+            if np.isfinite(v):
+                best = max(best, v)
+            if demo is None and np.isfinite(lo) and lo > 0:
+                demo = (i, -lo)
+        return (0, *demo) if demo else (1, 0, -best)
+
+    rendered = [r["model"] for r in ctx["calibration_rows"]]
+    assert rendered == sorted(rendered, key=key), f"{cohort}: got {rendered}"
+
+    demonstrated = [m for m in rendered if key(m)[0] == 0]
+    assert rendered[: len(demonstrated)] == demonstrated, f"{cohort}: demonstrated not on top"
+    if cohort == "pcam":
+        assert demonstrated == ["p4m_seed7"], demonstrated
+        assert rendered[0] == "p4m_seed7", rendered[:3]

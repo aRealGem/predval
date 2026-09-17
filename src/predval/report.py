@@ -86,14 +86,33 @@ _LIMITATIONS_ENSEMBLE = (
 )
 
 
+#: The predictions-in boundary (S6.4 A9). UNCONDITIONAL on the cohort spec: it is a property of
+#: predval's contract, not of any roster. S6.1 item 2 correctly gated the *ensemble-specific*
+#: caution on a declared `ensemble_members` list, but that also removed the general statement from
+#: every cohort that declares none -- which is every cohort so far, so the boundary silently
+#: stopped being stated at all. It says nothing about ensembles, so it costs no accuracy to show
+#: it always; leaving it out costs a reader the single most important limit on what rung0 means.
+_LIMITATIONS_PREDICTIONS_IN = (
+    "The optimism correction covers the recalibration step only. predval evaluates the "
+    "predictions it is handed and has no view of how they were produced. If model selection or "
+    "tuning used {plural} inside this cohort, rung0 is itself optimistically biased and this "
+    "harness cannot see it; only a cohort the model was never tuned on could expose that. "
+)
+
+
 def _limitations(clustering_name: str, ensemble_members: list[str]) -> str:
-    """Limitations block (item 6b, S6 item 5, S6.1 item 2), verbatim in report and docs/spec.md
-    section 9."""
-    gain_sentence = _LIMITATIONS_GAIN_INTERVAL.format(noun=clustering_name)
-    if not ensemble_members:
-        return gain_sentence
-    ensemble_sentence = _LIMITATIONS_ENSEMBLE.format(plural=_plural(clustering_name))
-    return ensemble_sentence + gain_sentence
+    """Limitations block (item 6b, S6 item 5, S6.1 item 2, S6.4 A9); mirrored in docs/spec.md
+    section 9.
+
+    Order is fixed: the predictions-in boundary, then the ensemble-construction caution when and
+    only when the cohort declares an ensemble member, then the refit-in-replicate note.
+    """
+    plural = _plural(clustering_name)
+    parts = [_LIMITATIONS_PREDICTIONS_IN.format(plural=plural)]
+    if ensemble_members:
+        parts.append(_LIMITATIONS_ENSEMBLE.format(plural=plural))
+    parts.append(_LIMITATIONS_GAIN_INTERVAL.format(noun=clustering_name))
+    return "".join(parts)
 
 
 #: Appendix concept-explainer (item 5): OFF by default; structure + placeholders this session, the
@@ -408,9 +427,16 @@ def _calibration_rows(metrics: pd.DataFrame, models: list[str]) -> list[dict]:
 
     The "(interval pending §4.5)" marker is gone: every gain now carries a paired cluster-bootstrap
     interval (item 1). A gain is rung0 Brier minus that rung's held-out Brier, positive when the
-    out-of-fold recalibration helped; the interval is the paired slide bootstrap. Rows are ordered
-    by the best per-member gain descending, so the members a recalibration would most help sit on
-    top. rung3 reads 'n/a' where it did not converge.
+    out-of-fold recalibration helped; the interval is the paired slide bootstrap.
+
+    Row order (S6.4 A14) puts DEMONSTRATED repairs first -- ascending rung, then descending
+    ci_low -- and only then everything else by descending best point estimate. Ordering by the
+    point estimate alone put tinyvgg_vl on top: the largest apparent gain in the fixture and one
+    whose interval crosses zero, i.e. exactly the number section 3's own prose tells the reader
+    not to trust. The admissible-repair rule (lowest rung with ci_low > 0) decides the top of the
+    table, so the ordering agrees with the verdict layer instead of contradicting it.
+
+    rung3 reads 'n/a' where it did not converge.
     """
     overall = metrics[(metrics["subset"] == "common") & (metrics["stratum_kind"] == "overall")]
     gains = _gain_lookup(metrics)
@@ -429,23 +455,29 @@ def _calibration_rows(metrics: pd.DataFrame, models: list[str]) -> list[dict]:
     for model in models:
         r0 = brier(model, "rung0", "apparent")
         best = float("-inf")
+        demo_idx: int | None = None
+        demo_ci_low = float("-inf")
         cells = {}
-        for rung in _LADDER_RUNGS:
+        for i, rung in enumerate(_LADDER_RUNGS):
             v, lo, hi = gain(model, rung)
             cells[f"{rung}_gain"] = _signed_ci_milli(v, lo, hi)
             if np.isfinite(v):
                 best = max(best, v)
+            # The demonstrated rung is the LOWEST whose interval excludes zero -- the same rule
+            # the verdict layer uses to pick the admissible rung, not the largest gain.
+            if demo_idx is None and np.isfinite(lo) and lo > 0:
+                demo_idx, demo_ci_low = i, lo
         out.append(
             {
                 "model": model,
                 "rung0": _f(r0),
                 **cells,
-                "_gain_sort": best,
+                "_sort": ((0, demo_idx, -demo_ci_low) if demo_idx is not None else (1, 0, -best)),
             }
         )
-    out.sort(key=lambda r: r["_gain_sort"], reverse=True)
+    out.sort(key=lambda r: r["_sort"])
     for r in out:
-        del r["_gain_sort"]
+        del r["_sort"]
     return out
 
 

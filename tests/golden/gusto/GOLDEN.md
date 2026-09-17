@@ -78,6 +78,14 @@ power-caveat clause that PCam's item 0 rewrote.
   rather than "naive per-row width" (twice), and the `cohort_spec` digest cell shows the new
   value. Nothing else in the report differs.
 
+**S6.4 refresh (2026-09-17):** identical in kind to PCam's -- `manifest.json`, `findings.json`
+and `report.html` only; all four metric parquets byte-identical and **all three input digests
+unchanged** (`cohort_spec` stays `142cb887...`). The single verdict line is byte-identical to
+S6.3. Changes: the unconditional predictions-in boundary now opens Limitations, using this
+cohort's cluster noun ("if model selection or tuning used regions inside this cohort"); the new
+verdict preamble; and provenance reading `predval 0.1.0`. The section 3 row-order rule (A14) is a
+no-op here -- one model, one row.
+
 To refresh deliberately after an intentional change, see the docstring of
 `tests/test_golden_gusto.py`.
 

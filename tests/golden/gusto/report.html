@@ -69,7 +69,10 @@ cross-check in metrics.parquet agrees (none crossed the 0 loss boundary).</p>
 <p class="muted">One line per member, assembled only from AUROC, the Brier skill score (BSS), and the
 best admissible rung -- no free adjectives. BSS is anchored at <strong>0 = no-skill</strong> (always
 predict prevalence) and <strong>1 = perfect</strong>; "closes Y% of the gap" is BSS as a percentage.
-The gauge fault names which rung, if any, the miscalibration needed.</p>
+The gauge sentence states any detected miscalibration (slope or intercept interval excluding its
+null), the lowest rung whose out-of-fold repair is demonstrated, and any rung whose recalibration
+reliably harms. A member with no detected fault and no demonstrated repair carries no gauge
+sentence: the test can fail to reject calibration but never establish it.</p>
 <ul>
 <li><strong>gusto_west_refit_logistic</strong> -- Ranking: AUROC 0.7908 [0.783, 0.798]. Probability quality after best admissible repair: closes 10.5% [9.5%, 11.6%] of the gap from no-skill (always predict prevalence) to perfect. Gauge fault found: miscalibrated (slope 0.8354 [0.801, 0.870], intercept 0.0922 [0.011, 0.173]); repair demonstrated at rung2 (level and spread (intercept + slope)); recalibration harm (paired cross-fit Brier gain, x10⁻³): rung1 [-0.18, -0.01].</li>
 </ul>
@@ -2135,8 +2138,9 @@ z
 </svg>
 </div>
 <h2>3. Calibration diagnosis (subordinate to section 2)</h2>
-<p class="subordinate">This section diagnoses rung0; it does not rank models. Rows are ordered by the
-best per-member gain. Each cell is the <strong>paired cross-fit Brier gain</strong> -- rung0 Brier
+<p class="subordinate">This section diagnoses rung0; it does not rank models. Rows are ordered with
+demonstrated repairs first (by rung, then by interval strength), then the remaining members by
+their best gain estimate -- the largest point estimate is not the strongest evidence. Each cell is the <strong>paired cross-fit Brier gain</strong> -- rung0 Brier
 minus that rung's held-out Brier, positive when recalibration helped -- with its paired
 cluster-bootstrap interval (a gain whose interval excludes 0 is a real out-of-fold improvement).
 The apparent, in-sample gains run larger; only the cross-fitted gains, which hold whole
@@ -3286,7 +3290,7 @@ region, which a tight bootstrap interval will not reveal.</p>
 </table>
 
 <h3>Limitations</h3>
-<div class="limitations">The paired cross-fit gain interval (section 3) conditions on the fitted correction -- it resamples the region-level loss difference but does not refit the correction inside each bootstrap replicate, so it does not carry the correction&#39;s own fitting variance; that refit-in-replicate interval remains backlog (spec section 4.5).</div>
+<div class="limitations">The optimism correction covers the recalibration step only. predval evaluates the predictions it is handed and has no view of how they were produced. If model selection or tuning used regions inside this cohort, rung0 is itself optimistically biased and this harness cannot see it; only a cohort the model was never tuned on could expose that. The paired cross-fit gain interval (section 3) conditions on the fitted correction -- it resamples the region-level loss difference but does not refit the correction inside each bootstrap replicate, so it does not carry the correction&#39;s own fitting variance; that refit-in-replicate interval remains backlog (spec section 4.5).</div>
 
 <h2>6. Provenance</h2>
 <p class="muted">Input digests (blake2b), the bootstrap seed and B, and library versions -- enough to
@@ -3300,7 +3304,7 @@ reproduce every number.</p>
     ci=0.95</td></tr>
 <tr><th>numpy</th><td>2.4.6</td></tr>
 <tr><th>pandas</th><td>3.0.5</td></tr>
-<tr><th>predval</th><td>0.0.0</td></tr>
+<tr><th>predval</th><td>0.1.0</td></tr>
 <tr><th>python</th><td>3.13.5</td></tr>
 <tr><th>scikit-learn</th><td>1.9.0</td></tr>
 <tr><th>scipy</th><td>1.17.1</td></tr>

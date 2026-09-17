@@ -33,11 +33,15 @@ Three things follow from that scope, and they are what predval spends its effort
   held out. The report shows both, states in an unconditional framing block that no rung is a
   validated model, and — this is the part most recalibration tooling skips — refuses to
   manufacture a gain where none exists: on the PCam fixture below, nine of the fifteen members
-  carry a detected calibration fault, ten have the repair's benefit left honestly unproven at
-  this cohort's small cluster count, four are *reliably harmed* by at least one rung, and exactly
-  one member gets a real, interval-backed repair. The remaining six show no detected fault, which
-  the report states as a null result and never as a clean bill of health: this harness's
-  calibration test can fail to reject "calibrated", but it can never establish it.
+  carry a detected miscalibration, ten have the repair's benefit left honestly unproven at this
+  cohort's small cluster count, and exactly one — `p4m_seed7` at rung2 — gets a real,
+  interval-backed repair. Five members carry at least one rung whose recalibration *reliably
+  harms* them, and `p4m_seed7` is one of the five: its rung2 repair is demonstrated while its
+  rung1 is harmful, which is why harm is reported independently of whether a repair was found.
+  Two of those five, `e2cnn_s21` and `e2cnn_s99`, are harmed at every rung and have no admissible
+  repair at all. The remaining six show no detected fault, which the report states as a null
+  result and never as a clean bill of health: this harness's calibration test can fail to reject
+  "calibrated", but it can never establish it.
 
 ## What predval deliberately does not do
 

@@ -88,7 +88,10 @@ cross-check in metrics.parquet agrees (none crossed the 0 loss boundary).</p>
 <p class="muted">One line per member, assembled only from AUROC, the Brier skill score (BSS), and the
 best admissible rung -- no free adjectives. BSS is anchored at <strong>0 = no-skill</strong> (always
 predict prevalence) and <strong>1 = perfect</strong>; "closes Y% of the gap" is BSS as a percentage.
-The gauge fault names which rung, if any, the miscalibration needed.</p>
+The gauge sentence states any detected miscalibration (slope or intercept interval excluding its
+null), the lowest rung whose out-of-fold repair is demonstrated, and any rung whose recalibration
+reliably harms. A member with no detected fault and no demonstrated repair carries no gauge
+sentence: the test can fail to reject calibration but never establish it.</p>
 <ul>
 {% for v in verdict_lines %}
 <li><strong>{{ v.model }}</strong> -- {{ v.line }}</li>
@@ -118,8 +121,9 @@ is <em>perfect</em>. Points below the diagonal over-predict risk; above, under-p
 {% endif %}
 
 <h2>3. Calibration diagnosis (subordinate to section 2)</h2>
-<p class="subordinate">This section diagnoses rung0; it does not rank models. Rows are ordered by the
-best per-member gain. Each cell is the <strong>paired cross-fit Brier gain</strong> -- rung0 Brier
+<p class="subordinate">This section diagnoses rung0; it does not rank models. Rows are ordered with
+demonstrated repairs first (by rung, then by interval strength), then the remaining members by
+their best gain estimate -- the largest point estimate is not the strongest evidence. Each cell is the <strong>paired cross-fit Brier gain</strong> -- rung0 Brier
 minus that rung's held-out Brier, positive when recalibration helped -- with its paired
 cluster-bootstrap interval (a gain whose interval excludes 0 is a real out-of-fold improvement).
 The apparent, in-sample gains run larger; only the cross-fitted gains, which hold whole

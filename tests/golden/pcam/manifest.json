@@ -353,7 +353,7 @@
   "versions": {
     "numpy": "2.4.6",
     "pandas": "3.0.5",
-    "predval": "0.0.0",
+    "predval": "0.1.0",
     "python": "3.13.5",
     "scikit-learn": "1.9.0",
     "scipy": "1.17.1",

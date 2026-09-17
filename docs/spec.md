@@ -671,6 +671,16 @@ worse than no harness, because its output looks the same either way.
 
 ## 9. Limitations
 
+**The predictions-in boundary is stated unconditionally (S6.4 A9).** Every cohort's Limitations
+block opens with it, regardless of what the spec declares: *the optimism correction covers the
+recalibration step only; predval evaluates the predictions it is handed and has no view of how
+they were produced; if model selection or tuning used clusters inside this cohort, `rung0` is
+itself optimistically biased and this harness cannot see it; only a cohort the model was never
+tuned on could expose that.* The ensemble-specific elaboration below stays conditional on a
+declared `ensemble_members` list, but the general boundary does not -- gating both on that
+declaration (S6.1 item 2) removed the boundary from every cohort that declares none, which is
+every cohort built so far, so in practice the report stopped stating it at all.
+
 **The optimism correction covers the recalibration step only, not model or ensemble construction
 (item 6b).** Section 3's cross-fit disciplines the *recalibration*: it holds whole slides out so a
 correction is never scored on the rows it was fitted on. It says nothing about how the predictions
