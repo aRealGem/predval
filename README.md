@@ -117,6 +117,34 @@ outcomes are out of scope for v0, not a deferred feature of this version. For th
 [`SurvivalEVAL`](https://github.com/shi-ang/SurvivalEVAL) is the adjacent tool — a comparably
 scoped evaluation package for individual survival distributions.
 
+## Cross-implementation check
+
+On identical outcome and predicted-probability vectors, predval 0.1.0 point
+estimates were compared with `predRupdate::pred_val_probs()` (predRupdate
+0.2.1, R 4.5.0, pROC 1.18.5) on four inputs: the three existing logistic
+models in predRupdate's SYNPM validation data (n = 20,000; 2,830 events) and
+the GUSTO non-West validation predictions (n = 38,642; 2,716 events). No
+input contains a predicted probability of 0 or 1. Absolute tolerances were
+set before the comparison was run: calibration intercept 1e-5, calibration
+slope 1e-5, AUROC 1e-8, Brier score 1e-10. All 16 comparisons were within
+tolerance. Largest absolute differences: intercept 2.1e-8, slope 4.0e-10,
+AUROC 0, Brier 1.4e-17. The SYNPM inputs and the R reference values are in
+`validation/predrupdate/`, and `tests/test_predrupdate_agreement.py` asserts
+the same tolerances.
+
+Not compared: interval estimates, O/E ratio and R-squared. predval reports
+cluster bootstrap and cluster-robust intervals; predRupdate reports analytic
+Wald intervals; these are different estimators. For reference, 95% intervals
+for the GUSTO calibration intercept (15 regions): predRupdate Wald
+[0.049, 0.135]; predval cluster bootstrap [0.021, 0.167]; predval
+cluster-robust t [0.011, 0.173]. For the slope: [0.803, 0.867],
+[0.805, 0.868], [0.801, 0.870]. On SYNPM, which has no cluster structure,
+the three interval widths are within 3% of each other. The GUSTO cluster
+intervals carry the `few_clusters` flag (G = 15); coverage was not assessed
+for any of them. The PCam fixture was excluded: it contains 732 predictions
+equal to 0 or 1, which the two tools handle under different documented
+policies.
+
 ## Example: a real fixture, not a synthetic one
 
 `examples/pcam/` runs predval end to end against a real 15-member PatchCamelyon histopathology
