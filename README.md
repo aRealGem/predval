@@ -241,6 +241,10 @@ uv sync --group examples
 uv run python examples/gusto/reproduce.py
 ```
 
+The `examples` group is needed here, unlike PCam's plain `uv sync`, because
+`examples/gusto/fetch_data.py` reads the source `.rda` with `pyreadr`, which only that group
+installs.
+
 Same non-sensitivity framing as PCam: `examples/gusto/cohort.parquet` and `predictions.parquet`
 are generated derivatives of a public dataset, excluded from git for size and provenance, not
 because GUSTO-I is restricted. GUSTO now has a **golden-file baseline** at `tests/golden/gusto/`,
