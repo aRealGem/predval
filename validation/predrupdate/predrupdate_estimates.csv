@@ -1,0 +1,17 @@
+input,model,metric,value,tolerance
+synpm,model1,calibration_intercept,0.73234613850335262,1e-5
+synpm,model1,calibration_slope,0.64838133743267057,1e-5
+synpm,model1,auroc,0.58142768943283851,1e-8
+synpm,model1,brier,0.12485752419408118,1e-10
+synpm,model2,calibration_intercept,-0.13254770300247223,1e-5
+synpm,model2,calibration_slope,0.98677694889464218,1e-5
+synpm,model2,auroc,0.58282992152883961,1e-8
+synpm,model2,brier,0.12059803288124833,1e-10
+synpm,model3,calibration_intercept,0.53235543737636204,1e-5
+synpm,model3,calibration_slope,0.72116734478647371,1e-5
+synpm,model3,auroc,0.56125041417049626,1e-8
+synpm,model3,brier,0.12342537789456093,1e-10
+gusto,gusto_west_refit_logistic,calibration_intercept,0.092159404892425786,1e-5
+gusto,gusto_west_refit_logistic,calibration_slope,0.83544079532497806,1e-5
+gusto,gusto_west_refit_logistic,auroc,0.79076131537605898,1e-8
+gusto,gusto_west_refit_logistic,brier,0.058885540522474772,1e-10
