@@ -25,3 +25,14 @@ rows <- lapply(names(METRIC), function(metric) {
 })
 write.csv(do.call(rbind, rows), "gusto_estimates.csv", row.names = FALSE, quote = FALSE)
 cat("wrote gusto_estimates.csv\n")
+
+# --- glm convergence sweep ---------------------------------------------------
+# The calibration intercept is the one estimate whose difference from predval is visible above
+# the floating-point floor. R's default stopping rule is responsible; see README.md.
+cat("\nglm calibration-intercept sweep (y ~ 1, offset = qlogis(p)):\n")
+for (eps in c(1e-8, 1e-10)) {
+  fit <- glm(y ~ 1, offset = qlogis(p), family = binomial,
+             control = glm.control(epsilon = eps))
+  cat(sprintf("  epsilon %-6s intercept %.17g  iterations %d\n",
+              format(eps), as.numeric(coef(fit)[1]), fit$iter))
+}

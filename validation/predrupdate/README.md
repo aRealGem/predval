@@ -76,3 +76,5 @@ largest absolute change in any coefficient falls below 1e-9, with a cap of 50 it
 R's `glm` stops when the relative change in deviance falls below 1e-8, with a cap of 25
 iterations. Both tolerances are tighter than the 1e-5 asserted here. AUROC and Brier
 involve no iterative fit.
+
+The GUSTO intercept difference of 2.1e-8 is against R's default glm.control(epsilon = 1e-8), under which the fit stops after 5 iterations. With epsilon = 1e-10 or smaller the fit takes 6 iterations and the difference from predval is 4.2e-15. gusto_reference.R prints both.
