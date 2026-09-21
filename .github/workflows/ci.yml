@@ -1,6 +1,4 @@
-# DORMANT. This repository has no remote, so nothing runs this workflow yet. It is committed
-# now so that CI is not an afterthought if the project is ever published.
-#
+# Runs on every push to main and on pull requests.
 # Note the PCam fixture tests are excluded here: they read a local campaign directory that
 # exists only on the machine the fixture was built from. They are expected to skip in CI.
 name: ci
