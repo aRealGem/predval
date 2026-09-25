@@ -54,9 +54,14 @@ The committed data file is what the test reads, so no R is needed to run the tes
     uv run pytest tests/test_predrupdate_agreement.py
 
 To regenerate the reference values you need R with predRupdate 0.2.1 installed from the
-tarball named above, then from this directory:
+tarball named above. **Every command below is run from the repository root.** Both R
+scripts resolve their own inputs and outputs relative to their own location, so running
+them from this directory instead also works.
 
-    Rscript make_reference.R
+    Rscript validation/predrupdate/make_reference.R
+
+That reproduces the *content* of `synpm_y_p.csv.gz`, not its gzip blob: the decompressed
+bytes match the committed file byte for byte, the compressed bytes need not.
 
 For the GUSTO half, build the GUSTO fixture first (see `examples/gusto/`), then:
 
@@ -64,9 +69,14 @@ For the GUSTO half, build the GUSTO fixture first (see `examples/gusto/`), then:
       c = pd.read_parquet('examples/gusto/cohort.parquet'); \
       p = pd.read_parquet('examples/gusto/predictions.parquet'); \
       d = c.merge(p, on='subject_id').sort_values('subject_id'); \
-      Path('gusto_y_p.csv').write_text('y,p\n' + ''.join(f'{int(a)},{b:.17g}\n' \
+      out = Path('validation/predrupdate/gusto_y_p.csv'); \
+      out.write_text('y,p\n' + ''.join(f'{int(a)},{b:.17g}\n' \
         for a, b in zip(d['label'], d['predicted'])))"
-    Rscript gusto_reference.R
+    Rscript validation/predrupdate/gusto_reference.R
+
+The three files those commands write — `gusto_y_p.csv`, `synpm_estimates.csv` and
+`gusto_estimates.csv` — are gitignored; `predrupdate_estimates.csv` is the merge of the
+two `*_estimates.csv` halves.
 
 ## Note on the residual differences
 

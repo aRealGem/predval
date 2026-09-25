@@ -1,12 +1,25 @@
 # Produces the GUSTO rows of predrupdate_estimates.csv from an exported y,p CSV.
 #
 # Requires predRupdate 0.2.1 and a gusto_y_p.csv written by the command in README.md.
-# Run from this directory:  Rscript gusto_reference.R
+# Run from the repository root:  Rscript validation/predrupdate/gusto_reference.R
+# Inputs and outputs are resolved relative to this script, so running it from this
+# directory works as well.
+
+# dirname of the --file= entry that Rscript passes to the interpreter.
+script_dir <- function() {
+  args <- commandArgs(trailingOnly = FALSE)
+  file_arg <- grep("^--file=", args, value = TRUE)
+  if (length(file_arg) != 1L) {
+    stop("cannot locate this script; run it with Rscript, not source()")
+  }
+  dirname(normalizePath(sub("^--file=", "", file_arg)))
+}
+HERE <- script_dir()
 
 suppressPackageStartupMessages(library(predRupdate))
 stopifnot(as.character(packageVersion("predRupdate")) == "0.2.1")
 
-d <- read.csv("gusto_y_p.csv", colClasses = c("integer", "numeric"))
+d <- read.csv(file.path(HERE, "gusto_y_p.csv"), colClasses = c("integer", "numeric"))
 y <- d$y
 p <- d$p
 stopifnot(all(y %in% c(0, 1)))
@@ -23,7 +36,8 @@ rows <- lapply(names(METRIC), function(metric) {
              value = sprintf("%.17g", as.numeric(v[[METRIC[[metric]]]])),
              tolerance = TOL[[metric]])
 })
-write.csv(do.call(rbind, rows), "gusto_estimates.csv", row.names = FALSE, quote = FALSE)
+write.csv(do.call(rbind, rows), file.path(HERE, "gusto_estimates.csv"),
+          row.names = FALSE, quote = FALSE)
 cat("wrote gusto_estimates.csv\n")
 
 # --- glm convergence sweep ---------------------------------------------------

@@ -20,3 +20,11 @@ examples/gusto/raw_cache/
 examples/gusto/cohort.parquet
 examples/gusto/predictions.parquet
 examples/gusto/out/
+
+# Intermediates of the predRupdate reproduce recipe (see validation/predrupdate/README.md).
+# gusto_y_p.csv is an export of the GUSTO fixture and must never be committed; the two
+# *_estimates.csv are the halves that were merged by hand into the committed
+# predrupdate_estimates.csv.
+validation/predrupdate/gusto_y_p.csv
+validation/predrupdate/synpm_estimates.csv
+validation/predrupdate/gusto_estimates.csv
