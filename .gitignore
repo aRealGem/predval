@@ -28,3 +28,9 @@ examples/gusto/out/
 validation/predrupdate/gusto_y_p.csv
 validation/predrupdate/synpm_estimates.csv
 validation/predrupdate/gusto_estimates.csv
+
+# Same reasoning for the IMPROVE neoepitope fixture: build_fixture.py regenerates both parquets
+# deterministically from the released IMPROVE_paper results archive.
+examples/improve/cohort.parquet
+examples/improve/predictions.parquet
+examples/improve/out/
