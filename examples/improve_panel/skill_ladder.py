@@ -6,9 +6,10 @@
 predval's report quotes one Brier skill score per model, at the *admissible* rung -- the lowest
 rung whose cross-fitted paired gain interval excludes zero. That rule is parsimony-first by
 design: do not buy a more complex correction than you can prove you need. It also means the
-headline number depends on a selection rule, and on this roster four of five models come out with
-NEGATIVE skill, i.e. worse than quoting the cohort base rate to every patient. A reviewer's first
-objection is the right one: maybe a higher rung would have rescued them and the rule hid it.
+headline number depends on a selection rule, and on this roster three of five models come out
+there with reliably NEGATIVE skill, i.e. worse than quoting the cohort base rate to every
+patient, and a fourth is indistinguishable from zero. A reviewer's first objection is the right
+one: maybe a higher rung would have rescued them and the rule hid it.
 
 So this sidecar drops the selection rule and scores every rung the ladder could fit:
 
