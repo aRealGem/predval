@@ -34,3 +34,8 @@ validation/predrupdate/gusto_estimates.csv
 examples/improve/cohort.parquet
 examples/improve/predictions.parquet
 examples/improve/out/
+
+# And for the third-party predictor panel on the same cohort.
+examples/improve_panel/cohort.parquet
+examples/improve_panel/predictions.parquet
+examples/improve_panel/out/
