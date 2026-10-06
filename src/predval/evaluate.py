@@ -95,9 +95,14 @@ def coverage_delta(metrics: pd.DataFrame) -> pd.DataFrame:
     # As-published only: coverage restriction is a property of rung0, and mixing recalibrated
     # rungs into the pivot would compare corrections rather than the effect of the common subset.
     primary = metrics[(metrics["ci_method"] != "naive_row_bootstrap") & (metrics["rung"] == RUNG0)]
-    wide = primary.pivot_table(
-        index=keys, columns="subset", values="value", aggfunc="first", dropna=False
-    ).reset_index()
+    # groupby, not pivot_table: pivot_table(dropna=False) takes the cartesian product of the index
+    # levels, inventing (overall, perturbation=dialect, ...) rows that duplicate each model_id.
+    wide = (
+        primary.groupby([*keys, "subset"], dropna=False, observed=True)["value"]
+        .first()
+        .unstack("subset")
+        .reset_index()
+    )
     if "full" not in wide or "common" not in wide:
         return pd.DataFrame(columns=[*keys, "cov_delta"])
     wide["cov_delta"] = wide["full"] - wide["common"]
