@@ -242,6 +242,22 @@ def test_coverage_delta_is_zero_when_coverage_is_identical(result) -> None:
     assert np.allclose(finite, 0.0), "full == common here, so every delta must be zero"
 
 
+def test_coverage_delta_has_one_overall_row_per_model_with_ragged_coverage(tmp_path: Path) -> None:
+    """Subgroups plus unequal coverage must not multiply the overall rows (report.py indexes them).
+
+    pivot_table(dropna=False) crossed the index levels, inventing overall rows carrying subgroup
+    levels; _primary_rows then got a Series back from .get() and crashed rendering the report.
+    """
+    cohort, preds = build(tmp_path, drop_for_weak=40)
+    delta = coverage_delta(evaluate(cohort, preds).metrics)
+    overall = delta[(delta["stratum_kind"] == "overall") & (delta["metric"] == "auroc")]
+    assert sorted(overall["model_id"]) == sorted(MODELS)
+    assert overall["subgroup_name"].isna().all()
+    by_model = overall.set_index("model_id")["cov_delta"]
+    assert by_model["weak"] == 0.0, "weak's own rows define the common subset"
+    assert np.isfinite(by_model["good"]) and by_model["good"] != 0.0, "good loses rows to common"
+
+
 # -------------------------------------------------------------------------------- the manifest
 
 
