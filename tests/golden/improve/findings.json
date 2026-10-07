@@ -1,0 +1,624 @@
+{
+  "cohort_id": "improve-neoepitope-cv-patient-grouped",
+  "flags": [
+    {
+      "code": "few_clusters",
+      "message": "tail quantiles approximate with few clusters (G=20) for tumour_cohort=Basket; percentile bootstrap intervals below 40 clusters are coarse",
+      "severity": "note"
+    },
+    {
+      "code": "few_clusters",
+      "message": "tail quantiles approximate with few clusters (G=24) for tumour_cohort=bladder; percentile bootstrap intervals below 40 clusters are coarse",
+      "severity": "note"
+    },
+    {
+      "code": "few_clusters",
+      "message": "tail quantiles approximate with few clusters (G=26) for tumour_cohort=melanoma; percentile bootstrap intervals below 40 clusters are coarse",
+      "severity": "note"
+    },
+    {
+      "code": "recalibration_non_monotone",
+      "message": "rung3 materially non-monotone for improve_simple (peptide_length=non_9mer): delta_auroc=+0.0036 exceeds tol 0.001 (secondary note: largest local decrease on the probability-scale transform = 0.0005, not a flag driver)",
+      "severity": "note"
+    },
+    {
+      "code": "recalibration_non_monotone",
+      "message": "rung3 materially non-monotone for improve_simple (tumour_cohort=Basket): delta_auroc=+0.0073 exceeds tol 0.001 (secondary note: largest local decrease on the probability-scale transform = 0.0000, not a flag driver)",
+      "severity": "note"
+    },
+    {
+      "code": "recalibration_non_monotone",
+      "message": "rung3 materially non-monotone for improve_simple_wo_prime (peptide_length=non_9mer): delta_auroc=+0.0047 exceeds tol 0.001 (secondary note: largest local decrease on the probability-scale transform = 0.0003, not a flag driver)",
+      "severity": "note"
+    },
+    {
+      "code": "recalibration_non_monotone",
+      "message": "rung3 materially non-monotone for improve_simple_wo_prime (tumour_cohort=Basket): delta_auroc=+0.0119 exceeds tol 0.001 (secondary note: largest local decrease on the probability-scale transform = 0.0000, not a flag driver)",
+      "severity": "note"
+    },
+    {
+      "code": "recalibration_non_monotone",
+      "message": "rung3 materially non-monotone for improve_simple_wo_prime (tumour_cohort=melanoma): delta_auroc=+0.0068 exceeds tol 0.001 (secondary note: largest local decrease on the probability-scale transform = 0.0002, not a flag driver)",
+      "severity": "note"
+    },
+    {
+      "code": "recalibration_non_monotone",
+      "message": "rung3 materially non-monotone for improve_tme_excl (peptide_length=non_9mer): delta_auroc=+0.0037 exceeds tol 0.001 (secondary note: largest local decrease on the probability-scale transform = 0.0005, not a flag driver)",
+      "severity": "note"
+    },
+    {
+      "code": "recalibration_non_monotone",
+      "message": "rung3 materially non-monotone for improve_tme_excl (tumour_cohort=Basket): delta_auroc=+0.0041 exceeds tol 0.001 (secondary note: largest local decrease on the probability-scale transform = 0.0000, not a flag driver)",
+      "severity": "note"
+    },
+    {
+      "code": "recalibration_non_monotone",
+      "message": "rung3 materially non-monotone for improve_tme_excl_wo_prime (peptide_length=non_9mer): delta_auroc=+0.0049 exceeds tol 0.001 (secondary note: largest local decrease on the probability-scale transform = 0.0003, not a flag driver)",
+      "severity": "note"
+    },
+    {
+      "code": "recalibration_non_monotone",
+      "message": "rung3 materially non-monotone for improve_tme_excl_wo_prime (tumour_cohort=Basket): delta_auroc=+0.0277 exceeds tol 0.001 (secondary note: largest local decrease on the probability-scale transform = 0.0000, not a flag driver)",
+      "severity": "note"
+    },
+    {
+      "code": "recalibration_non_monotone",
+      "message": "rung3 materially non-monotone for improve_tme_excl_wo_prime (tumour_cohort=bladder): delta_auroc=+0.0020 exceeds tol 0.001 (secondary note: largest local decrease on the probability-scale transform = 0.0002, not a flag driver)",
+      "severity": "note"
+    },
+    {
+      "code": "recalibration_non_monotone",
+      "message": "rung3 materially non-monotone for improve_tme_excl_wo_prime (tumour_cohort=melanoma): delta_auroc=+0.0087 exceeds tol 0.001 (secondary note: largest local decrease on the probability-scale transform = 0.0005, not a flag driver)",
+      "severity": "note"
+    },
+    {
+      "code": "recalibration_non_monotone",
+      "message": "rung3 materially non-monotone for improve_tme_incl (tumour_cohort=bladder): delta_auroc=+0.0161 exceeds tol 0.001 (secondary note: largest local decrease on the probability-scale transform = 0.0000, not a flag driver)",
+      "severity": "note"
+    },
+    {
+      "code": "recalibration_non_monotone",
+      "message": "rung3 materially non-monotone for improve_tme_incl_wo_prime (tumour_cohort=bladder): delta_auroc=+0.0092 exceeds tol 0.001 (secondary note: largest local decrease on the probability-scale transform = 0.0000, not a flag driver)",
+      "severity": "note"
+    },
+    {
+      "code": "recalibration_non_monotone",
+      "message": "rung3 materially non-monotone for nnalign (overall): delta_auroc=-0.0014 exceeds tol 0.001 (secondary note: largest local decrease on the probability-scale transform = 0.0000, not a flag driver)",
+      "severity": "note"
+    },
+    {
+      "code": "recalibration_non_monotone",
+      "message": "rung3 materially non-monotone for nnalign (peptide_length=9mer): delta_auroc=+0.0057 exceeds tol 0.001 (secondary note: largest local decrease on the probability-scale transform = 0.0000, not a flag driver)",
+      "severity": "note"
+    },
+    {
+      "code": "recalibration_non_monotone",
+      "message": "rung3 materially non-monotone for nnalign (tumour_cohort=Basket): delta_auroc=+0.0022 exceeds tol 0.001 (secondary note: largest local decrease on the probability-scale transform = 0.0005, not a flag driver)",
+      "severity": "note"
+    },
+    {
+      "code": "recalibration_non_monotone",
+      "message": "rung3 materially non-monotone for nnalign (tumour_cohort=melanoma): delta_auroc=+0.0074 exceeds tol 0.001 (secondary note: largest local decrease on the probability-scale transform = 0.0000, not a flag driver)",
+      "severity": "note"
+    }
+  ],
+  "members": [
+    {
+      "analytic_ci_truncated": false,
+      "metrics": {
+        "auroc": {
+          "ci_high": 0.678939,
+          "ci_low": 0.607441,
+          "ci_method": "cluster_bootstrap",
+          "value": 0.642521
+        },
+        "average_precision": {
+          "ci_high": 0.066597,
+          "ci_low": 0.037073,
+          "ci_method": "cluster_bootstrap",
+          "value": 0.048959
+        },
+        "brier": {
+          "ci_high": 0.181697,
+          "ci_low": 0.166324,
+          "ci_method": "cluster_bootstrap",
+          "value": 0.173643
+        },
+        "calibration_intercept": {
+          "ci_high": -3.043193,
+          "ci_low": -3.512195,
+          "ci_method": "cluster_robust_t",
+          "value": -3.277694
+        },
+        "calibration_slope": {
+          "ci_high": 1.397442,
+          "ci_low": 0.772114,
+          "ci_method": "cluster_robust_t",
+          "value": 1.084778
+        }
+      },
+      "model_id": "improve_simple",
+      "recalibration_gains": [
+        {
+          "ci_high": 0.157132,
+          "ci_low": 0.139412,
+          "ci_method": "paired_cluster_bootstrap",
+          "gain": 0.147872,
+          "rung": "rung1"
+        },
+        {
+          "ci_high": 0.157131,
+          "ci_low": 0.139423,
+          "ci_method": "paired_cluster_bootstrap",
+          "gain": 0.147873,
+          "rung": "rung2"
+        },
+        {
+          "ci_high": 0.157112,
+          "ci_low": 0.139413,
+          "ci_method": "paired_cluster_bootstrap",
+          "gain": 0.147858,
+          "rung": "rung3"
+        }
+      ],
+      "verdict": {
+        "axis_a_miscalibrated": true,
+        "axis_b": "demonstrated",
+        "best_rung": "rung1",
+        "bss": 0.006726,
+        "bss_ci_high": 0.011459,
+        "bss_ci_low": 0.00101,
+        "gauge_label": "miscalibrated (intercept -3.2777 [-3.512, -3.043]); repair demonstrated at rung1 (level (calibration-in-the-large))"
+      }
+    },
+    {
+      "analytic_ci_truncated": false,
+      "metrics": {
+        "auroc": {
+          "ci_high": 0.67614,
+          "ci_low": 0.606165,
+          "ci_method": "cluster_bootstrap",
+          "value": 0.640178
+        },
+        "average_precision": {
+          "ci_high": 0.066637,
+          "ci_low": 0.037252,
+          "ci_method": "cluster_bootstrap",
+          "value": 0.049148
+        },
+        "brier": {
+          "ci_high": 0.181235,
+          "ci_low": 0.16676,
+          "ci_method": "cluster_bootstrap",
+          "value": 0.173622
+        },
+        "calibration_intercept": {
+          "ci_high": -3.043955,
+          "ci_low": -3.509214,
+          "ci_method": "cluster_robust_t",
+          "value": -3.276584
+        },
+        "calibration_slope": {
+          "ci_high": 1.427888,
+          "ci_low": 0.786151,
+          "ci_method": "cluster_robust_t",
+          "value": 1.10702
+        }
+      },
+      "model_id": "improve_simple_wo_prime",
+      "recalibration_gains": [
+        {
+          "ci_high": 0.156479,
+          "ci_low": 0.139736,
+          "ci_method": "paired_cluster_bootstrap",
+          "gain": 0.147851,
+          "rung": "rung1"
+        },
+        {
+          "ci_high": 0.15647,
+          "ci_low": 0.139755,
+          "ci_method": "paired_cluster_bootstrap",
+          "gain": 0.147851,
+          "rung": "rung2"
+        },
+        {
+          "ci_high": 0.156461,
+          "ci_low": 0.139751,
+          "ci_method": "paired_cluster_bootstrap",
+          "gain": 0.147854,
+          "rung": "rung3"
+        }
+      ],
+      "verdict": {
+        "axis_a_miscalibrated": true,
+        "axis_b": "demonstrated",
+        "best_rung": "rung1",
+        "bss": 0.006691,
+        "bss_ci_high": 0.011281,
+        "bss_ci_low": 0.001142,
+        "gauge_label": "miscalibrated (intercept -3.2766 [-3.509, -3.044]); repair demonstrated at rung1 (level (calibration-in-the-large))"
+      }
+    },
+    {
+      "analytic_ci_truncated": false,
+      "metrics": {
+        "auroc": {
+          "ci_high": 0.667999,
+          "ci_low": 0.596901,
+          "ci_method": "cluster_bootstrap",
+          "value": 0.630215
+        },
+        "average_precision": {
+          "ci_high": 0.06774,
+          "ci_low": 0.03748,
+          "ci_method": "cluster_bootstrap",
+          "value": 0.049766
+        },
+        "brier": {
+          "ci_high": 0.181351,
+          "ci_low": 0.166968,
+          "ci_method": "cluster_bootstrap",
+          "value": 0.174057
+        },
+        "calibration_intercept": {
+          "ci_high": -3.03901,
+          "ci_low": -3.513196,
+          "ci_method": "cluster_robust_t",
+          "value": -3.276103
+        },
+        "calibration_slope": {
+          "ci_high": 1.39062,
+          "ci_low": 0.753222,
+          "ci_method": "cluster_robust_t",
+          "value": 1.071921
+        }
+      },
+      "model_id": "improve_tme_excl",
+      "recalibration_gains": [
+        {
+          "ci_high": 0.157824,
+          "ci_low": 0.139401,
+          "ci_method": "paired_cluster_bootstrap",
+          "gain": 0.148276,
+          "rung": "rung1"
+        },
+        {
+          "ci_high": 0.157832,
+          "ci_low": 0.139396,
+          "ci_method": "paired_cluster_bootstrap",
+          "gain": 0.148273,
+          "rung": "rung2"
+        },
+        {
+          "ci_high": 0.157819,
+          "ci_low": 0.139372,
+          "ci_method": "paired_cluster_bootstrap",
+          "gain": 0.148257,
+          "rung": "rung3"
+        }
+      ],
+      "verdict": {
+        "axis_a_miscalibrated": true,
+        "axis_b": "demonstrated",
+        "best_rung": "rung1",
+        "bss": 0.006288,
+        "bss_ci_high": 0.010847,
+        "bss_ci_low": 0.001046,
+        "gauge_label": "miscalibrated (intercept -3.2761 [-3.513, -3.039]); repair demonstrated at rung1 (level (calibration-in-the-large))"
+      }
+    },
+    {
+      "analytic_ci_truncated": false,
+      "metrics": {
+        "auroc": {
+          "ci_high": 0.662456,
+          "ci_low": 0.590813,
+          "ci_method": "cluster_bootstrap",
+          "value": 0.625699
+        },
+        "average_precision": {
+          "ci_high": 0.067936,
+          "ci_low": 0.03709,
+          "ci_method": "cluster_bootstrap",
+          "value": 0.049497
+        },
+        "brier": {
+          "ci_high": 0.181512,
+          "ci_low": 0.167692,
+          "ci_method": "cluster_bootstrap",
+          "value": 0.174373
+        },
+        "calibration_intercept": {
+          "ci_high": -3.040116,
+          "ci_low": -3.511595,
+          "ci_method": "cluster_robust_t",
+          "value": -3.275855
+        },
+        "calibration_slope": {
+          "ci_high": 1.430282,
+          "ci_low": 0.746937,
+          "ci_method": "cluster_robust_t",
+          "value": 1.08861
+        }
+      },
+      "model_id": "improve_tme_excl_wo_prime",
+      "recalibration_gains": [
+        {
+          "ci_high": 0.157948,
+          "ci_low": 0.14007,
+          "ci_method": "paired_cluster_bootstrap",
+          "gain": 0.148584,
+          "rung": "rung1"
+        },
+        {
+          "ci_high": 0.157943,
+          "ci_low": 0.140066,
+          "ci_method": "paired_cluster_bootstrap",
+          "gain": 0.148582,
+          "rung": "rung2"
+        },
+        {
+          "ci_high": 0.157922,
+          "ci_low": 0.140077,
+          "ci_method": "paired_cluster_bootstrap",
+          "gain": 0.148576,
+          "rung": "rung3"
+        }
+      ],
+      "verdict": {
+        "axis_a_miscalibrated": true,
+        "axis_b": "demonstrated",
+        "best_rung": "rung1",
+        "bss": 0.006,
+        "bss_ci_high": 0.01054,
+        "bss_ci_low": 0.000843,
+        "gauge_label": "miscalibrated (intercept -3.2759 [-3.512, -3.040]); repair demonstrated at rung1 (level (calibration-in-the-large))"
+      }
+    },
+    {
+      "analytic_ci_truncated": false,
+      "metrics": {
+        "auroc": {
+          "ci_high": 0.697397,
+          "ci_low": 0.605923,
+          "ci_method": "cluster_bootstrap",
+          "value": 0.65243
+        },
+        "average_precision": {
+          "ci_high": 0.070342,
+          "ci_low": 0.03912,
+          "ci_method": "cluster_bootstrap",
+          "value": 0.05252
+        },
+        "brier": {
+          "ci_high": 0.184694,
+          "ci_low": 0.152257,
+          "ci_method": "cluster_bootstrap",
+          "value": 0.167626
+        },
+        "calibration_intercept": {
+          "ci_high": -3.029761,
+          "ci_low": -3.46348,
+          "ci_method": "cluster_robust_t",
+          "value": -3.246621
+        },
+        "calibration_slope": {
+          "ci_high": 1.42373,
+          "ci_low": 0.770754,
+          "ci_method": "cluster_robust_t",
+          "value": 1.097242
+        }
+      },
+      "model_id": "improve_tme_incl",
+      "recalibration_gains": [
+        {
+          "ci_high": 0.15812,
+          "ci_low": 0.127903,
+          "ci_method": "paired_cluster_bootstrap",
+          "gain": 0.14189,
+          "rung": "rung1"
+        },
+        {
+          "ci_high": 0.158078,
+          "ci_low": 0.127897,
+          "ci_method": "paired_cluster_bootstrap",
+          "gain": 0.141872,
+          "rung": "rung2"
+        },
+        {
+          "ci_high": 0.158069,
+          "ci_low": 0.127871,
+          "ci_method": "paired_cluster_bootstrap",
+          "gain": 0.141861,
+          "rung": "rung3"
+        }
+      ],
+      "verdict": {
+        "axis_a_miscalibrated": true,
+        "axis_b": "demonstrated",
+        "best_rung": "rung1",
+        "bss": 0.008079,
+        "bss_ci_high": 0.013428,
+        "bss_ci_low": 0.00146,
+        "gauge_label": "miscalibrated (intercept -3.2466 [-3.463, -3.030]); repair demonstrated at rung1 (level (calibration-in-the-large))"
+      }
+    },
+    {
+      "analytic_ci_truncated": false,
+      "metrics": {
+        "auroc": {
+          "ci_high": 0.696474,
+          "ci_low": 0.604139,
+          "ci_method": "cluster_bootstrap",
+          "value": 0.651394
+        },
+        "average_precision": {
+          "ci_high": 0.070554,
+          "ci_low": 0.038899,
+          "ci_method": "cluster_bootstrap",
+          "value": 0.052213
+        },
+        "brier": {
+          "ci_high": 0.184142,
+          "ci_low": 0.15347,
+          "ci_method": "cluster_bootstrap",
+          "value": 0.167951
+        },
+        "calibration_intercept": {
+          "ci_high": -3.028426,
+          "ci_low": -3.458913,
+          "ci_method": "cluster_robust_t",
+          "value": -3.24367
+        },
+        "calibration_slope": {
+          "ci_high": 1.526758,
+          "ci_low": 0.813521,
+          "ci_method": "cluster_robust_t",
+          "value": 1.17014
+        }
+      },
+      "model_id": "improve_tme_incl_wo_prime",
+      "recalibration_gains": [
+        {
+          "ci_high": 0.157538,
+          "ci_low": 0.128854,
+          "ci_method": "paired_cluster_bootstrap",
+          "gain": 0.142207,
+          "rung": "rung1"
+        },
+        {
+          "ci_high": 0.157531,
+          "ci_low": 0.128858,
+          "ci_method": "paired_cluster_bootstrap",
+          "gain": 0.142188,
+          "rung": "rung2"
+        },
+        {
+          "ci_high": 0.157532,
+          "ci_low": 0.12886,
+          "ci_method": "paired_cluster_bootstrap",
+          "gain": 0.14218,
+          "rung": "rung3"
+        }
+      ],
+      "verdict": {
+        "axis_a_miscalibrated": true,
+        "axis_b": "demonstrated",
+        "best_rung": "rung1",
+        "bss": 0.00773,
+        "bss_ci_high": 0.01279,
+        "bss_ci_low": 0.00166,
+        "gauge_label": "miscalibrated (intercept -3.2437 [-3.459, -3.028]); repair demonstrated at rung1 (level (calibration-in-the-large))"
+      }
+    },
+    {
+      "analytic_ci_truncated": false,
+      "metrics": {
+        "auroc": {
+          "ci_high": 0.647381,
+          "ci_low": 0.564122,
+          "ci_method": "cluster_bootstrap",
+          "value": 0.60537
+        },
+        "average_precision": {
+          "ci_high": 0.058386,
+          "ci_low": 0.03393,
+          "ci_method": "cluster_bootstrap",
+          "value": 0.044111
+        },
+        "brier": {
+          "ci_high": 0.031751,
+          "ci_low": 0.020575,
+          "ci_method": "cluster_bootstrap",
+          "value": 0.02583
+        },
+        "calibration_intercept": {
+          "ci_high": 0.149966,
+          "ci_low": -0.326434,
+          "ci_method": "cluster_robust_t",
+          "value": -0.088234
+        },
+        "calibration_slope": {
+          "ci_high": 1.359274,
+          "ci_low": 0.580042,
+          "ci_method": "cluster_robust_t",
+          "value": 0.969658
+        }
+      },
+      "model_id": "nnalign",
+      "recalibration_gains": [
+        {
+          "ci_high": 2.6e-05,
+          "ci_low": -7.1e-05,
+          "ci_method": "paired_cluster_bootstrap",
+          "gain": -1.9e-05,
+          "rung": "rung1"
+        },
+        {
+          "ci_high": 2.9e-05,
+          "ci_low": -8e-05,
+          "ci_method": "paired_cluster_bootstrap",
+          "gain": -2.2e-05,
+          "rung": "rung2"
+        },
+        {
+          "ci_high": -1e-06,
+          "ci_low": -0.000114,
+          "ci_method": "paired_cluster_bootstrap",
+          "gain": -5.4e-05,
+          "rung": "rung3"
+        }
+      ],
+      "verdict": {
+        "axis_a_miscalibrated": false,
+        "axis_b": "counterproductive",
+        "best_rung": "rung0",
+        "bss": 0.004425,
+        "bss_ci_high": 0.008335,
+        "bss_ci_low": -0.001112,
+        "gauge_label": "recalibration harm (paired cross-fit Brier gain, x10\u207b\u00b3): rung3 [-0.11, -0.00]"
+      }
+    }
+  ],
+  "provenance": {
+    "ci_level": 0.95,
+    "config": {
+      "clustered": true,
+      "clustering_field": "patient",
+      "coverage_compare_on": "both",
+      "coverage_min_fraction": 0.95,
+      "expected_models": [
+        "improve_simple",
+        "improve_simple_wo_prime",
+        "improve_tme_excl",
+        "improve_tme_excl_wo_prime",
+        "improve_tme_incl",
+        "improve_tme_incl_wo_prime",
+        "nnalign"
+      ]
+    },
+    "git_commit": "4f9fbd00b2f84bf673d66bead230eb6e49c6400b-dirty",
+    "input_hashes": {
+      "cohort_data": "0602dee2f9c80b0512e9f6e5e3470fd0cd85fb561578adbcbc6956edb905baf4",
+      "cohort_spec": "cc9ee94cfcdc09ff8be98514fb1c33b0cf14cb80338649b4d10caa8336b7b617",
+      "predictions": "d5c66de35023d643f11f3e750a9d303180de8588c088d94abb651e77453c9972"
+    },
+    "n_boot": 2000,
+    "seed": 1337,
+    "versions": {
+      "numpy": "2.4.6",
+      "pandas": "3.0.5",
+      "predval": "0.1.0",
+      "python": "3.13.16",
+      "scikit-learn": "1.9.0",
+      "scipy": "1.17.1",
+      "statsmodels": "0.14.6"
+    }
+  },
+  "roster": {
+    "absent": [],
+    "declared": 7,
+    "present": 7
+  },
+  "schema_version": "1.1"
+}
