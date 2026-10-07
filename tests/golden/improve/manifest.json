@@ -1,0 +1,264 @@
+{
+  "cells_reused_identical": 42,
+  "cohort_id": "improve-neoepitope-cv-patient-grouped",
+  "contract_version": 0,
+  "coverage": {
+    "common_warn_frac": 0.2,
+    "compare_on": "both",
+    "min_fraction": 0.95
+  },
+  "dropped_subjects": [],
+  "expected_models": [
+    "improve_simple",
+    "improve_simple_wo_prime",
+    "improve_tme_excl",
+    "improve_tme_excl_wo_prime",
+    "improve_tme_incl",
+    "improve_tme_incl_wo_prime",
+    "nnalign"
+  ],
+  "flags": [
+    {
+      "code": "few_clusters",
+      "message": "tail quantiles approximate with few clusters (G=20) for tumour_cohort=Basket; percentile bootstrap intervals below 40 clusters are coarse",
+      "severity": "note"
+    },
+    {
+      "code": "few_clusters",
+      "message": "tail quantiles approximate with few clusters (G=24) for tumour_cohort=bladder; percentile bootstrap intervals below 40 clusters are coarse",
+      "severity": "note"
+    },
+    {
+      "code": "few_clusters",
+      "message": "tail quantiles approximate with few clusters (G=26) for tumour_cohort=melanoma; percentile bootstrap intervals below 40 clusters are coarse",
+      "severity": "note"
+    },
+    {
+      "code": "recalibration_non_monotone",
+      "message": "rung3 materially non-monotone for improve_simple (peptide_length=non_9mer): delta_auroc=+0.0036 exceeds tol 0.001 (secondary note: largest local decrease on the probability-scale transform = 0.0005, not a flag driver)",
+      "severity": "note"
+    },
+    {
+      "code": "recalibration_non_monotone",
+      "message": "rung3 materially non-monotone for improve_simple (tumour_cohort=Basket): delta_auroc=+0.0073 exceeds tol 0.001 (secondary note: largest local decrease on the probability-scale transform = 0.0000, not a flag driver)",
+      "severity": "note"
+    },
+    {
+      "code": "recalibration_non_monotone",
+      "message": "rung3 materially non-monotone for improve_simple_wo_prime (peptide_length=non_9mer): delta_auroc=+0.0047 exceeds tol 0.001 (secondary note: largest local decrease on the probability-scale transform = 0.0003, not a flag driver)",
+      "severity": "note"
+    },
+    {
+      "code": "recalibration_non_monotone",
+      "message": "rung3 materially non-monotone for improve_simple_wo_prime (tumour_cohort=Basket): delta_auroc=+0.0119 exceeds tol 0.001 (secondary note: largest local decrease on the probability-scale transform = 0.0000, not a flag driver)",
+      "severity": "note"
+    },
+    {
+      "code": "recalibration_non_monotone",
+      "message": "rung3 materially non-monotone for improve_simple_wo_prime (tumour_cohort=melanoma): delta_auroc=+0.0068 exceeds tol 0.001 (secondary note: largest local decrease on the probability-scale transform = 0.0002, not a flag driver)",
+      "severity": "note"
+    },
+    {
+      "code": "recalibration_non_monotone",
+      "message": "rung3 materially non-monotone for improve_tme_excl (peptide_length=non_9mer): delta_auroc=+0.0037 exceeds tol 0.001 (secondary note: largest local decrease on the probability-scale transform = 0.0005, not a flag driver)",
+      "severity": "note"
+    },
+    {
+      "code": "recalibration_non_monotone",
+      "message": "rung3 materially non-monotone for improve_tme_excl (tumour_cohort=Basket): delta_auroc=+0.0041 exceeds tol 0.001 (secondary note: largest local decrease on the probability-scale transform = 0.0000, not a flag driver)",
+      "severity": "note"
+    },
+    {
+      "code": "recalibration_non_monotone",
+      "message": "rung3 materially non-monotone for improve_tme_excl_wo_prime (peptide_length=non_9mer): delta_auroc=+0.0049 exceeds tol 0.001 (secondary note: largest local decrease on the probability-scale transform = 0.0003, not a flag driver)",
+      "severity": "note"
+    },
+    {
+      "code": "recalibration_non_monotone",
+      "message": "rung3 materially non-monotone for improve_tme_excl_wo_prime (tumour_cohort=Basket): delta_auroc=+0.0277 exceeds tol 0.001 (secondary note: largest local decrease on the probability-scale transform = 0.0000, not a flag driver)",
+      "severity": "note"
+    },
+    {
+      "code": "recalibration_non_monotone",
+      "message": "rung3 materially non-monotone for improve_tme_excl_wo_prime (tumour_cohort=bladder): delta_auroc=+0.0020 exceeds tol 0.001 (secondary note: largest local decrease on the probability-scale transform = 0.0002, not a flag driver)",
+      "severity": "note"
+    },
+    {
+      "code": "recalibration_non_monotone",
+      "message": "rung3 materially non-monotone for improve_tme_excl_wo_prime (tumour_cohort=melanoma): delta_auroc=+0.0087 exceeds tol 0.001 (secondary note: largest local decrease on the probability-scale transform = 0.0005, not a flag driver)",
+      "severity": "note"
+    },
+    {
+      "code": "recalibration_non_monotone",
+      "message": "rung3 materially non-monotone for improve_tme_incl (tumour_cohort=bladder): delta_auroc=+0.0161 exceeds tol 0.001 (secondary note: largest local decrease on the probability-scale transform = 0.0000, not a flag driver)",
+      "severity": "note"
+    },
+    {
+      "code": "recalibration_non_monotone",
+      "message": "rung3 materially non-monotone for improve_tme_incl_wo_prime (tumour_cohort=bladder): delta_auroc=+0.0092 exceeds tol 0.001 (secondary note: largest local decrease on the probability-scale transform = 0.0000, not a flag driver)",
+      "severity": "note"
+    },
+    {
+      "code": "recalibration_non_monotone",
+      "message": "rung3 materially non-monotone for nnalign (overall): delta_auroc=-0.0014 exceeds tol 0.001 (secondary note: largest local decrease on the probability-scale transform = 0.0000, not a flag driver)",
+      "severity": "note"
+    },
+    {
+      "code": "recalibration_non_monotone",
+      "message": "rung3 materially non-monotone for nnalign (peptide_length=9mer): delta_auroc=+0.0057 exceeds tol 0.001 (secondary note: largest local decrease on the probability-scale transform = 0.0000, not a flag driver)",
+      "severity": "note"
+    },
+    {
+      "code": "recalibration_non_monotone",
+      "message": "rung3 materially non-monotone for nnalign (tumour_cohort=Basket): delta_auroc=+0.0022 exceeds tol 0.001 (secondary note: largest local decrease on the probability-scale transform = 0.0005, not a flag driver)",
+      "severity": "note"
+    },
+    {
+      "code": "recalibration_non_monotone",
+      "message": "rung3 materially non-monotone for nnalign (tumour_cohort=melanoma): delta_auroc=+0.0074 exceeds tol 0.001 (secondary note: largest local decrease on the probability-scale transform = 0.0000, not a flag driver)",
+      "severity": "note"
+    }
+  ],
+  "inputs": {
+    "cohort_data": "0602dee2f9c80b0512e9f6e5e3470fd0cd85fb561578adbcbc6956edb905baf4",
+    "cohort_spec": "cc9ee94cfcdc09ff8be98514fb1c33b0cf14cb80338649b4d10caa8336b7b617",
+    "predictions": "d5c66de35023d643f11f3e750a9d303180de8588c088d94abb651e77453c9972"
+  },
+  "models_present": [
+    "improve_simple",
+    "improve_simple_wo_prime",
+    "improve_tme_excl",
+    "improve_tme_excl_wo_prime",
+    "improve_tme_incl",
+    "improve_tme_incl_wo_prime",
+    "nnalign"
+  ],
+  "n_subjects": 17520,
+  "roster": {
+    "absent": [],
+    "declared": 7,
+    "ensemble_members": [],
+    "present": 7
+  },
+  "uncertainty": {
+    "ci_level": 0.95,
+    "clustered": true,
+    "clustering_field": "patient",
+    "clustering_name": "patient",
+    "n_boot": 2000,
+    "seed": 1337,
+    "show_naive_ci": true,
+    "unit_noun": "peptide"
+  },
+  "verdict": {
+    "improve_simple": {
+      "axis_a_miscalibrated": true,
+      "axis_b": "demonstrated",
+      "axis_b_counterproductive_rungs": [],
+      "best_rung": "rung1",
+      "best_rung_brier": 0.025770239792686046,
+      "bss": 0.006726175584733984,
+      "bss_ci_high": 0.011459333307902646,
+      "bss_ci_low": 0.0010103638877356459,
+      "n": 17520,
+      "n_clusters": 70,
+      "prevalence": 0.02665525114155251,
+      "rung0_brier": 0.1736426279039147
+    },
+    "improve_simple_wo_prime": {
+      "axis_a_miscalibrated": true,
+      "axis_b": "demonstrated",
+      "axis_b_counterproductive_rungs": [],
+      "best_rung": "rung1",
+      "best_rung_brier": 0.025771142636787574,
+      "bss": 0.006691376862611453,
+      "bss_ci_high": 0.011280965974780174,
+      "bss_ci_low": 0.001141575323759689,
+      "n": 17520,
+      "n_clusters": 70,
+      "prevalence": 0.02665525114155251,
+      "rung0_brier": 0.17362201243380085
+    },
+    "improve_tme_excl": {
+      "axis_a_miscalibrated": true,
+      "axis_b": "demonstrated",
+      "axis_b_counterproductive_rungs": [],
+      "best_rung": "rung1",
+      "best_rung_brier": 0.02578160059807171,
+      "bss": 0.006288291005287494,
+      "bss_ci_high": 0.01084696486704049,
+      "bss_ci_low": 0.0010456215867604508,
+      "n": 17520,
+      "n_clusters": 70,
+      "prevalence": 0.02665525114155251,
+      "rung0_brier": 0.1740571541484085
+    },
+    "improve_tme_excl_wo_prime": {
+      "axis_a_miscalibrated": true,
+      "axis_b": "demonstrated",
+      "axis_b_counterproductive_rungs": [],
+      "best_rung": "rung1",
+      "best_rung_brier": 0.025789071243491817,
+      "bss": 0.00600034659316806,
+      "bss_ci_high": 0.01053968605906155,
+      "bss_ci_low": 0.0008430445036216836,
+      "n": 17520,
+      "n_clusters": 70,
+      "prevalence": 0.02665525114155251,
+      "rung0_brier": 0.17437342114437554
+    },
+    "improve_tme_incl": {
+      "axis_a_miscalibrated": true,
+      "axis_b": "demonstrated",
+      "axis_b_counterproductive_rungs": [],
+      "best_rung": "rung1",
+      "best_rung_brier": 0.025735148054809035,
+      "bss": 0.00807873205944587,
+      "bss_ci_high": 0.0134276046647617,
+      "bss_ci_low": 0.0014602036571806387,
+      "n": 17520,
+      "n_clusters": 70,
+      "prevalence": 0.02665525114155251,
+      "rung0_brier": 0.16762562559930383
+    },
+    "improve_tme_incl_wo_prime": {
+      "axis_a_miscalibrated": true,
+      "axis_b": "demonstrated",
+      "axis_b_counterproductive_rungs": [],
+      "best_rung": "rung1",
+      "best_rung_brier": 0.025744200664175557,
+      "bss": 0.007729813306700084,
+      "bss_ci_high": 0.012790371547574123,
+      "bss_ci_low": 0.0016603479016365002,
+      "n": 17520,
+      "n_clusters": 70,
+      "prevalence": 0.02665525114155251,
+      "rung0_brier": 0.1679510221660752
+    },
+    "nnalign": {
+      "axis_a_miscalibrated": false,
+      "axis_b": "counterproductive",
+      "axis_b_counterproductive_rungs": [
+        "rung3"
+      ],
+      "best_rung": "rung0",
+      "best_rung_brier": 0.025829954627819694,
+      "bss": 0.004424560111044751,
+      "bss_ci_high": 0.008334603978975204,
+      "bss_ci_low": -0.001111639209645941,
+      "n": 17520,
+      "n_clusters": 70,
+      "prevalence": 0.02665525114155251,
+      "rung0_brier": 0.025829954627819694
+    }
+  },
+  "versions": {
+    "numpy": "2.4.6",
+    "pandas": "3.0.5",
+    "predval": "0.1.0",
+    "python": "3.13.16",
+    "scikit-learn": "1.9.0",
+    "scipy": "1.17.1",
+    "statsmodels": "0.14.6"
+  }
+}
