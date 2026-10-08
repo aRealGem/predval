@@ -38,6 +38,7 @@
     "clustered": true,
     "clustering_field": "regl",
     "clustering_name": "region",
+    "gain_interval": "fixed",
     "n_boot": 2000,
     "seed": 1337,
     "show_naive_ci": true,

@@ -517,6 +517,7 @@ def evaluate(cohort: Cohort, predictions: Predictions) -> Evaluation:
             "seed": unc.seed,
             "ci_level": ci,
             "show_naive_ci": unc.show_naive_ci,
+            "gain_interval": unc.gain_interval,
             "clustered": clustered,
             "clustering_field": spec.clustering.field if spec.clustering else None,
             # Human-readable noun for the clustering unit ("slide", "region", ...), threaded into
@@ -712,10 +713,27 @@ def _evaluate_one(
         # out-of-fold Brier, with a paired slide bootstrap (item 1). This is the interval the pitch
         # shows in section 3, replacing the deferred "(interval pending §4.5)" marker. Emitted for
         # every rung whose cross-fit mapping is available; ci_method is paired_cluster_bootstrap.
+        # With `uncertainty.gain_interval: refit` the correction is re-cross-fitted inside every
+        # replicate instead (§4.5); same point estimate, ci_method paired_cluster_bootstrap_refit.
+        n_folds = min(5, n_clusters)
         for lr_rung, cf_pred in lrep.crossfit_predictions.items():
-            gain, gain_ci = U.paired_brier_gain_interval(
-                y, p, cf_pred, groups, ci, n_boot=unc.n_boot, seed=unc.seed
-            )
+            if unc.gain_interval == "refit":
+                gain, gain_ci = U.paired_brier_gain_refit_interval(
+                    y,
+                    p,
+                    cf_pred,
+                    groups,
+                    ci,
+                    n_boot=unc.n_boot,
+                    seed=unc.seed,
+                    crossfit=lambda yy, pp, gg, _r=lr_rung: R._crossfit_predictions(
+                        _r, yy, pp, gg, n_folds
+                    )[0],
+                )
+            else:
+                gain, gain_ci = U.paired_brier_gain_interval(
+                    y, p, cf_pred, groups, ci, n_boot=unc.n_boot, seed=unc.seed
+                )
             rows.append(row("paired_gain_brier", gain, gain_ci, rung=lr_rung, fit_mode=R.CROSSFIT))
 
         # rung3 non-monotonicity diagnostics: ALWAYS recorded in the artefact (S4.1 item 2), so a

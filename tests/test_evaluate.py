@@ -523,3 +523,35 @@ def test_no_clustering_declared_is_flagged(tmp_path: Path) -> None:
     res = evaluate(load_cohort(tmp_path / "cohort.yaml"), preds)
     assert any(f.code == "no_clustering_declared" for f in res.flags)
     assert res.manifest["uncertainty"]["clustered"] is False
+
+
+def test_refit_gain_interval_is_selectable_and_keeps_the_point(tmp_path) -> None:
+    """`uncertainty.gain_interval: refit` swaps the paired-gain ci_method, records the choice in the
+    manifest, and leaves every point estimate identical to the fixed-mapping run (§4.5)."""
+    (tmp_path / "f").mkdir()
+    (tmp_path / "r").mkdir()
+    fixed = evaluate(*build(tmp_path / "f"))
+    refit = evaluate(
+        *build(
+            tmp_path / "r",
+            spec_extra={"uncertainty": {"n_boot": 60, "seed": 1337, "gain_interval": "refit"}},
+        )
+    )
+    assert fixed.manifest["uncertainty"]["gain_interval"] == "fixed"
+    assert refit.manifest["uncertainty"]["gain_interval"] == "refit"
+
+    def gains(res):
+        g = res.metrics[res.metrics["metric"] == "paired_gain_brier"]
+        return g.set_index(
+            ["model_id", "subset", "stratum_kind", "subgroup_level", "rung"]
+        ).sort_index()
+
+    gf, gr = gains(fixed), gains(refit)
+    assert (gf["ci_method"] == "paired_cluster_bootstrap").all()
+    assert (gr["ci_method"] == "paired_cluster_bootstrap_refit").all()
+    assert gf.index.equals(gr.index)
+    np.testing.assert_allclose(gf["value"].to_numpy(), gr["value"].to_numpy())
+    # the rest of the table is untouched by the choice
+    rest_f = fixed.metrics[fixed.metrics["metric"] != "paired_gain_brier"].reset_index(drop=True)
+    rest_r = refit.metrics[refit.metrics["metric"] != "paired_gain_brier"].reset_index(drop=True)
+    pd.testing.assert_frame_equal(rest_f, rest_r)
