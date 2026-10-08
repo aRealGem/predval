@@ -320,11 +320,28 @@ makes the interval tight, because a score and its recalibration move together wi
 is the interval the pitch shows in section 3; it replaces the earlier `(interval pending §4.5)`
 marker. The gain is emitted wherever the ladder runs (overall, and gated-pass subgroups).
 
-**What is still deferred** is the interval on a recalibrated metric *level* that refits the
-correction inside every bootstrap replicate — and, for the cross-fitted rungs, inside every
-replicate *and* every fold — so that it carries the variance of the correction itself. The paired
-gain holds the cross-fit mapping fixed; the full refit-in-replicate interval is a design surface of
-its own and remains backlog rather than a silent omission.
+**The fixed-mapping interval under-covers, and a refit-in-replicate interval is available.** The
+paired interval above holds the cross-fit mapping fixed, so it carries none of the variance of
+fitting the correction. In simulation (clustered logit random effect, true slope 0.7 or 0.5,
+G = 10–50 clusters of 5, `forecastbench/sim_refit_origin.py` in the project record) its empirical
+coverage at a nominal 0.95 was 0.74–0.93, with the misses almost all on the high side: the
+cross-fitted gain is a little pessimistic relative to the gain a full-sample fit delivers, and the
+percentile bootstrap does not widen for that.
+
+`uncertainty.gain_interval: refit` selects the alternative: every cluster-bootstrap replicate
+re-runs the grouped K-fold cross-fit on the resampled rows and takes *that* replicate's paired
+gain (`ci_method = paired_cluster_bootstrap_refit`; the point estimate is unchanged). Fold
+membership inside a replicate is keyed on the **original** cluster id, so a cluster drawn twice has
+both copies held out together. That detail is load-bearing: relabelling copies as distinct clusters
+lets a copy in a train fold score its twin and biases every replicate gain upward (coverage then
+looks fine for the wrong reason). With original-id folds the same simulation gave coverage
+0.90–0.97 in every cell, at the cost of lower power (fewer intervals exclude zero) and B × K extra
+rung fits per model and stratum.
+
+The default stays `fixed` in this version so that frozen golden outputs remain reproducible; the
+report and manifest name which interval was used. New cohorts should declare `refit`. Still
+deferred: an interval on a recalibrated metric *level* (not the gain) that refits inside every
+replicate and every fold.
 
 ### 4.6 Every metric at every rung, with two integrity checks (S3.1)
 

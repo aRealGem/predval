@@ -89,6 +89,13 @@ class UncertaintySpec(StrictModel):
     #: unit-of-analysis exhibit. It is labelled incorrect; the point is to make the cost of
     #: ignoring clustering concrete.
     show_naive_ci: bool = True
+    #: How the paired cross-fit Brier gain interval is built (docs/spec.md section 4.5).
+    #: ``fixed`` holds the out-of-fold correction fixed and resamples clusters of its per-row loss
+    #: difference; it is fast but under-covers (about 0.75-0.90 at a nominal 0.95 in simulation)
+    #: because it carries no variance from the correction itself. ``refit`` re-runs the grouped
+    #: cross-fit inside every cluster-bootstrap replicate, with every copy of a resampled cluster
+    #: held out together, and recovers nominal coverage at the price of B x K extra fits.
+    gain_interval: Literal["fixed", "refit"] = "fixed"
 
 
 class CompletenessSpec(StrictModel):

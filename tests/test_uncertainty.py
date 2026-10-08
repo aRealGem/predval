@@ -202,6 +202,60 @@ def test_paired_gain_is_tighter_than_an_unpaired_difference() -> None:
     assert (paired.high - paired.low) < 0.5 * (unpaired.high - unpaired.low)
 
 
+def _rung2_crossfit(y: np.ndarray, p: np.ndarray, groups: np.ndarray):
+    from predval.recalibrate import _crossfit_predictions
+
+    return _crossfit_predictions("rung2", y, p, groups, min(5, np.unique(groups).size))[0]
+
+
+def test_refit_gain_interval_shares_the_point_and_is_deterministic() -> None:
+    y, p0, _, g = _recalibrated_pair()
+    p_r = _rung2_crossfit(y, p0, g)
+    point, ci = U.paired_brier_gain_refit_interval(
+        y, p0, p_r, g, 0.95, n_boot=100, seed=1337, crossfit=_rung2_crossfit
+    )
+    fixed_point, _ = U.paired_brier_gain_interval(y, p0, p_r, g, 0.95, n_boot=100, seed=1337)
+    assert ci.method == "paired_cluster_bootstrap_refit"
+    assert point == pytest.approx(fixed_point), "refit changes the interval, never the point"
+    assert ci.low <= ci.high and np.isfinite(ci.low)
+    p2, ci2 = U.paired_brier_gain_refit_interval(
+        y, p0, p_r, g, 0.95, n_boot=100, seed=1337, crossfit=_rung2_crossfit
+    )
+    assert (point, ci.low, ci.high) == (p2, ci2.low, ci2.high)
+
+
+def test_refit_gain_interval_holds_every_copy_of_a_cluster_out_together() -> None:
+    """A cluster drawn twice must land in one fold with both copies: the crossfit callable sees
+    group ids that are the ORIGINAL cluster labels, so duplicates never straddle train and eval."""
+    y, p0, _, g = _recalibrated_pair(n_clusters=6, per=40)
+    p_r = _rung2_crossfit(y, p0, g)
+    seen: list[int] = []
+
+    def spy(yy, pp, gg):
+        seen.append(np.unique(gg).size)
+        return _rung2_crossfit(yy, pp, gg)
+
+    U.paired_brier_gain_refit_interval(y, p0, p_r, g, 0.95, n_boot=30, seed=7, crossfit=spy)
+    # With 6 clusters drawn with replacement, some replicates must contain a duplicate -> fewer
+    # distinct ids than clusters. If copies were relabelled fresh this would always equal 6.
+    assert min(seen) < 6 and max(seen) <= 6
+
+
+def test_refit_gain_interval_drops_degenerate_replicates() -> None:
+    y, p0, _, g = _recalibrated_pair()
+    p_r = _rung2_crossfit(y, p0, g)
+    calls = {"n": 0}
+
+    def flaky(yy, pp, gg):
+        calls["n"] += 1
+        return None if calls["n"] % 2 else _rung2_crossfit(yy, pp, gg)
+
+    point, ci = U.paired_brier_gain_refit_interval(
+        y, p0, p_r, g, 0.95, n_boot=40, seed=1, crossfit=flaky
+    )
+    assert np.isfinite(point) and np.isfinite(ci.low) and np.isfinite(ci.high)
+
+
 def test_paired_gain_degrades_to_nan_with_one_cluster() -> None:
     y, p0, p_r, _ = _recalibrated_pair(n_clusters=1, per=200)
     g = np.full(y.size, "only")
