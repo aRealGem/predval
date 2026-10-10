@@ -1,0 +1,3 @@
+model_id,n_scored,n_full,coverage_full,n_common,common_fraction,n_dropped_if_common,meets_minimum
+full,1332,1332,1,919,0.68993993993993996,413,True
+partial,919,1332,0.68993993993993996,919,0.68993993993993996,0,False

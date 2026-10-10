@@ -1,0 +1,10 @@
+.....x                                                                   [100%]
+==================================== PASSES ====================================
+=========================== short test summary info ============================
+PASSED benchmarks/alternatives/tests/test_benchmark.py::test_fixtures_are_deterministic_and_patient_folds_disjoint
+PASSED benchmarks/alternatives/tests/test_benchmark.py::test_crossfit_matches_independent_glm
+PASSED benchmarks/alternatives/tests/test_benchmark.py::test_missing_coverage_and_absent_models_reject
+PASSED benchmarks/alternatives/tests/test_benchmark.py::test_pycaleva_rejects_out_of_range_probabilities
+PASSED benchmarks/alternatives/tests/test_benchmark.py::test_invalid_crossfit_is_unavailable_not_fabricated
+XFAIL benchmarks/alternatives/tests/test_benchmark.py::test_quasi_separation_must_not_return_finite_converged_slope - Known PREDVAL IRLS iteration-limit/quasi-separation defect
+5 passed, 1 xfailed in 8.12s

@@ -1,0 +1,3 @@
+Registered S3 method overwritten by 'butcher':
+  method                 from
+  as.character.dev_topic generics

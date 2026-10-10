@@ -1,0 +1,3 @@
+fixture,replicates,low,high,method
+wdbc_heldout,1000,-0.0052822820622240177,0.0093309392234624533,rsample native group_bootstraps; fixed R logit-GLM predictions
+synthetic_clustered,1000,-0.0010582283577589672,0.022889944278495382,rsample native group_bootstraps; fixed R logit-GLM predictions
