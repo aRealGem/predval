@@ -58,11 +58,6 @@
     },
     {
       "code": "recalibration_non_monotone",
-      "message": "rung3 materially non-monotone for improve_tme_excl_wo_prime (tumour_cohort=Basket): delta_auroc=+0.0277 exceeds tol 0.001 (secondary note: largest local decrease on the probability-scale transform = 0.0000, not a flag driver)",
-      "severity": "note"
-    },
-    {
-      "code": "recalibration_non_monotone",
       "message": "rung3 materially non-monotone for improve_tme_excl_wo_prime (tumour_cohort=bladder): delta_auroc=+0.0020 exceeds tol 0.001 (secondary note: largest local decrease on the probability-scale transform = 0.0002, not a flag driver)",
       "severity": "note"
     },
@@ -99,6 +94,11 @@
     {
       "code": "recalibration_non_monotone",
       "message": "rung3 materially non-monotone for nnalign (tumour_cohort=melanoma): delta_auroc=+0.0074 exceeds tol 0.001 (secondary note: largest local decrease on the probability-scale transform = 0.0000, not a flag driver)",
+      "severity": "note"
+    },
+    {
+      "code": "recalibration_unavailable",
+      "message": "rung3 withheld for improve_tme_excl_wo_prime (tumour_cohort=Basket): non-convergence",
       "severity": "note"
     }
   ],
@@ -597,7 +597,7 @@
         "nnalign"
       ]
     },
-    "git_commit": "4f9fbd00b2f84bf673d66bead230eb6e49c6400b-dirty",
+    "git_commit": "937f0791ffd05be1ddb726deec2cbb2576238348-dirty",
     "input_hashes": {
       "cohort_data": "0602dee2f9c80b0512e9f6e5e3470fd0cd85fb561578adbcbc6956edb905baf4",
       "cohort_spec": "cc9ee94cfcdc09ff8be98514fb1c33b0cf14cb80338649b4d10caa8336b7b617",

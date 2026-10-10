@@ -8,6 +8,7 @@ artefacts render byte-identically whether from memory or from disk.
 
 from __future__ import annotations
 
+from copy import deepcopy
 from pathlib import Path
 
 import numpy as np
@@ -115,7 +116,10 @@ def html(evaluation):
 
 def test_framing_block_is_present_and_unconditional(html) -> None:
     assert FRAMING in html
-    assert "Recalibration does not and cannot improve discrimination." in html
+    assert "Recalibration targets calibration." in html
+    assert "A single strictly increasing mapping preserves ranking" in html
+    assert "pooling fold-specific corrections, can change discrimination" in html
+    assert "does not and cannot improve discrimination" not in html
     # It appears before the first section heading -- nothing precedes the framing.
     assert html.index(FRAMING) < html.index("1. Coverage and roster")
 
@@ -478,11 +482,31 @@ def test_ensemble_paragraph_shown_when_a_member_is_declared(tmp_path: Path) -> N
     assert "model or ensemble construction" in html
 
 
-def test_fold4_reference_omitted_without_a_rung3_withholding(html) -> None:
-    """Item 5: the fold4 diagnosis doc is a PCam-specific writeup; citing it when this run has no
-    rung3-could-not-cross-fit withholding would be a dangling, misleading reference."""
+def test_unavailable_rung3_explanation_omitted_without_withholding(html) -> None:
+    assert "If either the apparent fit" not in html
     assert "fold4" not in html.lower()
-    assert "diagnosis-rung3-scanner_domain0" not in html
+    assert "docs/diagnosis-rung3-" not in html
+
+
+@pytest.mark.parametrize("stratum", ["tumour_cohort=Basket", "scanner_domain=0"])
+def test_unavailable_rung3_explains_half_pair_without_document_reference(evaluation, stratum):
+    result = deepcopy(evaluation)
+    result.manifest["flags"].append(
+        {
+            "code": "recalibration_unavailable",
+            "severity": "note",
+            "message": f"rung3 withheld for good ({stratum}): non-convergence",
+        }
+    )
+    rendered = render_evaluation(result)
+    text = " ".join(rendered.split())
+    assert (
+        "If either the apparent fit or any cross-fit training-fold fit is unavailable, "
+        "both apparent and cross-fitted rung3 results are withheld for that model and stratum. "
+        "See Flags for the reason."
+    ) in text
+    assert "docs/diagnosis-rung3-" not in rendered
+    assert "fold4 diagnosis" not in rendered
 
 
 def test_exhibit_note_is_conditional_on_the_ratio() -> None:

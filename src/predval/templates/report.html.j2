@@ -142,9 +142,9 @@ ranks. The cross-fitted Brier estimates held-out loss after local recalibration,
 result.</p>
 <p class="subordinate">At small G the flexible rung is high-variance under cross-fitting: absence of
 a rung3 gain is evidence of linear miscalibration only insofar as rung3 had power to detect shape
-distortion.{% if rung3_diagnosis_doc %} See the fold4 diagnosis
-({{ rung3_diagnosis_doc }}) for the members whose rung3 could not be cross-fit on this
-cohort.{% endif %}</p>
+distortion.{% if rung3_diagnosis_doc %} If either the apparent fit or any cross-fit training-fold
+fit is unavailable, both apparent and cross-fitted rung3 results are withheld for that model and
+stratum. See Flags for the reason.{% endif %}</p>
 <table>
 <tr><th>model</th><th>Brier rung0</th><th>rung1 gain [CI] (x10⁻³)</th><th>rung2 gain [CI] (x10⁻³)</th>
     <th>rung3 gain [CI] (x10⁻³)</th></tr>
