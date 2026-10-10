@@ -2,7 +2,9 @@
 
 `tests/golden/improve/` freezes the real, showable output of `examples/improve/run_evaluation.py`
 at its default B=2000. This test regenerates that same run and checks every artefact against the
-frozen baseline, so a change that silently shifts the example's headline numbers -- rather than
+frozen baseline (continuous metrics use a fixed absolute 1e-10 precision budget; schema,
+metadata, classifications, interval null sides and report output remain exact), so a change
+that silently shifts the example's headline numbers -- rather than
 being a deliberate, reviewed update to the golden files -- fails loudly. It is the IMPROVE
 counterpart to `tests/test_golden_gusto.py` and `tests/test_golden_pcam.py`.
 
@@ -22,7 +24,6 @@ and note *why* the numbers moved in the commit that updates them.
 
 from __future__ import annotations
 
-import json
 import os
 import subprocess
 import sys
@@ -30,7 +31,7 @@ from pathlib import Path
 
 import pytest
 
-from predval.hashing import hash_file
+from tests._improve_golden_comparison import assert_improve_outputs_match
 
 EXAMPLE = Path(__file__).resolve().parents[1] / "examples" / "improve"
 GOLDEN = Path(__file__).resolve().parent / "golden" / "improve"
@@ -46,23 +47,6 @@ pytestmark = [
     ),
 ]
 
-#: findings.json is compared separately -- it embeds predval's own git commit, which legitimately
-#: differs on every commit to this repo and is not a signal about the IMPROVE evaluation itself.
-BYTE_IDENTICAL_ARTIFACTS = (
-    "metrics.parquet",
-    "fragility.parquet",
-    "calibration.parquet",
-    "coverage.parquet",
-    "manifest.json",
-    "report.html",
-)
-
-
-def _normalize_findings(path: Path) -> dict:
-    doc = json.loads(path.read_text())
-    doc["provenance"]["git_commit"] = None
-    return doc
-
 
 def test_improve_full_run_matches_golden_baseline(tmp_path: Path) -> None:
     out = tmp_path / "out"
@@ -72,18 +56,4 @@ def test_improve_full_run_matches_golden_baseline(tmp_path: Path) -> None:
         capture_output=True,
     )
 
-    mismatches = []
-    for name in BYTE_IDENTICAL_ARTIFACTS:
-        golden_file = GOLDEN / name
-        assert golden_file.exists(), f"missing golden file: {golden_file}"
-        if hash_file(out / name) != hash_file(golden_file):
-            mismatches.append(name)
-
-    if _normalize_findings(out / "findings.json") != _normalize_findings(GOLDEN / "findings.json"):
-        mismatches.append("findings.json")
-
-    assert not mismatches, (
-        f"artefacts drifted from tests/golden/improve/: {mismatches}. "
-        "If this is an intentional change, refresh the golden files (see this module's "
-        "docstring) and explain why the numbers moved in the commit."
-    )
+    assert_improve_outputs_match(out, GOLDEN)
