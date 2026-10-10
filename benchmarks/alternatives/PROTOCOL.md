@@ -62,3 +62,17 @@ path twice and compare stable output hashes. Deliver CSV/JSON summaries, reprodu
 and a bounded findings report. Stop after both fixtures, coverage variants, and clean repeat
 have completed, or document specific dependency/access blockers. No paid compute, private
 clinical data, data-use agreements, outreach, push, PR, merge, or deployment.
+
+## Source-review amendment (before R or isitfair execution)
+
+Official source inspection found that probably's `smooth=FALSE` fits `y ~ p`, while
+PREDVAL rung2 fits `y ~ logit(p)`. These are different correction families. Report probably's
+native result separately and cross-check it against a raw-probability statsmodels GLM;
+retain a separate R `glm(y ~ logit(p))` adapter as the exactly matched control. Do not feed
+logits into a probability API merely to force equality. Isitfair's native Platt fit uses
+L2-regularized sklearn logistic regression and epsilon 1e-10, so it too is a separate native
+configuration, not an exact unpenalized rung2 equivalent. No executed isitfair result will
+be claimed without an authorized executable package.
+
+An isolated conda-forge R setup may be attempted for at most 15 minutes and less than 1 GB
+of planned package downloads. No system-level R installation or security changes.
