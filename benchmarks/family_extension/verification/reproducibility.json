@@ -1,0 +1,7 @@
+{
+  "stable_files_checked_per_run": 4,
+  "repeat_manifest_equal": true,
+  "cases": 41,
+  "method_cases": 164,
+  "all_fixed_seeds_accounted_for": true
+}

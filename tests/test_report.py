@@ -24,6 +24,7 @@ from predval import (
     render_from_dir,
 )
 from predval.report import FRAMING, PENDING, build_context
+from tests.conftest import VALID_SPEC, write_cohort, write_predictions
 
 N_CLUSTERS = 8
 PER_CLUSTER = 80
@@ -218,6 +219,49 @@ def test_gated_subgroup_ladder_is_flagged_in_the_report(html) -> None:
     """The 4-cluster subgroups are below the gate; the report must say the ladder was suppressed."""
     assert "Ladder suppressed on gated subgroups" in html
     assert "recalibration_suppressed" not in html or "suppressed" in html.lower()
+
+
+def test_quasi_separated_rung_is_unavailable_in_evaluation_and_report(tmp_path: Path) -> None:
+    """The default fit must expose failure through the report, with no apparent or gain rows."""
+    ids = [f"s{i}" for i in range(20)]
+    cohort_path = write_cohort(
+        tmp_path,
+        spec={
+            **VALID_SPEC,
+            "subgroups": [],
+            "uncertainty": {"n_boot": 12, "seed": 1337},
+        },
+        table=pd.DataFrame(
+            {
+                "subject_id": ids,
+                "label": np.tile([0, 0, 1, 1], 5),
+                "site": np.repeat(np.arange(5), 4),
+            }
+        ),
+    )
+    predictions_path = write_predictions(
+        tmp_path,
+        pd.DataFrame(
+            {
+                "subject_id": ids,
+                "model_id": "quasi",
+                "predicted": np.tile([0.2, 0.5, 0.5, 0.8], 5),
+            }
+        ),
+    )
+    result = evaluate(load_cohort(cohort_path), load_predictions(predictions_path))
+
+    assert not (result.metrics["rung"] == "rung2").any()
+    reason = "rung2 withheld for quasi (overall): non-convergence"
+    assert any(
+        flag.code == "recalibration_unavailable" and flag.message == reason for flag in result.flags
+    )
+    ctx = build_context(
+        result.metrics, result.fragility, result.coverage, result.manifest, result.calibration
+    )
+    assert ctx["calibration_rows"]
+    assert all(row["rung2_gain"] == "n/a" for row in ctx["calibration_rows"])
+    assert reason in render_evaluation(result)
 
 
 # ----------------------------------------------------------------------------- provenance

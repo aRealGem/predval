@@ -1,0 +1,45 @@
+R version 4.5.3 (2026-03-11)
+Platform: x86_64-conda-linux-gnu
+Running under: Debian GNU/Linux 13 (trixie)
+
+Matrix products: default
+BLAS/LAPACK: /workspace/shared/predval-r-toolchain/env/lib/libopenblasp-r0.3.34.so;  LAPACK version 3.12.0
+
+locale:
+ [1] LC_CTYPE=C.UTF-8       LC_NUMERIC=C           LC_TIME=C.UTF-8
+ [4] LC_COLLATE=C.UTF-8     LC_MONETARY=C.UTF-8    LC_MESSAGES=C.UTF-8
+ [7] LC_PAPER=C.UTF-8       LC_NAME=C              LC_ADDRESS=C
+[10] LC_TELEPHONE=C         LC_MEASUREMENT=C.UTF-8 LC_IDENTIFICATION=C
+
+time zone: America/New_York
+tzcode source: system (glibc)
+
+attached base packages:
+[1] stats     graphics  grDevices utils     datasets  methods   base
+
+other attached packages:
+[1] purrr_1.2.2     tidyr_1.3.2     readr_2.2.0     dplyr_1.2.1
+[5] yardstick_1.4.0 rsample_1.3.2   probably_1.2.0
+
+loaded via a namespace (and not attached):
+ [1] gtable_0.3.6        ggplot2_4.0.3       recipes_1.4.0
+ [4] lattice_0.23-1      tzdb_0.5.0          vctrs_0.7.3
+ [7] tools_4.5.3         generics_0.1.4      parallel_4.5.3
+[10] tibble_3.3.1        pkgconfig_2.0.3     Matrix_1.7-6
+[13] data.table_1.18.6.1 RColorBrewer_1.1-3  S7_0.2.2
+[16] lifecycle_1.0.5     compiler_4.5.3      farver_2.1.2
+[19] codetools_0.2-20    DiceDesign_1.10     class_7.3-24
+[22] tune_2.1.0          prodlim_2026.03.11  pillar_1.11.1
+[25] furrr_0.4.0         crayon_1.5.3        MASS_7.3-66
+[28] gower_1.0.2         rpart_4.1.27        parallelly_1.48.0
+[31] lava_1.9.3          dials_1.4.4         tidyselect_1.2.1
+[34] digest_0.6.39       future_1.76.0       listenv_1.1.0
+[37] splines_4.5.3       parsnip_1.6.1       grid_4.5.3
+[40] cli_3.6.6           magrittr_2.0.5      survival_3.8-12
+[43] future.apply_1.20.2 withr_3.0.3         scales_1.4.0
+[46] bit64_4.8.6         lubridate_1.9.5     timechange_0.4.0
+[49] butcher_0.4.0       globals_0.19.1      bit_4.6.0
+[52] nnet_7.3-21         timeDate_4052.112   workflows_1.3.0
+[55] hms_1.1.4           hardhat_1.4.3       rlang_1.3.0
+[58] Rcpp_1.1.2          glue_1.8.1          ipred_0.9-15
+[61] vroom_1.7.1         R6_2.6.1

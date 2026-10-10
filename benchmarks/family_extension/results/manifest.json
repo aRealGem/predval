@@ -1,0 +1,43 @@
+{
+  "files": {
+    "cases.json": "579f26f50eb7cd51413532ae113ecdf484f4fb5645a7dca7ff11239df21f0b25",
+    "metrics.csv": "39c811a406ee6a42b791db6c9b39b95f397fdba4ba19db404f59f967bcf5cbc5",
+    "metrics.json": "0f76da5790c41dd780ef71e5e5ec389907b8bfe44bc36b5070146f13da03cfd6",
+    "summary.json": "9b975a31e79bb5415a8c054004c430eb174f42f59215aa4713584595b38576cd"
+  },
+  "predval_source": "/workspace/shared/predval-family-extension-20261010/src/predval/recalibrate.py",
+  "protocol_sha256": "8a34e65b43b189e3a845a6c0fc7d92f11a992d57eafb62e199de62fef8954559",
+  "python": "3.12.14",
+  "recalibrate_sha256": "513d69580b00cdd2f4633060300210513c79f5524fc0027d038e25810d072a22",
+  "runner_sha256": "cbffe569b0bd7ae556bbebad65cdebc28b5045c4573f29fc6e1a300bc2978bf2",
+  "seeds": [
+    20261020,
+    20261021,
+    20261022,
+    20261023,
+    20261024,
+    20261025,
+    20261026,
+    20261027,
+    20261028,
+    20261029,
+    20261030,
+    20261031,
+    20261032,
+    20261033,
+    20261034,
+    20261035,
+    20261036,
+    20261037,
+    20261038,
+    20261039
+  ],
+  "versions": {
+    "numpy": "2.4.6",
+    "pandas": "3.0.5",
+    "predval": "0.1.0",
+    "scikit-learn": "1.9.0",
+    "scipy": "1.17.1",
+    "statsmodels": "0.14.6"
+  }
+}

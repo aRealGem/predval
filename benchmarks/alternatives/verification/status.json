@@ -1,0 +1,21 @@
+{
+  "predval_base_commit": "99ca3d72f1d4f8340df9a59de3616277e9ebdb7a",
+  "core_code_changed": false,
+  "existing_suite": {
+    "passed": 269,
+    "skipped": 20,
+    "failure_count": 0,
+    "note": "Optional example/golden fixture checks skipped; not claimed as passed."
+  },
+  "benchmark_contracts": {
+    "passed": 5,
+    "expected_failures": 1,
+    "note": "Strict xfail: preexisting IRLS quasi-separation/iteration-limit defect."
+  },
+  "ruff": "passed",
+  "git_diff_check": "passed",
+  "python_reproduction": "two freshly created isolated environments; stable hashes identical",
+  "r_numerics": "native probably/grouped rsample and independent controls executed; see r_agreement.csv",
+  "isitfair": "source-reviewed; no competitor source executed",
+  "r_reproduction": "Same final inputs; seven stable outputs byte-identical across two runs"
+}

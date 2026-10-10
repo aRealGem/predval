@@ -1,0 +1,11 @@
+fixture,tool,scheme,metric,low,high,width
+wdbc_heldout,pycaleva_plus_custom_bootstrap,patient,brier,0.015593303087883301,0.048631062684011898,0.033037759596128598
+wdbc_heldout,pycaleva_plus_custom_bootstrap,patient,paired_brier_gain,-0.0053364764046153401,0.0094270783303540603,0.014763554734969399
+wdbc_heldout,pycaleva_plus_custom_bootstrap,row,brier,0.015723847480198692,0.048319757974591579,0.032595910494392887
+wdbc_heldout,pycaleva_plus_custom_bootstrap,row,paired_brier_gain,-0.0055358590458910581,0.0092397263447514654,0.014775585390642523
+wdbc_heldout,predval,patient,paired_brier_gain,-0.0053364764046153375,0.0094270783303540585,0.014763554734969396
+synthetic_clustered,pycaleva_plus_custom_bootstrap,patient,brier,0.1587361211804677,0.20688337470523394,0.048147253524766231
+synthetic_clustered,pycaleva_plus_custom_bootstrap,patient,paired_brier_gain,-0.0011632227475880863,0.022167365927628083,0.02333058867521617
+synthetic_clustered,pycaleva_plus_custom_bootstrap,row,brier,0.16852215094087003,0.19457984262889494,0.026057691688024909
+synthetic_clustered,pycaleva_plus_custom_bootstrap,row,paired_brier_gain,0.005338072340460855,0.016573381895931719,0.011235309555470864
+synthetic_clustered,predval,patient,paired_brier_gain,-0.0011632227475880895,0.022167365927628101,0.023330588675216191

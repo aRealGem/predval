@@ -34,3 +34,8 @@ validation/predrupdate/gusto_estimates.csv
 examples/improve/cohort.parquet
 examples/improve/predictions.parquet
 examples/improve/out/
+
+# Isolated benchmark environments and scratch reruns
+.venv-clean/
+.venv-benchmark/
+benchmarks/alternatives/results/run*/

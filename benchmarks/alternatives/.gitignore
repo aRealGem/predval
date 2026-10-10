@@ -1,0 +1,10 @@
+# Generated row-level fixtures and predictions regenerate from the locked script.
+# Commit compact numerical summaries and hashes, not bulk row-level inputs.
+results/python/coverage_inputs/
+results/python/wdbc_heldout.csv
+results/python/wdbc_heldout_corrected.csv
+results/python/synthetic_clustered.csv
+results/python/synthetic_clustered_corrected.csv
+results/r/*_r_corrected.csv
+results/r/*_rsample_gains.csv
+results/r-repeat*/

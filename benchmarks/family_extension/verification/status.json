@@ -1,0 +1,52 @@
+{
+  "baseline": "150998f76df1141c73b6c3621233e693c4eb0b49",
+  "calibrationcurves": "Primary documentation reviewed; not installed or executed.",
+  "execution_note": "First run had Matplotlib/fontconfig import cache warnings; repeat and suite set writable cache directories. No model-fitting warnings.",
+  "fitting_warnings": 0,
+  "git_diff_check": "passed",
+  "historical_and_production_unchanged": true,
+  "independent_verification": {
+    "blocking_findings": 0,
+    "independent_glm_families_refitted": 2,
+    "limitation": "Unexpected exceptions outside selected fitting exception types would abort the run. No such exceptions occurred in the fixed design.",
+    "max_abs_loss_discrepancy": 4.45e-15,
+    "protocol_unchanged": true,
+    "summary_and_MCSE_reproduced": true,
+    "synthetic_designs_reconstructed": 40,
+    "tracked_production_and_historical_unchanged": true
+  },
+  "local_protocol_commit": "4a289159a937c49b1d06469e93db9079fef5f47f",
+  "manifests_equal": true,
+  "max_abs_predval_independent_logit_difference": 7.105427357601002e-15,
+  "method_cases": 164,
+  "native_R_extension_execution": false,
+  "provenance_limit": "Local commit chronology is not independently timestamped preregistration. Original results were inspected before this extension.",
+  "remote_actions": [],
+  "repeated_cases": 41,
+  "ruff": "passed",
+  "ruff_format": "passed",
+  "runtime_scope": "Combined workload after imports, not a package-speed comparison.",
+  "runtime_seconds": [
+    11.137972092999917,
+    9.642061055999875
+  ],
+  "source_sha256": {
+    "benchmarks/family_extension/PROTOCOL.md": "8a34e65b43b189e3a845a6c0fc7d92f11a992d57eafb62e199de62fef8954559",
+    "benchmarks/family_extension/run_extension.py": "cbffe569b0bd7ae556bbebad65cdebc28b5045c4573f29fc6e1a300bc2978bf2",
+    "benchmarks/family_extension/verify_results.py": "fab99b931dfa6cf3d1e7580e816aedc77ab590b71cc8487e05a018b5b97f9d65",
+    "src/predval/metrics.py": "5a0f13aee0e1a4de17611f5aa13ff05421382af478b9fff788fd77132d9b81e6",
+    "src/predval/recalibrate.py": "513d69580b00cdd2f4633060300210513c79f5524fc0027d038e25810d072a22"
+  },
+  "stable_files_checked_per_run": 4,
+  "suppression": "Only WDBC rung3 non-convergence; rung2 available in all cases.",
+  "test_command": "PYTHONPATH=$PWD/src MPLCONFIGDIR=/tmp/predval-family-mpl XDG_CACHE_HOME=/tmp/predval-cache OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 /workspace/shared/predval-benchmark-20261010/.venv/bin/python -m pytest tests benchmarks/alternatives/tests benchmarks/family_extension/tests -ra",
+  "tests": {
+    "failed": 0,
+    "new_tests": 9,
+    "passed": 291,
+    "seconds": 110.19,
+    "skip_reason": "Optional PCam, GUSTO and IMPROVE example/golden fixtures unavailable.",
+    "skipped": 20
+  },
+  "unavailable_method_cases": 0
+}
