@@ -545,3 +545,16 @@ def test_appendix_off_by_default_and_bytes_unchanged(evaluation) -> None:
 def test_appendix_has_placeholder_structure(evaluation) -> None:
     html = render_evaluation(evaluation, appendix=True)
     assert html.count("Placeholder --") == 4
+
+
+def test_calibration_decision_point_qualifies_intervals_and_rank_preservation(html) -> None:
+    section = html.split("3. Calibration diagnosis", 1)[1].split("<table>", 1)[0]
+    assert "configured fixed-prediction resampling" in section
+    assert "Limited independent clusters and data-adaptive model or rung selection" in section
+    assert "neither conditional coverage nor coverage" in section
+    assert "full fitting-and-selection procedure" in section
+    assert "apparent rung2 with a positive slope" in section
+    assert "clipping or saturation creates" in section
+    assert "Pooled cross-fitted predictions can reorder" in section
+    assert "Recalibration cannot improve discrimination" not in html
+    assert "a real out-of-fold improvement" not in html

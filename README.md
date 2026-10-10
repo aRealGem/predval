@@ -8,6 +8,120 @@ prespecified subgroup behaviour, and a recalibration ladder that reports how muc
 miscalibration is repairable without touching the model, and discloses the ladder's own
 optimism rather than reporting only its best face.
 
+## Quickstart with your own predictions
+
+No PCam files or model weights are needed. From a checkout, run `uv sync --locked`, then save
+these three files in a new `my-cohort/` directory. This tiny, fully synthetic CSV example is
+public demonstration data, not patient data or a statistical validation benchmark.
+
+`cohort.csv` (one row per observation):
+
+```csv
+subject_id,patient_id,label
+v01,p01,0
+v02,p01,1
+v03,p02,1
+v04,p02,0
+v05,p03,0
+v06,p03,1
+v07,p04,1
+v08,p04,0
+v09,p05,0
+v10,p05,1
+v11,p06,1
+v12,p06,0
+```
+
+`predictions.csv` (one row per scored observation and model):
+
+```csv
+subject_id,model_id,predicted
+v01,my_model,0.20
+v02,my_model,0.65
+v03,my_model,0.35
+v04,my_model,0.55
+v05,my_model,0.30
+v06,my_model,0.75
+v07,my_model,0.60
+v08,my_model,0.40
+v09,my_model,0.70
+v10,my_model,0.45
+v11,my_model,0.80
+v12,my_model,0.25
+```
+
+`cohort.yaml` (paths are relative to this file):
+
+```yaml
+cohort_id: synthetic-own-data-demo
+version: 0
+subject_key: subject_id
+data: cohort.csv
+unit_noun: visit
+outcome:
+  type: binary
+  field: label
+  positive_label: 1
+clustering:
+  field: patient_id
+  name: patient
+coverage:
+  min_fraction: 1.0
+  compare_on: both
+completeness:
+  require_outcome: true
+  on_violation: fail
+expected_models: [my_model]
+on_missing_model: fail
+thresholds: [0.5]
+uncertainty:
+  n_boot: 20  # Fast plumbing check only; the library default is 2000.
+  seed: 1337
+```
+
+From the checkout, run the public API (CSV and Parquet are both supported):
+
+```bash
+uv run python - <<'PY'
+from pathlib import Path
+from predval import evaluate, load_cohort, load_predictions, write_findings, write_report
+
+root = Path("my-cohort")
+result = evaluate(load_cohort(root / "cohort.yaml"), load_predictions(root / "predictions.csv"))
+out = root / "results"
+result.write(out)
+write_report(result, out / "report.html")
+write_findings(result, out / "findings.json")
+print(out / "report.html")
+PY
+```
+
+Open `my-cohort/results/report.html`; `findings.json` is the machine-readable companion, and
+`result.write` saves the metric tables and provenance manifest. With only six independent
+patients, warnings or unavailable recalibration rungs are expected, not a reason to hide rows.
+
+To replace the toy data:
+- Keep `subject_id` unique for each observation and identical across the two files. With one row
+  per patient it can identify that patient; repeated visits need unique visit IDs plus a separate
+  patient clustering column. Use pseudonymous IDs, not names or medical record numbers.
+- Declare the actual independence unit in `clustering.field` (patient, site, slide, etc.).
+  Omitting it treats observations as independent; a unique row ID is not a substitute for a
+  shared cluster ID. Whether clusters are independent is a study-design judgment.
+- List all intended model IDs in `expected_models`; this example fails if an entire model is
+  missing. `predicted` must be the probability of `outcome == positive_label`, supplied as a
+  finite number in `[0, 1]` (not the probability of the other class). An unscored observation has no prediction
+  row, never a zero placeholder. Set the coverage floor before analysis; `1.0` here requires
+  every usable observation to be scored by each model. `compare_on: both` also evaluates the
+  common scored subset. Review missing outcomes and coverage before interpreting comparisons.
+- Prespecify the outcome, thresholds, subgroups, model roster and analysis plan. Replace the
+  demonstration bootstrap budget with a justified analysis budget; more resamples cannot fix
+  too few independent clusters or data-adaptive selection.
+
+A completed run checks these inputs and reports performance on this cohort. It does not prove
+clinical utility, transportability, calibrated probabilities, or that a selected recalibration
+will improve a new cohort. Gain intervals resample fixed cross-fitted predictions; neither
+conditional coverage nor full fitting-and-selection coverage is established by that choice.
+
 ## The pitch, narrowed
 
 Most tools in this space either train something (a new calibration layer, a monitoring model)
@@ -38,18 +152,19 @@ Three things follow from that scope, and they are what predval spends its effort
   validated model, and — this is the part most recalibration tooling skips — refuses to
   manufacture a gain where none exists: on the PCam fixture below, nine of the fifteen members
   carry a detected miscalibration, ten have the repair's benefit left honestly unproven at this
-  cohort's small cluster count, and exactly one — `p4m_seed7` at rung2 — gets a real,
-  interval-backed repair. Five members carry at least one rung whose recalibration *reliably
-  harms* them, and `p4m_seed7` is one of the five: its rung2 repair is demonstrated while its
-  rung1 is harmful, which is why harm is reported independently of whether a repair was found.
-  Two of those five, `e2cnn_s21` and `e2cnn_s99`, are harmed at every rung and have no admissible
-  repair at all. The remaining six show no detected fault, which the report states as a null
+  cohort's small cluster count, and exactly one — `p4m_seed7` at rung2 — has a positive
+  estimated gain whose interval excludes zero under the configured fixed-prediction resampling.
+  Five members have at least one rung with a gain interval entirely below zero, including
+  `p4m_seed7` at rung1: estimated harm is reported independently of estimated benefit at rung2.
+  Two of those five, `e2cnn_s21` and `e2cnn_s99`, have negative gain intervals at every rung
+  and no admissible repair under the configured criterion. The remaining six show no detected fault, which the report states as a null
   result and never as a clean bill of health: this harness's calibration test can fail to reject
   "calibrated", but it can never establish it.
 
 The paired gain intervals hold fitted cross-fold predictions fixed. They do not establish
 nominal coverage for the full fitting-and-selection procedure, or conditional coverage merely
-because fitting is held fixed during resampling. See [the interval limitations](docs/spec.md#45-rung-intervals-the-paired-cross-fit-gain-carries-one-the-per-rung-refit-is-deferred).
+because fitting is held fixed during resampling. Limited independent clusters and data-adaptive
+selection of models or rungs warrant caution when interpreting an interval that excludes zero. See [the interval limitations](docs/spec.md#45-rung-intervals-the-paired-cross-fit-gain-carries-one-the-per-rung-refit-is-deferred).
 
 ## What predval deliberately does not do
 
@@ -261,9 +376,11 @@ matching PCam's — the full B=2000 run is frozen and regression-checked by
 headline numbers fails loudly.
 
 **Honest read of the verdict:** AUROC 0.791, comfortably inside the literature's expected
-0.72–0.82 range on the first attempt. Calibration slope 0.835 shows real, if modest, displacement
-scoring off the development region — the recalibration ladder finds a small but statistically
-real gain at rungs 2–3 (both exclude zero), while rung 1 alone is actually slightly negative. This
+0.72–0.82 range on the first attempt. Calibration slope 0.835 indicates modest displacement
+scoring off the development region. Rungs 2–3 have small positive estimated gains whose
+intervals exclude zero under the configured fixed-prediction resampling; rung 1 has a slightly
+negative point estimate. Limited independent clusters and data-adaptive selection limit what
+these intervals establish; they do not validate the full fitting-and-selection procedure. This
 is a much milder miscalibration story than PCam's two badly-miscalibrated members, which is an
 honest property of this cohort rather than something to chase. The real finding of this example
 isn't the numbers — it's that predval's ingestion, coverage, roster, clustering, and ladder code
