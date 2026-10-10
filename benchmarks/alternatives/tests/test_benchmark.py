@@ -61,10 +61,9 @@ def test_invalid_crossfit_is_unavailable_not_fabricated():
     assert len(report.suppressed) == 3
 
 
-@pytest.mark.xfail(strict=True, reason="Known PREDVAL IRLS iteration-limit/quasi-separation defect")
 def test_quasi_separation_must_not_return_finite_converged_slope():
     y = np.array([0, 0, 1, 1])
     p = np.array([0.2, 0.5, 0.5, 0.8])
-    # This quasi-separated likelihood has no finite slope MLE. Current core
-    # returns its last iterate after max_iter rather than marking unavailable.
+    # This quasi-separated likelihood has no finite slope MLE. Exhausting the
+    # IRLS iteration budget must mark the slope unavailable.
     assert not np.isfinite(bm.pm.calibration_slope(y, p))

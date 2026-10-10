@@ -1,0 +1,60 @@
+{
+  "wdbc_heldout": {
+    "rows": 285,
+    "patients": 285,
+    "events": 106,
+    "max_corrected_prediction_difference": 3.785860513971784e-14,
+    "brier_gain": 0.002006686710238758,
+    "brier_gain_ci": [
+      -0.0053364764046153375,
+      0.009427078330354059
+    ],
+    "suppressed_ladder_rungs": [
+      [
+        "rung3",
+        "non-convergence"
+      ]
+    ]
+  },
+  "synthetic_clustered": {
+    "rows": 1332,
+    "patients": 120,
+    "events": 560,
+    "max_corrected_prediction_difference": 5.9119376061289586e-15,
+    "brier_gain": 0.010868603906738982,
+    "brier_gain_ci": [
+      -0.0011632227475880895,
+      0.0221673659276281
+    ],
+    "suppressed_ladder_rungs": []
+  },
+  "coverage": {
+    "flags": [
+      {
+        "code": "declared_but_absent",
+        "severity": "warning",
+        "message": "declared in expected_models but absent from predictions: ['absent']"
+      },
+      {
+        "code": "informative_common_selection",
+        "severity": "warning",
+        "message": "the common subset excludes 31.0% of cohort rows (> 20%); selection into the common subset may be informative"
+      }
+    ],
+    "errors": [
+      {
+        "check": "minimum_coverage_90_percent",
+        "status": "rejected",
+        "error": "1 model(s) fall below coverage.min_fraction; worst shown\n  model:    partial\n  coverage: 0.689940\n  required: 0.900000"
+      },
+      {
+        "check": "declared_absent_model",
+        "status": "rejected",
+        "error": "declared in expected_models but absent from predictions: ['absent']"
+      }
+    ],
+    "pycaleva_scope": "Accepts aligned y/p arrays; roster and cohort denominators need caller glue."
+  },
+  "scope": "Executed: predval and PyCalEva; statsmodels/sklearn independent reference."
+}
+{"wall_seconds": 5.465970102000028, "cpu_seconds": 5.272218276, "max_rss_kib": 293760, "note": "Benchmark body, not a fair tool runtime comparison; excludes imports and installation."}

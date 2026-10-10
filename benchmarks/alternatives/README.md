@@ -6,7 +6,11 @@ Its point metrics are not novel, and correct alternatives can reproduce its resu
 
 The protocol was committed before execution (`dae6e1a`), with a source-review amendment
 (`756e5a1`) distinguishing correction families before any R or isitfair execution.
-Both commits descend from patient-partition guard `99ca3d7`; no core PREDVAL code changed.
+Both commits descend from patient-partition guard `99ca3d7`; the original benchmark
+changed no core PREDVAL code. This integrated branch also includes the subsequently
+reviewed IRLS iteration-limit guard (`62c8af3`, cherry-picked as `617ddac`). Original
+results and verification records below remain unchanged and describe the historical
+baseline. Separately labeled current-branch checks are in [INTEGRATION.md](INTEGRATION.md).
 
 ## What is and is not executed
 
@@ -157,16 +161,21 @@ statsmodels 0.14.6. Every transitive Python dependency is pinned in requirements
 The checked probably GitHub source is commit `974f0154cc7d44ae41d8072161996b23a19d3d2a`;
 installed R package versions, when executed, take precedence over that source-only snapshot.
 
-## Known limitation found during independent review
+## Historical IRLS defect and integrated guard
 
-PREDVAL's IRLS implementation can return its last iterate after hitting the iteration limit
-without convergence. On `y=[0,0,1,1]`, `p=[0.2,0.5,0.5,0.8]`, the quasi-separated likelihood
-has no finite slope MLE, but the baseline returns a finite slope near 22.288 and does not
-mark rung2 unavailable. A strict expected-failure regression test records this defect.
-The matched rung2 estimates on the two main fixtures still agree with independently
-converged GLMs; that agreement does not validate the general failure guard. No core fix is
-included in this comparison branch. Do not market the tool as universally detecting
-non-convergence or statistically validated on the strength of these checks.
+In baseline `99ca3d7`, PREDVAL's IRLS implementation could return its last iterate after
+hitting the iteration limit without convergence. On `y=[0,0,1,1]`,
+`p=[0.2,0.5,0.5,0.8]`, the quasi-separated likelihood has no finite slope MLE, but the
+baseline returned a finite slope near 22.288 and did not mark rung2 unavailable.
+The original comparison recorded this as a strict expected failure.
+
+The integrated branch includes the reviewed iteration-limit guard: exhausted IRLS fits
+now return `None`, and this regression is an ordinary passing test. This changes the
+failure guard, not the estimator, convergence tolerance, or iteration budget. The two
+main fixtures' matched rung2 estimates still agree with independently converged GLMs;
+all 13 stable Python output/input hashes are unchanged in the integration reruns.
+That bounded check does not establish universal non-convergence detection or statistical
+validity. See [INTEGRATION.md](INTEGRATION.md) for current-source provenance and caveats.
 
 ## Reproducibility and measured resource use
 
@@ -210,7 +219,10 @@ R `group_vfold_cv` passed the no-patient-overlap check. `group_bootstraps` suppl
 native cluster resamples for each fixture. R's resamples differ from NumPy's; their intervals
 are independently generated Monte Carlo results on fixed corrected predictions.
 
-## Verification status
+## Original baseline verification status (archived)
+
+These counts refer to the original comparator at `868276e`, before integration of the
+IRLS guard. Current combined-suite results are recorded in [INTEGRATION.md](INTEGRATION.md).
 
 - Existing PREDVAL suite: 269 passed, 20 skipped because optional example/golden fixtures
   were unavailable. This does not claim those skipped integration cases passed.
