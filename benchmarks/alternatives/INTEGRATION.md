@@ -98,8 +98,15 @@ PY
 - The guard retains the same estimator, tolerance, and iteration limit. A valid finite-MLE
   fit can be unavailable if it needs more iterations. This change does not prove every
   unavailable-reason label is correct or detect every possible separation condition.
+  Because the existing half-pair guard withholds a rung if its apparent fit or any cross-fit
+  fold is unavailable, one iteration-exhausted fold can now withhold the entire rung for a
+  cohort that previously received a finite last-iterate result.
 - The two comparator gain intervals still cross zero. They condition on fixed held-out
   predictions and do not measure repeated-sampling coverage or correction-training uncertainty.
+  Shared fitting and overlapping training folds also mean that holding predictions fixed is
+  insufficient to establish conditional coverage. No replacement interval is introduced here.
 - The original isitfair adapter remains unexecuted; source review is not an execution result.
 - These are bounded engineering/method checks, not clinical validation or a superiority claim.
-- All work is local. No push, pull request, merge, or deployment was performed.
+- At the time of the original integration checks, all work was local; no push, pull request,
+  merge, or deployment had been performed. The reviewed tree was subsequently published in
+  [draft PR #6](https://github.com/aRealGem/predval/pull/6), at published head `4829570`.

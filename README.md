@@ -22,10 +22,14 @@ Three things follow from that scope, and they are what predval spends its effort
   flatters the model.
 - **The unit of analysis and the unit of independence are usually not the same file column.**
   When predictions come from grouped data — patients with repeat visits, patches from the same
-  slide, images from the same device — per-row confidence intervals are not slightly optimistic,
-  they are wrong by roughly the square root of the cluster size. predval takes a declared
-  clustering unit and resamples whole clusters everywhere it computes uncertainty, and renders
-  the naive-vs-cluster comparison once so the gap is a number, not a caveat in a footnote.
+  slide, images from the same device — ignoring positive within-cluster dependence can seriously
+  understate uncertainty. For an illustrative mean with independent clusters of equal size `m`
+  and exchangeable within-cluster correlation `ICC`, the standard-error inflation is
+  `sqrt(1 + (m - 1) * ICC)`;
+  `sqrt(m)` is the special case `ICC = 1`, not a universal factor for every metric. predval takes
+  a declared clustering unit and resamples whole clusters everywhere it computes uncertainty,
+  and renders the naive-vs-cluster comparison once so the gap is a number, not a caveat in a
+  footnote.
 - **A recalibration that improves the numbers is a finding about the ladder's own fit, not a
   promotion of the model, until it survives being scored on clusters it never saw.** Every rung of
   predval's ladder — intercept, intercept+slope, spline — is fit twice: once on the rows it will
@@ -42,6 +46,10 @@ Three things follow from that scope, and they are what predval spends its effort
   repair at all. The remaining six show no detected fault, which the report states as a null
   result and never as a clean bill of health: this harness's calibration test can fail to reject
   "calibrated", but it can never establish it.
+
+The paired gain intervals hold fitted cross-fold predictions fixed. They do not establish
+nominal coverage for the full fitting-and-selection procedure, or conditional coverage merely
+because fitting is held fixed during resampling. See [the interval limitations](docs/spec.md#45-rung-intervals-the-paired-cross-fit-gain-carries-one-the-per-rung-refit-is-deferred).
 
 ## What predval deliberately does not do
 
