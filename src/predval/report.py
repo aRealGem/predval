@@ -230,9 +230,18 @@ def _primary_rows(metrics: pd.DataFrame, models: list[str], show_cov_delta: bool
         & (metrics["stratum_kind"] == "overall")
     ]
     cov = coverage_delta(metrics)
-    cov_auroc = cov[(cov["stratum_kind"] == "overall") & (cov["metric"] == "auroc")].set_index(
-        "model_id"
-    )["cov_delta"]
+    # The cell this column annotates is the primary table's own: overall stratum, no subgroup,
+    # threshold-free AUROC. Pinning all five keys is what makes the lookup one row per model;
+    # selecting on stratum_kind and metric alone also catches the per-subgroup AUROC cells and
+    # yields a Series per model.
+    cov_auroc = cov[
+        (cov["stratum_kind"] == "overall")
+        & (cov["metric"] == "auroc")
+        & cov["subgroup_name"].isna()
+        & cov["subgroup_level"].isna()
+        & cov["threshold"].isna()
+    ]
+    cov_auroc = dict(zip(cov_auroc["model_id"], cov_auroc["cov_delta"], strict=True))
 
     out = []
     for model in models:
@@ -254,7 +263,9 @@ def _primary_rows(metrics: pd.DataFrame, models: list[str], show_cov_delta: bool
         }
         if show_cov_delta:
             d = cov_auroc.get(model, float("nan"))
-            row["cov_delta"] = _f(d, 4) if np.isfinite(d) else "0.0000"
+            # "n/a", not "0.0000": a missing delta means one of the two subsets had no AUROC to
+            # compare, which is not the same statement as "restriction changed nothing".
+            row["cov_delta"] = _f(d, 4) if np.isfinite(d) else "n/a"
         out.append(row)
     return out
 

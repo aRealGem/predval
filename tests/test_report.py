@@ -40,6 +40,7 @@ def _build(
     clustering_name=_UNSET,
     single_model=False,
     ensemble_members=None,
+    drop_for_weak=0,
 ):
     """A small clustered cohort: 2 models (or 1, if single_model), a 2-level subgroup (4 clusters
     each -> gated)."""
@@ -70,8 +71,13 @@ def _build(
                     }
                 )
 
-    pd.DataFrame(rows).to_parquet(tmp_path / "cohort.parquet", index=False)
-    pd.DataFrame(preds).to_parquet(tmp_path / "predictions.parquet", index=False)
+    cohort_df = pd.DataFrame(rows)
+    pred_df = pd.DataFrame(preds)
+    if drop_for_weak:
+        victims = set(cohort_df["subject_id"].head(drop_for_weak))
+        pred_df = pred_df[~((pred_df["model_id"] == "weak") & pred_df["subject_id"].isin(victims))]
+    cohort_df.to_parquet(tmp_path / "cohort.parquet", index=False)
+    pred_df.to_parquet(tmp_path / "predictions.parquet", index=False)
     clustering = {"field": "wsi"}
     if clustering_name is not _UNSET and clustering_name is not None:
         clustering["name"] = clustering_name
@@ -231,6 +237,39 @@ def test_provenance_carries_hashes_seed_and_versions(html, evaluation) -> None:
 
 
 # ----------------------------------------------------------------------------- determinism
+
+
+def test_partial_coverage_renders_a_per_model_cov_delta_column(tmp_path: Path) -> None:
+    """The cov_delta column only renders when coverage differs across the roster, so every
+    uniform-coverage fixture leaves it untested. One model scoring a subset is what exercises it:
+    the column must appear once per model, as a single number, not a Series repr."""
+    ev = _build(tmp_path, drop_for_weak=int(N_CLUSTERS * PER_CLUSTER * 0.2))
+    ctx = build_context(ev.metrics, ev.fragility, ev.coverage, ev.manifest)
+    assert not ctx["identical_coverage"], "the fixture must have non-uniform coverage"
+    rows = {r["model"]: r["cov_delta"] for r in ctx["primary_rows"]}
+    assert set(rows) == {"good", "weak"}
+    for model, cell in rows.items():
+        assert isinstance(cell, str), model
+        assert "\n" not in cell and "dtype" not in cell, f"{model}: {cell!r} is not a scalar cell"
+        assert cell == "n/a" or float(cell) == pytest.approx(float(cell))
+    html = render_evaluation(ev)
+    assert "AUROC cov-delta" in html
+
+
+def test_coverage_delta_has_one_row_per_computed_cell(tmp_path: Path) -> None:
+    """The pivot that builds cov_delta fills the full cross product of its index levels, which
+    invents cells no stratum ever produced (overall crossed with a subgroup level). Those are
+    dropped, so the keys stay unique per computed cell."""
+    from predval import coverage_delta
+
+    ev = _build(tmp_path, drop_for_weak=int(N_CLUSTERS * PER_CLUSTER * 0.2))
+    cov = coverage_delta(ev.metrics)
+    keys = ["model_id", "stratum_kind", "subgroup_name", "subgroup_level", "metric", "threshold"]
+    assert not cov.duplicated(keys, keep=False).any()
+    overall = cov[(cov["stratum_kind"] == "overall") & cov["subgroup_name"].isna()]
+    assert len(overall), "the overall stratum must survive the drop"
+    invented = cov[(cov["stratum_kind"] == "overall") & cov["subgroup_level"].notna()]
+    assert not len(invented), "overall must never carry a subgroup level"
 
 
 def test_render_is_deterministic(evaluation) -> None:

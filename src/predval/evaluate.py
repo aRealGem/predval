@@ -100,6 +100,12 @@ def coverage_delta(metrics: pd.DataFrame) -> pd.DataFrame:
     ).reset_index()
     if "full" not in wide or "common" not in wide:
         return pd.DataFrame(columns=[*keys, "cov_delta"])
+    # `dropna=False` keeps a cell whose `common` value is missing -- that absence is the thing
+    # this column exists to show. It also fills in the full cross product of the index levels,
+    # which invents cells that never existed (stratum_kind="overall" crossed with a
+    # subgroup_level, say). Those have neither subset present, so drop exactly those: the result
+    # then carries one row per cell the evaluation actually computed.
+    wide = wide[wide["full"].notna() | wide["common"].notna()].reset_index(drop=True)
     wide["cov_delta"] = wide["full"] - wide["common"]
     return wide[[*keys, "cov_delta"]]
 

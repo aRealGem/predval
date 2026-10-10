@@ -1,0 +1,117 @@
+# IMPROVE cohort, third-party predictor panel.
+#
+# The same 17,520 candidate neoepitopes from 70 patients as examples/improve/, with the same
+# experimentally determined T-cell recognition outcomes (467 immunogenic, 2.666% prevalence),
+# scored by independently published immunogenicity predictors from other groups.
+#
+# examples/improve/ established that IMPROVE's own random forest ships probabilities anchored
+# roughly 15x above the base rate, with the whole fault in the intercept. That result on its own
+# is a statement about one training pipeline. This fixture asks the question it provokes: is
+# that one model's artefact, or is it what the field does? Same cohort, same labels, same
+# clustering, different model families from different groups.
+#
+# This is explicitly NOT independent replication. The patients, the labels and the assay are
+# shared with examples/improve/, so nothing here tests whether the finding survives a new
+# patient sample. It tests breadth across predictors, not breadth across cohorts.
+#
+# Source: the predictor table released with Borch et al. 2024 (Front Immunol) at
+# github.com/SRHgroup/IMPROVE_paper, data.zip,
+# data/benchmark_comparison/neoepitopes_predictions.tsv, joined to that release's own
+# patient-partitioned cross-validation table. The join key and why it is the only correct one
+# are documented in build_fixture.py.
+#
+# Regenerate the parquet files with:
+#     uv run python examples/improve_panel/build_fixture.py --src <IMPROVE_paper checkout>
+
+cohort_id: improve-neoepitope-thirdparty-panel
+version: 0
+subject_key: subject_id
+data: cohort.parquet
+
+outcome:
+  type: binary
+  field: response
+  positive_label: 1
+
+# Identical to examples/improve/: the cluster is the patient, because peptides from one patient
+# share that patient's HLA genotype, mutational process, tumour transcriptome and
+# microenvironment. That is true of these predictors' inputs exactly as it was of IMPROVE's.
+unit_noun: peptide
+
+clustering:
+  field: patient
+  name: patient
+
+# 0.95 is deliberately left where examples/improve/ set it, knowing one roster member will
+# breach it. DeepNetBim scores only 9-mers and therefore covers 10,561 of 17,520 peptides, and
+# the right response to that is a coverage flag and an honest common-subset comparison, not a
+# relaxed floor and not imputation. The excluded 40% is far above common_warn_frac, so the
+# report will also caution that selection into the common subset is informative here: the
+# intersection is 9-mers only, which is the easiest stratum for every binding-derived feature.
+# Read the full-subset column for each model's own behaviour and the common-subset column only
+# for model-to-model comparison.
+coverage:
+  min_fraction: 0.95
+  compare_on: both
+
+completeness:
+  require_outcome: true
+  on_violation: drop_and_report
+
+# The same two prespecified subgroups as examples/improve/, carried over unchanged so the two
+# fixtures are readable side by side. Neither was chosen after seeing a result on this roster.
+subgroups:
+  - name: tumour_cohort
+    field: tumour_cohort
+  - name: peptide_length
+    field: peptide_length
+
+thresholds: [0.5]
+
+uncertainty:
+  n_boot: 2000
+  seed: 1337
+  ci_level: 0.95
+  show_naive_ci: true
+
+# Roster: 5 declared, 5 expected present.
+#
+# ADMITTED -- every member's published output is nominally an immunogenicity probability:
+#   deepimmuno         DeepImmuno, a deep model trained on immunogenicity assay data.
+#   deephlapan_immuno  DeepHLApan's immunogenic score (its binding score is a separate output
+#                      and is NOT in this roster).
+#   deepnetbim_immuno  DeepNetBim's immunogenicity probability (likewise distinct from its
+#                      binding output). 9-mers only; see the coverage note above.
+#   ittca_rf           iTTCA-RF's probability, published on a 0-100 scale and divided by 100 in
+#                      build_fixture.py. Its observed floor on this cohort is exactly 0.500 --
+#                      it never expresses a probability below a coin flip.
+#   improve_tme_incl   IMPROVE's best-discriminating variant, carried from examples/improve/ as
+#                      the in-house reference point this repo has already characterised.
+#
+# EXCLUDED, and this list is part of the prespecification because scoring these as
+# immunogenicity probabilities would be a strawman rather than a finding:
+#   MHCflurry (MHC affinity, processing, presentation) -- predicts antigen PRESENTATION. A
+#     presentation probability of 0.5 is not a claim that the peptide is immunogenic, so holding
+#     it to the immunogenicity base rate would manufacture a miscalibration that the model never
+#     asserted. The same reasoning excludes HLAthena's MSiC / MSiE / MSiCE.
+#   MixMHCpred, RankEL, RankBA -- binding predictors, and the ranks are percentiles, not
+#     probabilities.
+#   PRIME (score and rank) -- binding-weighted and not published on a probability scale.
+#   IEDB immunogenicity -- ranges from -0.914 to 0.639 on this cohort; it is a score, not a
+#     probability, and predval would reject it at the [0, 1] bound anyway.
+#
+# The distinction being enforced: a calibration critique only applies to a model that claims to
+# emit a probability of the event the labels record. Anything else is a ranking tool, and
+# examples/improve/'s own result is that the ranking is the part that works.
+expected_models:
+  - improve_tme_incl
+  - deepimmuno
+  - deephlapan_immuno
+  - deepnetbim_immuno
+  - ittca_rf
+on_missing_model: fail
+
+# No member is a blend of several separately trained models. Same reasoning as
+# examples/improve/: a single trained model's internal bagging is part of its fitting procedure,
+# not a post-hoc blend over a roster.
+ensemble_members: []
