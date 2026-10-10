@@ -94,6 +94,41 @@ def test_constant_predictions_have_no_slope() -> None:
     assert np.isnan(M.calibration_slope(y, np.full(4, 0.3)))
 
 
+# -------------------------------------------------------------------------- IRLS convergence
+
+
+def test_irls_rejects_quasi_separation_at_default_iteration_limit() -> None:
+    """Mixed outcomes at the tied score keep weights positive without a finite slope MLE."""
+    y = np.array([0, 0, 1, 1])
+    p = np.array([0.2, 0.5, 0.5, 0.8])
+    assert M._irls_logistic(y, M.logit(p), None) is None
+    assert np.isnan(M.calibration_slope(y, p))
+    # The offset-only fit still has a finite solution despite the unavailable slope fit.
+    assert M.calibration_intercept(y, p) == pytest.approx(0.0, abs=1e-9)
+
+
+@pytest.mark.parametrize("max_iter", [0, 1])
+def test_irls_rejects_exhausted_budget_even_with_finite_mle(max_iter) -> None:
+    y = np.array([0, 0, 1, 1, 0, 1])
+    z = M.logit(np.array([0.1, 0.2, 0.3, 0.4, 0.5, 0.6]))
+    assert M._irls_logistic(y, z, None, max_iter=max_iter) is None
+
+
+def test_irls_preserves_converged_finite_mle() -> None:
+    y = np.array([0, 0, 1, 1, 0, 1])
+    z = M.logit(np.array([0.1, 0.2, 0.3, 0.4, 0.5, 0.6]))
+    ref = sm.GLM(y, sm.add_constant(z), family=sm.families.Binomial()).fit()
+    beta = M._irls_logistic(y, z, None)
+    assert beta is not None
+    assert beta == pytest.approx(ref.params, rel=1e-6)
+
+
+def test_irls_accepts_convergence_on_last_allowed_iteration() -> None:
+    beta = M._irls_logistic(np.array([0, 1]), None, None, max_iter=1)
+    assert beta is not None
+    assert beta == pytest.approx([0.0])
+
+
 # --------------------------------------------------------------------------- the eps-clip path
 
 
