@@ -35,8 +35,10 @@ LADDER_RUNGS = ("rung1", "rung2", "rung3")
 # Every metric is recomputed on each recalibrated mapping -- not only calibration. Threshold
 # metrics move because recalibration shifts the operating point, and rung3 can reorder scores,
 # so AUROC/average precision are no longer invariant. Emitting all of them is what lets the
-# report show that recalibration cannot buy discrimination (rung1/rung2 AUROC == rung0) while a
-# threshold's sensitivity genuinely changes. The metric set is M.THRESHOLD_FREE + M.THRESHOLDED.
+# report distinguish rank-preserving apparent fits from pooled cross-fit scores. A single
+# strictly increasing mapping preserves AUROC unless clipping/saturation creates ties; rung2
+# requires a positive slope. Different fold-specific mappings can reorder pooled held-out scores
+# even when each is increasing. The metric set is M.THRESHOLD_FREE + M.THRESHOLDED.
 
 APPARENT = "apparent"
 CROSSFIT = "crossfit"

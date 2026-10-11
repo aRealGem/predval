@@ -1,0 +1,6 @@
+{
+  "wall_seconds": 1.962911616999918,
+  "cpu_seconds": 1.9628360740000002,
+  "max_rss_kib": 291520,
+  "note": "Benchmark body, not a fair tool runtime comparison; excludes imports and installation."
+}

@@ -39,11 +39,32 @@ def _sid(frame: pd.DataFrame) -> pd.Series:
     )
 
 
+def validate_patient_partitions(frame: pd.DataFrame, model_id: str) -> None:
+    """Fail closed on missing grouping metadata or patients split across CV folds.
+
+    This checks the released RF tables, not the upstream training implementation or
+    the NNAlign comparator (whose Split field is not read by this builder).
+    """
+    required = {"Patient", "Partition"}
+    if not required.issubset(frame.columns):
+        raise SystemExit(f"{model_id}: missing Patient or Partition column")
+    if frame["Patient"].isna().any() or frame["Patient"].astype(str).str.strip().eq("").any():
+        raise SystemExit(f"{model_id}: missing patient identifiers")
+    partition = pd.to_numeric(frame["Partition"], errors="coerce")
+    if partition.isna().any() or (partition % 1 != 0).any():
+        raise SystemExit(f"{model_id}: CV partitions must be non-missing integers")
+    # Use the same patient representation as the output cohort, without changing the data.
+    counts = partition.groupby(frame["Patient"].astype(str)).nunique()
+    if (counts > 1).any():
+        raise SystemExit(f"{model_id}: a patient appears in multiple CV partitions")
+
+
 def load_rf(src: Path) -> dict[str, pd.DataFrame]:
     out = {}
     for model_id, (sub, name) in RF_MODELS.items():
         path = src / "5_fold_CV" / sub / name
         frame = pd.read_csv(path, sep=r"\s+")
+        validate_patient_partitions(frame, model_id)
         frame["subject_id"] = _sid(frame)
         out[model_id] = frame
     return out

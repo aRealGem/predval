@@ -1,0 +1,125 @@
+{
+  "benchmark_tests_separate": {
+    "passed": 6,
+    "seconds": 7.14,
+    "skipped": 0,
+    "xfailed": 0
+  },
+  "cherry_picked_guard_commit": "617ddac480849ac48de41c1c1b1d050ddc427492",
+  "combined_tests": {
+    "command": "python -m pytest tests benchmarks/alternatives/tests -ra",
+    "failed": 0,
+    "passed": 282,
+    "seconds": 167.91,
+    "skip_reason": "Unavailable PCam, GUSTO, and IMPROVE optional example/golden fixtures.",
+    "skipped": 20,
+    "xfailed": 0,
+    "xpassed": 0
+  },
+  "date": "2026-10-10",
+  "lint": {
+    "formatted_file_count": 63,
+    "git_diff_check": "passed",
+    "ruff_check": "passed",
+    "ruff_format_check": "passed"
+  },
+  "numerical_outcome": "No change in either main benchmark fixture; all 13 stable input/result files match the original in each of two reruns.",
+  "original_comparator_commit": "868276ef960f0bc7f2bc75cc79926ff7b3c2e1f1",
+  "original_convergence_guard_commit": "62c8af368824d75e1dd915e78c131f46e333a340",
+  "original_protocol_result_verification_files": [
+    "benchmarks/alternatives/PROTOCOL.md",
+    "benchmarks/alternatives/results/glue_inventory.json",
+    "benchmarks/alternatives/results/python/correction_metrics.csv",
+    "benchmarks/alternatives/results/python/coverage.csv",
+    "benchmarks/alternatives/results/python/coverage_selection_metrics.csv",
+    "benchmarks/alternatives/results/python/intervals.csv",
+    "benchmarks/alternatives/results/python/manifest.json",
+    "benchmarks/alternatives/results/python/point_metrics.csv",
+    "benchmarks/alternatives/results/python/resource_usage.json",
+    "benchmarks/alternatives/results/python/summary.json",
+    "benchmarks/alternatives/results/r/r_agreement.csv",
+    "benchmarks/alternatives/results/r/r_bootstrap_summary.csv",
+    "benchmarks/alternatives/results/r/r_metrics.csv",
+    "benchmarks/alternatives/results/r/resource_usage.txt",
+    "benchmarks/alternatives/results/r/sessionInfo.txt",
+    "benchmarks/alternatives/results/r/verification.json",
+    "benchmarks/alternatives/results/reproducibility.json",
+    "benchmarks/alternatives/verification/benchmark-contract-tests.log",
+    "benchmarks/alternatives/verification/predval-pytest.log",
+    "benchmarks/alternatives/verification/r-parse.log",
+    "benchmarks/alternatives/verification/r-repeat.log",
+    "benchmarks/alternatives/verification/r-run.log",
+    "benchmarks/alternatives/verification/repeat-check.log",
+    "benchmarks/alternatives/verification/ruff.log",
+    "benchmarks/alternatives/verification/status.json"
+  ],
+  "original_protocol_result_verification_files_preserved": 25,
+  "patient_partition_guard": "99ca3d72f1d4f8340df9a59de3616277e9ebdb7a",
+  "python_environment_note": "Two existing isolated Python 3.12.14 environments created from requirements-lock.txt for the original benchmark were reused. They were not freshly installed for integration. PYTHONPATH selected this integration worktree; both imports were verified.",
+  "python_reruns": [
+    {
+      "all_stable_hashes_match_original": true,
+      "manifest_sha256": "a2a541ec30fbffe83103e04d2c85a5e83114a671e9818488e896a2f34eaf510d",
+      "resource_usage": {
+        "cpu_seconds": 3.6602351980000005,
+        "max_rss_kib": 291780,
+        "note": "Benchmark body, not a fair tool runtime comparison; excludes imports and installation.",
+        "wall_seconds": 3.85623039300026
+      },
+      "run": "python-a",
+      "stable_file_count": 13
+    },
+    {
+      "all_stable_hashes_match_original": true,
+      "manifest_sha256": "a2a541ec30fbffe83103e04d2c85a5e83114a671e9818488e896a2f34eaf510d",
+      "resource_usage": {
+        "cpu_seconds": 5.272218276,
+        "max_rss_kib": 293760,
+        "note": "Benchmark body, not a fair tool runtime comparison; excludes imports and installation.",
+        "wall_seconds": 5.465970102000028
+      },
+      "run": "python-b",
+      "stable_file_count": 13
+    }
+  ],
+  "python_stable_file_sha256": {
+    "correction_metrics.csv": "810d078fed3b8b96c69751ad2c04333e9730e13f64c2d7a9811faa4becacbd8a",
+    "coverage.csv": "3a6aa0df1d5da3aea520a81e7b1ff5287d12b1bad3ba5d36cbe90955061f8ca5",
+    "coverage_inputs/cohort.csv": "50127a122204e8fcbae05f4cf597e77f210791060015bbe120c837edc7f421c2",
+    "coverage_inputs/cohort.yaml": "fd3789802a5c4884f3d05a87ceb67bc67b5fbc97f9c736efe739f135780cf548",
+    "coverage_inputs/predictions.csv": "effe905a9fdc1117bf6d50f6bdfd9c20857552597d440259d37eb0accba5bc96",
+    "coverage_selection_metrics.csv": "2633e304ad3c482de0753cefcfce9c5c6835fc6882f0518310b2dc63d1f38712",
+    "intervals.csv": "65b5b3fc24cf9c603f7ca421d74b4a3353d8b75d92e2a7817d6428b125e44482",
+    "point_metrics.csv": "ba5cb17b04f400541e09b3c4b0108e41a211e75709707b55c9d4efee29f62480",
+    "summary.json": "03300c0306c33c4541e437b87426735a3bba16cabc2808a3144b282f54f41ac9",
+    "synthetic_clustered.csv": "50127a122204e8fcbae05f4cf597e77f210791060015bbe120c837edc7f421c2",
+    "synthetic_clustered_corrected.csv": "1bb4899c68ad53387f47804f6da41899c76ff5fc87165e5118cfd60a19e78568",
+    "wdbc_heldout.csv": "61a22060cc9072ef62ad74f7db619b982e8eeb3130c07d4cc275d602aa1ccd9c",
+    "wdbc_heldout_corrected.csv": "b47c07f8301ba3d7bac38a4ad9396593b0342036d71dabe1970d3630d5ce80c2"
+  },
+  "r_evidence": {
+    "execution_repeated_for_integration": false,
+    "original_stable_file_count_verified": 7,
+    "original_stable_file_sha256": {
+      "r_agreement.csv": "2c1e306addc003d941c80f84ad0f2e1ae476902e42eb5a8498152f147600f4bd",
+      "r_metrics.csv": "7a8d558a65c8d61d43b04406fbf1d46c5c18126e6fc5a2ebd1818fe9dfde0c59",
+      "sessionInfo.txt": "54be6cde818461ff3da62ff156022848d00cab4ae131e30af1c4c1ef720b3039",
+      "synthetic_clustered_r_corrected.csv": "5c13c21f257107c6893d001dc80388d1b19ab92448dadf951982e9358414cba6",
+      "synthetic_clustered_rsample_gains.csv": "bbedbfec1f6085cb31290b43f84feaf1dff7c6049cb1d276cccd2f26c24a3ccb",
+      "wdbc_heldout_r_corrected.csv": "8bc8df31c97730d9e2acd8671d2d0ae9a0816f9a1580b8e615129dacccacaf3f",
+      "wdbc_heldout_rsample_gains.csv": "3f1fc4df7f404beedc6255da517ee6e4bd634ff2588833f9299be0bff96237dd"
+    },
+    "reason": "The unchanged R adapter consumes byte-identical Python fixture/corrected-prediction inputs. Historical R evidence is reused and explicitly labeled; no new R execution is claimed."
+  },
+  "remote_actions": [],
+  "scope": "Local integration revalidation; methods/engineering evidence, not clinical or statistical validation.",
+  "source_sha256": {
+    "benchmarks/alternatives/PROTOCOL.md": "8630bb9af1f54eb4a7f8e7bacfa5a652dd4915dc60e1e319ac02105cbf920db1",
+    "benchmarks/alternatives/probably_adapter.R": "b81a00594a0e7407b4af5f023a01be594353f30bc16a090ac1f16d39aa4723e3",
+    "benchmarks/alternatives/run_benchmark.py": "a62a5f77c04e74ba79d9a043c98f4f2be37dd651112a49cc76b5d5fcbf360375",
+    "benchmarks/alternatives/tests/test_benchmark.py": "6b2270052c2df675b94638c7bff18b6d14ed64afb44412d1f4c89393449e2d8f",
+    "src/predval/metrics.py": "5a0f13aee0e1a4de17611f5aa13ff05421382af478b9fff788fd77132d9b81e6"
+  },
+  "statistical_stress_integrated": false,
+  "tested_source_note": "The code at the cherry-picked guard commit, with the comparator strict xfail removed; documentation and evidence records do not change source code."
+}

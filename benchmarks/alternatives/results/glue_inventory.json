@@ -1,0 +1,12 @@
+{
+  "physical_lines_including_comments": {
+    "reference_crossfit": 15,
+    "custom_bootstrap": 11,
+    "coverage_cases": 70,
+    "probably_adapter.R": 90,
+    "isitfair_adapter.py": 60
+  },
+  "interpretation": "Descriptive implementation size only. Includes validation/export code; not comparable developer time or a minimum required adapter.",
+  "native_predval_calls": "ladder; paired_brier_gain_interval; coverage_report/check_coverage/check_roster/check_common_selection",
+  "pycaleva_custom_scope": "External correction, grouped resampling, cohort/roster handling; point metrics native."
+}

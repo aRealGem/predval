@@ -1,0 +1,13 @@
+fixture,tool,metric,value
+wdbc_heldout,predval_rung2,auroc,0.98403077896068303
+wdbc_heldout,predval_rung2,brier,0.029256064983711545
+wdbc_heldout,statsmodels_custom_grouped,auroc,0.98403077896068303
+wdbc_heldout,statsmodels_custom_grouped,brier,0.029256064983711881
+wdbc_heldout,statsmodels_raw_probability,auroc,0.96874670601876245
+wdbc_heldout,statsmodels_raw_probability,brier,0.027717535594874616
+synthetic_clustered,predval_rung2,auroc,0.81855107327905252
+synthetic_clustered,predval_rung2,brier,0.17054132084865364
+synthetic_clustered,statsmodels_custom_grouped,auroc,0.81855107327905252
+synthetic_clustered,statsmodels_custom_grouped,brier,0.17054132084865359
+synthetic_clustered,statsmodels_raw_probability,auroc,0.81883558475203566
+synthetic_clustered,statsmodels_raw_probability,brier,0.17238338966503758

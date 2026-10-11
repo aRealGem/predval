@@ -159,6 +159,26 @@ def test_single_class_cell_yields_no_ladder_rows() -> None:
 # ------------------------------------------------------------------------- half-pair guard
 
 
+def test_quasi_separation_withholds_rung2_with_non_convergence_reason() -> None:
+    """Every training fold has quasi-separation: no finite apparent or held-out slope exists."""
+    y = np.tile([0, 0, 1, 1], 5)
+    p = np.tile([0.2, 0.5, 0.5, 0.8], 5)
+    groups = np.repeat(np.arange(5), 4)
+
+    cal, reason = R._fit("rung2", y, p)
+    assert cal is None and reason == R.R_NON_CONVERGENCE
+    predictions, reason = R._crossfit_predictions("rung2", y, p, groups, k=5)
+    assert predictions is None and reason == R.R_NON_CONVERGENCE
+
+    rows, report = R.ladder(y, p, groups)
+    assert ("rung2", R.R_NON_CONVERGENCE) in report.suppressed
+    assert report.rung2_slope is None
+    assert "rung2" not in report.crossfit_predictions
+    assert not any(row.rung == "rung2" for row in rows)
+    # The valid offset-only correction still emits both halves of its pair.
+    assert {row.fit_mode for row in rows if row.rung == "rung1"} == {"apparent", "crossfit"}
+
+
 def test_no_crossfit_partner_suppresses_the_whole_rung() -> None:
     """With one cluster there is nothing to hold out, so every rung is withheld, not half-shown."""
     rng = np.random.default_rng(7)

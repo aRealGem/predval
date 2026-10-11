@@ -1,0 +1,24 @@
+........................................................................ [ 23%]
+................sss..................................................... [ 47%]
+......................sssssssssssss..............ssss................... [ 71%]
+........................................................................ [ 95%]
+..............                                                           [100%]
+=========================== short test summary info ============================
+SKIPPED [1] tests/test_golden_gusto.py:69: GUSTO fixture not built; run examples/gusto/fetch_data.py + make_predictions.py
+SKIPPED [1] tests/test_golden_improve.py:67: IMPROVE fixture not built; run examples/improve/build_fixture.py
+SKIPPED [1] tests/test_golden_pcam.py:69: PCam fixture not built; run examples/pcam/build_fixture.py
+SKIPPED [1] tests/test_pcam_fixture.py:40: PCam fixture not built; run examples/pcam/build_fixture.py
+SKIPPED [1] tests/test_pcam_fixture.py:46: PCam fixture not built; run examples/pcam/build_fixture.py
+SKIPPED [1] tests/test_pcam_fixture.py:52: PCam fixture not built; run examples/pcam/build_fixture.py
+SKIPPED [1] tests/test_pcam_fixture.py:58: PCam fixture not built; run examples/pcam/build_fixture.py
+SKIPPED [1] tests/test_pcam_fixture.py:63: PCam fixture not built; run examples/pcam/build_fixture.py
+SKIPPED [1] tests/test_pcam_fixture.py:68: PCam fixture not built; run examples/pcam/build_fixture.py
+SKIPPED [1] tests/test_pcam_fixture.py:73: PCam fixture not built; run examples/pcam/build_fixture.py
+SKIPPED [1] tests/test_pcam_fixture.py:79: PCam fixture not built; run examples/pcam/build_fixture.py
+SKIPPED [1] tests/test_pcam_fixture.py:85: PCam fixture not built; run examples/pcam/build_fixture.py
+SKIPPED [1] tests/test_pcam_fixture.py:92: PCam fixture not built; run examples/pcam/build_fixture.py
+SKIPPED [1] tests/test_pcam_fixture.py:97: PCam fixture not built; run examples/pcam/build_fixture.py
+SKIPPED [1] tests/test_pcam_fixture.py:108: PCam fixture not built; run examples/pcam/build_fixture.py
+SKIPPED [1] tests/test_pcam_fixture.py:144: PCam fixture not built; run examples/pcam/build_fixture.py
+SKIPPED [4] tests/test_predrupdate_agreement.py:99: GUSTO fixture not built; run examples/gusto/fetch_data.py + make_predictions.py
+282 passed, 20 skipped in 167.91s (0:02:47)

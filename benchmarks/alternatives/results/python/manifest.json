@@ -1,0 +1,31 @@
+{
+  "bootstrap_replicates": 1000,
+  "bootstrap_seed": 20261011,
+  "files": {
+    "correction_metrics.csv": "810d078fed3b8b96c69751ad2c04333e9730e13f64c2d7a9811faa4becacbd8a",
+    "coverage.csv": "3a6aa0df1d5da3aea520a81e7b1ff5287d12b1bad3ba5d36cbe90955061f8ca5",
+    "coverage_inputs/cohort.csv": "50127a122204e8fcbae05f4cf597e77f210791060015bbe120c837edc7f421c2",
+    "coverage_inputs/cohort.yaml": "fd3789802a5c4884f3d05a87ceb67bc67b5fbc97f9c736efe739f135780cf548",
+    "coverage_inputs/predictions.csv": "effe905a9fdc1117bf6d50f6bdfd9c20857552597d440259d37eb0accba5bc96",
+    "coverage_selection_metrics.csv": "2633e304ad3c482de0753cefcfce9c5c6835fc6882f0518310b2dc63d1f38712",
+    "intervals.csv": "65b5b3fc24cf9c603f7ca421d74b4a3353d8b75d92e2a7817d6428b125e44482",
+    "point_metrics.csv": "ba5cb17b04f400541e09b3c4b0108e41a211e75709707b55c9d4efee29f62480",
+    "summary.json": "03300c0306c33c4541e437b87426735a3bba16cabc2808a3144b282f54f41ac9",
+    "synthetic_clustered.csv": "50127a122204e8fcbae05f4cf597e77f210791060015bbe120c837edc7f421c2",
+    "synthetic_clustered_corrected.csv": "1bb4899c68ad53387f47804f6da41899c76ff5fc87165e5118cfd60a19e78568",
+    "wdbc_heldout.csv": "61a22060cc9072ef62ad74f7db619b982e8eeb3130c07d4cc275d602aa1ccd9c",
+    "wdbc_heldout_corrected.csv": "b47c07f8301ba3d7bac38a4ad9396593b0342036d71dabe1970d3630d5ce80c2"
+  },
+  "protocol_sha256": "8630bb9af1f54eb4a7f8e7bacfa5a652dd4915dc60e1e319ac02105cbf920db1",
+  "python": "3.12.14",
+  "seed": 20261010,
+  "versions": {
+    "numpy": "2.4.6",
+    "pandas": "3.0.5",
+    "predval": "0.1.0",
+    "pycaleva": "0.8.2",
+    "scikit-learn": "1.9.0",
+    "scipy": "1.17.1",
+    "statsmodels": "0.14.6"
+  }
+}

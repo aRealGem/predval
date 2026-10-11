@@ -1,0 +1,5 @@
+subset,metric,value,n
+full_available,auroc,0.82189813101406362,1332
+full_available,brier,0.18140992475539261,1332
+common_intersection,auroc,0.78319621993512833,919
+common_intersection,brier,0.17792866586674272,919

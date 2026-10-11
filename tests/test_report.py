@@ -8,6 +8,7 @@ artefacts render byte-identically whether from memory or from disk.
 
 from __future__ import annotations
 
+from copy import deepcopy
 from pathlib import Path
 
 import numpy as np
@@ -24,6 +25,7 @@ from predval import (
     render_from_dir,
 )
 from predval.report import FRAMING, PENDING, build_context
+from tests.conftest import VALID_SPEC, write_cohort, write_predictions
 
 N_CLUSTERS = 8
 PER_CLUSTER = 80
@@ -114,7 +116,10 @@ def html(evaluation):
 
 def test_framing_block_is_present_and_unconditional(html) -> None:
     assert FRAMING in html
-    assert "Recalibration does not and cannot improve discrimination." in html
+    assert "Recalibration targets calibration." in html
+    assert "A single strictly increasing mapping preserves ranking" in html
+    assert "pooling fold-specific corrections, can change discrimination" in html
+    assert "does not and cannot improve discrimination" not in html
     # It appears before the first section heading -- nothing precedes the framing.
     assert html.index(FRAMING) < html.index("1. Coverage and roster")
 
@@ -218,6 +223,49 @@ def test_gated_subgroup_ladder_is_flagged_in_the_report(html) -> None:
     """The 4-cluster subgroups are below the gate; the report must say the ladder was suppressed."""
     assert "Ladder suppressed on gated subgroups" in html
     assert "recalibration_suppressed" not in html or "suppressed" in html.lower()
+
+
+def test_quasi_separated_rung_is_unavailable_in_evaluation_and_report(tmp_path: Path) -> None:
+    """The default fit must expose failure through the report, with no apparent or gain rows."""
+    ids = [f"s{i}" for i in range(20)]
+    cohort_path = write_cohort(
+        tmp_path,
+        spec={
+            **VALID_SPEC,
+            "subgroups": [],
+            "uncertainty": {"n_boot": 12, "seed": 1337},
+        },
+        table=pd.DataFrame(
+            {
+                "subject_id": ids,
+                "label": np.tile([0, 0, 1, 1], 5),
+                "site": np.repeat(np.arange(5), 4),
+            }
+        ),
+    )
+    predictions_path = write_predictions(
+        tmp_path,
+        pd.DataFrame(
+            {
+                "subject_id": ids,
+                "model_id": "quasi",
+                "predicted": np.tile([0.2, 0.5, 0.5, 0.8], 5),
+            }
+        ),
+    )
+    result = evaluate(load_cohort(cohort_path), load_predictions(predictions_path))
+
+    assert not (result.metrics["rung"] == "rung2").any()
+    reason = "rung2 withheld for quasi (overall): non-convergence"
+    assert any(
+        flag.code == "recalibration_unavailable" and flag.message == reason for flag in result.flags
+    )
+    ctx = build_context(
+        result.metrics, result.fragility, result.coverage, result.manifest, result.calibration
+    )
+    assert ctx["calibration_rows"]
+    assert all(row["rung2_gain"] == "n/a" for row in ctx["calibration_rows"])
+    assert reason in render_evaluation(result)
 
 
 # ----------------------------------------------------------------------------- provenance
@@ -434,11 +482,31 @@ def test_ensemble_paragraph_shown_when_a_member_is_declared(tmp_path: Path) -> N
     assert "model or ensemble construction" in html
 
 
-def test_fold4_reference_omitted_without_a_rung3_withholding(html) -> None:
-    """Item 5: the fold4 diagnosis doc is a PCam-specific writeup; citing it when this run has no
-    rung3-could-not-cross-fit withholding would be a dangling, misleading reference."""
+def test_unavailable_rung3_explanation_omitted_without_withholding(html) -> None:
+    assert "If either the apparent fit" not in html
     assert "fold4" not in html.lower()
-    assert "diagnosis-rung3-scanner_domain0" not in html
+    assert "docs/diagnosis-rung3-" not in html
+
+
+@pytest.mark.parametrize("stratum", ["tumour_cohort=Basket", "scanner_domain=0"])
+def test_unavailable_rung3_explains_half_pair_without_document_reference(evaluation, stratum):
+    result = deepcopy(evaluation)
+    result.manifest["flags"].append(
+        {
+            "code": "recalibration_unavailable",
+            "severity": "note",
+            "message": f"rung3 withheld for good ({stratum}): non-convergence",
+        }
+    )
+    rendered = render_evaluation(result)
+    text = " ".join(rendered.split())
+    assert (
+        "If either the apparent fit or any cross-fit training-fold fit is unavailable, "
+        "both apparent and cross-fitted rung3 results are withheld for that model and stratum. "
+        "See Flags for the reason."
+    ) in text
+    assert "docs/diagnosis-rung3-" not in rendered
+    assert "fold4 diagnosis" not in rendered
 
 
 def test_exhibit_note_is_conditional_on_the_ratio() -> None:
@@ -501,3 +569,16 @@ def test_appendix_off_by_default_and_bytes_unchanged(evaluation) -> None:
 def test_appendix_has_placeholder_structure(evaluation) -> None:
     html = render_evaluation(evaluation, appendix=True)
     assert html.count("Placeholder --") == 4
+
+
+def test_calibration_decision_point_qualifies_intervals_and_rank_preservation(html) -> None:
+    section = html.split("3. Calibration diagnosis", 1)[1].split("<table>", 1)[0]
+    assert "configured fixed-prediction resampling" in section
+    assert "Limited independent clusters and data-adaptive model or rung selection" in section
+    assert "neither conditional coverage nor coverage" in section
+    assert "full fitting-and-selection procedure" in section
+    assert "apparent rung2 with a positive slope" in section
+    assert "clipping or saturation creates" in section
+    assert "Pooled cross-fitted predictions can reorder" in section
+    assert "Recalibration cannot improve discrimination" not in html
+    assert "a real out-of-fold improvement" not in html

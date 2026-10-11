@@ -1,0 +1,18 @@
+{
+  "fresh_python_environments": 2,
+  "stable_manifests_identical": true,
+  "manifest_sha256": "a2a541ec30fbffe83103e04d2c85a5e83114a671e9818488e896a2f34eaf510d",
+  "primary_usage": {
+    "wall_seconds": 1.962911616999918,
+    "cpu_seconds": 1.9628360740000002,
+    "max_rss_kib": 291520,
+    "note": "Benchmark body, not a fair tool runtime comparison; excludes imports and installation."
+  },
+  "clean_usage": {
+    "wall_seconds": 2.3836366670002462,
+    "cpu_seconds": 2.3833308649999996,
+    "max_rss_kib": 291860,
+    "note": "Benchmark body, not a fair tool runtime comparison; excludes imports and installation."
+  },
+  "timing_scope": "Benchmark body after imports, excludes dependency setup. Not a tool speed comparison."
+}

@@ -27,10 +27,12 @@ through broad-scale validation of T cell recognition*, Frontiers in Immunology. 
   patients; melanoma 5,921 / 26; a mixed "Basket" group 5,362 / 20).
 - 467 peptides are experimentally immunogenic — **2.666% prevalence**.
 - Predictions are the paper's own **out-of-fold** scores from its 5-fold cross-validation. That
-  CV was partitioned **by patient**: every patient sits in exactly one partition, verified in
-  `build_fixture.py`. No score here comes from a model that had seen another peptide from the
-  same patient, which is what makes the file admissible as a predictions-only validation input
-  rather than an apparent-fit artefact.
+  CV was partitioned **by patient**. `build_fixture.py` checks every released random-forest
+  table for non-missing patient IDs and integer partitions, and rejects any patient appearing
+  in more than one partition before writing either fixture. This verifies the tables' grouping
+  metadata; it does not independently audit upstream training or the NNAlign comparator's
+  split assignments. Interpreting the released scores as out-of-fold predictions still relies
+  on the source authors' training procedure.
 - Seven models: the IMPROVE random forest in its three released feature configurations
   (`Simple`; `TME_excluded`, adding cellular prevalence and a prioritisation score;
   `TME_included`, further adding cytolytic activity, HLA expression and MCP-counter estimates),

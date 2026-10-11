@@ -46,7 +46,9 @@ FRAMING = (
     "rung0, not competitors to it. The cross-fitted figures are the expected performance after "
     "local recalibration on a cohort like this one -- not evidence that the recalibrated model "
     "has been validated, which would require a cohort the correction was never fitted on. "
-    "Recalibration does not and cannot improve discrimination."
+    "Recalibration targets calibration. A single strictly increasing mapping preserves ranking "
+    "unless clipping or saturation creates ties. Other mappings, or pooling fold-specific "
+    "corrections, can change discrimination; inspect AUROC changes alongside Brier gain."
 )
 
 #: Historical marker for a gain shown without an interval. The paired cross-fit gain now carries a

@@ -107,8 +107,12 @@ grouping unit within which subjects are correlated.
 This exists because the unit of analysis and the unit of independence are frequently not the
 same. In the PCam fixture, 19,999 image patches derive from just 22 whole slides; patches from
 one slide are heavily correlated. Confidence intervals computed as though there were 19,999
-independent observations are not slightly optimistic, they are wrong by roughly the square root
-of the cluster size. S1 validates and plumbs this field. S2 consumes it for cluster-robust or
+independent observations can seriously understate uncertainty. For an illustrative mean with
+independent clusters of equal size `m`, equal marginal variances, and exchangeable within-cluster
+correlation `ICC`, the standard-error inflation is `sqrt(1 + (m - 1) * ICC)`. It equals `sqrt(m)` only when
+`ICC = 1`. Unequal cluster sizes and other statistics, including AUROC, need their own variance
+analysis; the correlation relevant to a loss mean is that of the losses, not necessarily the
+outcomes. S1 validates and plumbs this field. S2 consumes it for cluster-robust or
 cluster-bootstrap intervals over the grouping unit.
 
 If `clustering` is omitted, S2 treats subjects as independent and says so in the report.
@@ -326,14 +330,24 @@ replicate *and* every fold — so that it carries the variance of the correction
 gain holds the cross-fit mapping fixed; the full refit-in-replicate interval is a design surface of
 its own and remains backlog rather than a silent omission.
 
+Holding the predictions fixed during resampling does **not** by itself establish conditional
+coverage: cross-fitted loss differences share fitted corrections and overlapping training data.
+The current intervals do not account for the full fitting-and-selection procedure. Respecting
+the cluster resampling unit alone does not guarantee nominal coverage, and the `few_clusters`
+warning is not a validated boundary above which coverage is guaranteed. Any proposed replacement
+interval needs evaluation against an explicitly stated target before adoption.
+
 ### 4.6 Every metric at every rung, with two integrity checks (S3.1)
 
 The ladder recomputes **all** metrics on each corrected mapping — not only calibration. Threshold
 metrics move because recalibration shifts the operating point, and that shift is clinically real;
-rung3 can reorder scores and so change AUROC and average precision. Emitting the full set is what
-lets a report show, side by side, that recalibration does **not** buy discrimination under the
-monotone rungs (rung1/rung2 AUROC equals rung0's exactly) while a decision threshold's sensitivity
-genuinely changes.
+rung3 can reorder scores and so change AUROC and average precision. A single strictly increasing
+mapping preserves ranks: apparent rung1, and apparent rung2 with a positive slope, preserve
+AUROC if clipping or numerical saturation does not introduce ties. This invariance does **not**
+extend to pooled cross-fitted predictions: different fold-specific mappings can reorder scores
+across folds even when each mapping is increasing. A nonpositive rung2 slope also precludes the
+strictly increasing argument. All metrics are therefore recomputed in both fit modes; threshold
+sensitivity can change even when ranks are preserved.
 
 Two identities hold **by construction** and must be annotated as such in any report, never
 presented as findings: rung1's apparent calibration intercept is ≈ 0, and rung2's apparent

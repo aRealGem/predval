@@ -24,6 +24,45 @@ normalizes that one field out of the comparison, as the GUSTO and PCam goldens d
 Reproducibility was verified at freeze time: a second independent run at the same commit was
 compared against these files by `tests/test_golden_improve.py`.
 
+## Minimal semantic refresh, 2026-10-10
+
+Based on PR6 source `937f079` plus the local report-only wording corrections described below,
+using Python **3.13.16** and the unchanged `uv.lock`. Findings records the base with a `-dirty`
+suffix to identify this uncommitted candidate; this is not unchanged `937f079` report output.
+This is a surgical update of the original frozen numerical artifacts, **not a new full
+Python 3.13.16 B=2000 evaluation**. The original freeze and its provenance above remain the
+source of all surviving numerical values.
+
+- The convergence guard withholds `rung3` for `improve_tme_excl_wo_prime` in
+  `tumour_cohort=Basket`. Remove its apparent/cross-fit pair and associated diagnostics:
+  21 rows per `full`/`common` analysis set, 42 rows total. These are two views of one cell.
+- Replace the old apparent `delta_auroc=+0.0277` non-monotonicity flag with
+  `rung3 ... non-convergence`. All surviving metric values, intervals and overall verdicts
+  are preserved exactly. Fragility, calibration and coverage files are byte-unchanged.
+- Render the report with `937f079`'s qualified interval/rank wording, a qualified opening
+  statement about ranking, and a conditional explanation of unavailable rung3 pairs without
+  referring to an absent diagnosis document. Regenerate findings from the preserved artifacts;
+  only the flag and explicitly recorded source commit change.
+
+Evidence: complete paired main `4eec985` / PR6 `3fc56b9` runs at B=2000, seed=1337 in one
+Python 3.12.14 environment found exactly this 42-row removal and no changed surviving values.
+Numerical Python source is unchanged between `3fc56b9` and `937f079`. A targeted fit with the
+restored Python 3.13.16 runtime independently confirmed the same 50-iteration non-convergence.
+Before the report-only correction, rendering the original frozen artifacts with main
+`4eec985`'s original template and original opening FRAMING reproduced the original HTML
+byte-for-byte in that runtime; repeated current-template rendering was also byte-identical.
+The conditional explanation also affects PCam when rung3 is unavailable; the opening
+qualification affects all reports. PCam and GUSTO golden refreshes remain pending.
+These checks validate the minimal transformation but do not claim a fresh full canonical
+end-to-end golden pass.
+
+The failing cross-fit training fold has 4,503 rows. The apparent fit converges, but the
+existing half-pair rule suppresses both outputs when its held-out companion is unavailable.
+In a narrow Python 3.12.14 diagnostic, the fold met the unchanged tolerance at iteration 64
+when allowed more iterations, with only ~6.4e-13 maximum probability change from iteration 50.
+Thus this is configured-limit handling, not evidence of irreparable separation. No production
+iteration budget or tolerance changed. No result is inferred for PCam or GUSTO.
+
 ## Headline numbers this baseline pins
 
 - **Prevalence anchoring.** The six IMPROVE random-forest configurations predict a mean

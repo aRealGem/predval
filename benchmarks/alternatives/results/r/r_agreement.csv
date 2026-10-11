@@ -1,0 +1,3 @@
+fixture,max_abs_predval_vs_r_logit,max_abs_statsmodels_vs_probably_raw
+wdbc_heldout,6.723954726339798e-12,1.0349785251051458e-8
+synthetic_clustered,5.773159728050814e-15,9.704870240767605e-11

@@ -128,7 +128,8 @@ def _irls_logistic(
         if np.max(np.abs(new - beta)) < tol:
             return new
         beta = new
-    return beta
+    # A finite last iterate is not a converged fit, notably under quasi-separation.
+    return None
 
 
 def calibration_intercept(y: np.ndarray, p: np.ndarray) -> float:

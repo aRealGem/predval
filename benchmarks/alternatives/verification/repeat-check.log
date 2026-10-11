@@ -1,0 +1,17 @@
+{
+  "python_stable_files_verified": 13,
+  "python_manifest_sha256": "a2a541ec30fbffe83103e04d2c85a5e83114a671e9818488e896a2f34eaf510d",
+  "r_repeated_stable_files_identical": 7,
+  "r_files_sha256": {
+    "r_metrics.csv": "7a8d558a65c8d61d43b04406fbf1d46c5c18126e6fc5a2ebd1818fe9dfde0c59",
+    "r_agreement.csv": "2c1e306addc003d941c80f84ad0f2e1ae476902e42eb5a8498152f147600f4bd",
+    "sessionInfo.txt": "54be6cde818461ff3da62ff156022848d00cab4ae131e30af1c4c1ef720b3039",
+    "wdbc_heldout_r_corrected.csv": "8bc8df31c97730d9e2acd8671d2d0ae9a0816f9a1580b8e615129dacccacaf3f",
+    "wdbc_heldout_rsample_gains.csv": "3f1fc4df7f404beedc6255da517ee6e4bd634ff2588833f9299be0bff96237dd",
+    "synthetic_clustered_r_corrected.csv": "5c13c21f257107c6893d001dc80388d1b19ab92448dadf951982e9358414cba6",
+    "synthetic_clustered_rsample_gains.csv": "bbedbfec1f6085cb31290b43f84feaf1dff7c6049cb1d276cccd2f26c24a3ccb"
+  },
+  "r_timing_first": "user  system elapsed\n138.449   3.509 142.258",
+  "r_timing_repeat": "user  system elapsed\n181.453   4.849 187.484",
+  "scope": "Same final inputs and fixed dependencies. Runtime excluded from hash equality."
+}
