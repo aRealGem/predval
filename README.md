@@ -1,5 +1,10 @@
 # predval
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/branding/predval-lockup-dark.svg">
+  <img src="docs/branding/predval-lockup-light.svg" alt="PREDVAL" width="420">
+</picture>
+
 A predictions-in validation harness for clinical prediction models.
 
 predval answers one question: **do a model's published probabilities hold up on your cohort?**
